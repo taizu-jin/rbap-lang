@@ -1,3 +1,7 @@
-fn main() {
-    println!("Hello, world!");
+use std::io;
+
+use rbap_lang::start;
+
+fn main() -> io::Result<()> {
+    start()
 }
