@@ -18,5 +18,5 @@ WRITE: / ' ', lv_template_string, ' '.
 WRITE: / lv_int.
 lv_int = 5 + 10.
 WRITE: / lv_int.
-WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2;
+WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2.
 ```
