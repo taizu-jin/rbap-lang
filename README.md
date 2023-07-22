@@ -12,7 +12,7 @@ DATA: lv_string TYPE string,
 lv_string = '(ツ)'.
 WRITE lv_string.
 
-DATA(lv_template_string) = |¯\_{ lv_string }_/¯|.
+DATA(lv_template_string) = |\_{ lv_string }_/|.
 WRITE: / ' ', lv_template_string, ' '.
 
 WRITE: / lv_int.
