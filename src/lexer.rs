@@ -130,8 +130,6 @@ impl Lexer {
         let pos = self.position;
 
         loop {
-            self.read_char();
-
             match self.ch {
                 b'{' => {
                     self.switch_strategy(Strategy::Token);
@@ -146,6 +144,7 @@ impl Lexer {
                 }
                 _ => (),
             }
+            self.read_char();
         }
 
         let literal = String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
