@@ -227,7 +227,11 @@ WRITE: / lv_int.
 lv_int = 5 + 10.
 WRITE: / lv_int.
 WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2.
-WRITE: | |, | { } |, |a{ |b| }c|."#;
+WRITE: | |, | { } |, |a{ |b| }c|.
+WRITE: |{}|.
+}abc|.
+WRITE: |nested { | string | } templates|.
+WRITE: |nested { | { 'string' } | } templates|."#;
 
         let tokens = vec![
             Token::Data,
@@ -332,6 +336,48 @@ WRITE: | |, | { } |, |a{ |b| }c|."#;
             Token::StringLiteral("c".into()),
             Token::VSlash,
             Token::Period,
+            Token::Write,
+            Token::Colon,
+            Token::VSlash,
+            Token::StringLiteral("".into()),
+            Token::LSquirly,
+            Token::RSquirly,
+            Token::StringLiteral("".into()),
+            Token::VSlash,
+            Token::Period,
+            Token::RSquirly,
+            Token::StringLiteral("abc".into()),
+            Token::VSlash,
+            Token::Period,
+            Token::Write,
+            Token::Colon,
+            Token::VSlash,
+            Token::StringLiteral("nested ".into()),
+            Token::LSquirly,
+            Token::VSlash,
+            Token::StringLiteral(" string ".into()),
+            Token::VSlash,
+            Token::RSquirly,
+            Token::StringLiteral(" templates".into()),
+            Token::VSlash,
+            Token::Period,
+            Token::Write,
+            Token::Colon,
+            Token::VSlash,
+            Token::StringLiteral("nested ".into()),
+            Token::LSquirly,
+            Token::VSlash,
+            Token::StringLiteral(" ".into()),
+            Token::LSquirly,
+            Token::StringLiteral("string".into()),
+            Token::RSquirly,
+            Token::StringLiteral(" ".into()),
+            Token::VSlash,
+            Token::RSquirly,
+            Token::StringLiteral(" templates".into()),
+            Token::VSlash,
+            Token::Period,
+            // WRITE: |nested { | { 'string' } | } templates|."#;
             Token::Eof,
         ];
 
