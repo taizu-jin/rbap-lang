@@ -68,6 +68,7 @@ impl Parser {
 
         match &self.cur_token {
             Token::IntLiteral(literal) => Self::parse_integer_literal(literal, token).unwrap(),
+            Token::StringLiteral(literal) => Self::parse_string_literal(literal, token).unwrap(),
             _ => unimplemented!("{:?}", self.cur_token),
         }
     }
@@ -79,7 +80,14 @@ impl Parser {
         }
     }
 
+    fn parse_string_literal(value: &str, token: Token) -> Result<Expression, String> {
+        Ok(Expression::StringLiteral {
+            value: value.to_string(),
+            token,
+        })
+    }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8,6 +8,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub enum Expression {
     IntLiteral { value: i64, token: Token },
+    StringLiteral { value: String, token: Token },
 }
 
 #[derive(Debug)]
