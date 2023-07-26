@@ -148,4 +148,35 @@ mod tests {
         panic!("{}", message)
     }
 
+    #[test]
+    fn test_string_literal_expression() {
+        let input = String::from("'5'.");
+        let program = parse_program(input);
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+
+        if let Statement::Expression(expression) = &program.statements[0] {
+            match expression {
+                Expression::StringLiteral {
+                    value,
+                    token: Token::StringLiteral(literal),
+                } => {
+                    assert_eq!("5", value, "value is not {}, got={}", "5", value);
+                    assert_eq!("5", literal, "literal is not {}, got={}", "5", literal);
+                }
+                _ => panic!("expression is not StringLiteral. got={:?}", expression),
+            }
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::Expression. got={:?}",
+                program.statements[1]
+            )
+        }
+    }
+
 }
