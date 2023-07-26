@@ -72,26 +72,19 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Option<Expression> {
-        let token = self.cur_token.clone();
 
         match &self.cur_token {
             Token::IntLiteral(literal) => {
-                Self::parse_integer_literal(literal.as_str(), token, &mut self.errors)
+                Self::parse_integer_literal(literal.as_str(), &mut self.errors)
             }
-            Token::StringLiteral(literal) => {
-                Some(Self::parse_string_literal(literal.as_str(), token))
-            }
+            Token::StringLiteral(literal) => Some(Self::parse_string_literal(literal.as_str())),
             _ => unimplemented!("{:?}", self.cur_token),
         }
     }
 
-    fn parse_integer_literal(
-        literal: &str,
-        token: Token,
-        errors: &mut Vec<String>,
-    ) -> Option<Expression> {
+    fn parse_integer_literal(literal: &str, errors: &mut Vec<String>) -> Option<Expression> {
         match literal.parse::<i64>() {
-            Ok(value) => Some(Expression::IntLiteral { value, token }),
+            Ok(value) => Some(Expression::IntLiteral(value)),
             Err(_) => {
                 errors.push(format!("could not parse {} as integer", literal));
                 None
@@ -99,11 +92,8 @@ impl Parser {
         }
     }
 
-    fn parse_string_literal(value: &str, token: Token) -> Expression {
-        Expression::StringLiteral {
-            value: value.to_string(),
-            token,
-        }
+    fn parse_string_literal(value: &str) -> Expression {
+        Expression::StringLiteral(value.to_string())
     }
 
 }
@@ -129,12 +119,8 @@ mod tests {
 
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
-                Expression::IntLiteral {
-                    value,
-                    token: Token::IntLiteral(literal),
-                } => {
+                Expression::IntLiteral(value) => {
                     assert_eq!(5, *value, "value is not {}, got={}", 5, *value);
-                    assert_eq!("5", literal, "literal is not {}, got={}", "5", literal);
                 }
                 _ => panic!("expression is not IntLiteral. got={:?}", expression),
             }
@@ -184,12 +170,8 @@ mod tests {
 
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
-                Expression::StringLiteral {
-                    value,
-                    token: Token::StringLiteral(literal),
-                } => {
+                Expression::StringLiteral(value) => {
                     assert_eq!("5", value, "value is not {}, got={}", "5", value);
-                    assert_eq!("5", literal, "literal is not {}, got={}", "5", literal);
                 }
                 _ => panic!("expression is not StringLiteral. got={:?}", expression),
             }
