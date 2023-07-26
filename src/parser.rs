@@ -78,4 +78,66 @@ impl Parser {
             Err(_) => Err(format!("could not parse {} as integer", literal)),
         }
     }
+
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fmt::Write;
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let input = String::from("5.");
+        let program = parse_program(input);
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+
+        if let Statement::Expression(expression) = &program.statements[0] {
+            match expression {
+                Expression::IntLiteral {
+                    value,
+                    token: Token::IntLiteral(literal),
+                } => {
+                    assert_eq!(5, *value, "value is not {}, got={}", 5, *value);
+                    assert_eq!("5", literal, "literal is not {}, got={}", "5", literal);
+                }
+                _ => panic!("expression is not IntLiteral. got={:?}", expression),
+            }
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::Expression. got={:?}",
+                program.statements[1]
+            )
+        }
+    }
+
+    fn parse_program(input: String) -> Program {
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+
+        check_parser_errors(parser);
+
+        program
+    }
+
+    fn check_parser_errors(parser: Parser) {
+        if parser.errors.is_empty() {
+            return;
+        }
+
+        let mut message = String::new();
+        writeln!(message, "parsers has {} errors", parser.errors.len()).unwrap();
+        for msg in parser.errors {
+            writeln!(message, "\tparser error: {}", msg).unwrap();
+        }
+
+        panic!("{}", message)
+    }
+
 }
