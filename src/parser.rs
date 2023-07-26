@@ -90,6 +90,8 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::{DataDeclaration, DataType};
+
     use super::*;
     use std::fmt::Write;
 
@@ -179,4 +181,56 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_data_declaration_statement() {
+        struct TestCase {
+            input: &'static str,
+            expected_ident: &'static str,
+            expected_type: DataType,
+        }
+
+        let tests = vec![
+            TestCase {
+                input: "DATA lv_string TYPE string.",
+                expected_ident: "lv_string",
+                expected_type: DataType::String,
+            },
+            TestCase {
+                input: "DATA lv_int type i.",
+                expected_ident: "lv_int",
+                expected_type: DataType::Int,
+            },
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::DataDeclaration(DataDeclaration { ident, ty }) =
+                &program.statements[0]
+            {
+                assert_eq!(
+                    test.expected_ident, ident,
+                    "identifier is not '{}'. got={}",
+                    test.expected_ident, ident
+                );
+                assert_eq!(
+                    &test.expected_type, ty,
+                    "type is not '{:?}'. got={:?}",
+                    &test.expected_type, ty
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::DataDeclaration. got={:?}",
+                    program.statements[1]
+                )
+            }
+        }
+    }
 }
