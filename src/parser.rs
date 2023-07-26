@@ -33,8 +33,16 @@ impl Parser {
         let mut program = Program::new();
 
         while !self.is_cur_token(&Token::Eof) {
-            program.statements.push(self.parse_statement());
-            self.next_token();
+            match self.parse_statement() {
+                Some(statement) => {
+                    self.next_token();
+                    program.statements.push(statement)
+                }
+                None => {
+                    self.next_token();
+                    continue;
+                }
+            }
         }
 
         program
@@ -43,49 +51,61 @@ impl Parser {
     fn is_cur_token(&self, token: &Token) -> bool {
         &self.cur_token == token
     }
-    fn parse_statement(&mut self) -> Statement {
+    fn parse_statement(&mut self) -> Option<Statement> {
         match self.cur_token {
             _ => self.parse_expression_statement(),
         }
     }
 
-    fn parse_expression_statement(&mut self) -> Statement {
-        let statement = Statement::Expression(self.parse_expression());
+    fn parse_expression_statement(&mut self) -> Option<Statement> {
+        let statement = Statement::Expression(self.parse_expression()?);
 
         if self.is_peek_token(&Token::Period) {
             self.next_token()
         }
 
-        statement
+        Some(statement)
     }
 
     fn is_peek_token(&self, token: &Token) -> bool {
         &self.peek_token == token
     }
 
-    fn parse_expression(&mut self) -> Expression {
+    fn parse_expression(&mut self) -> Option<Expression> {
         let token = self.cur_token.clone();
 
         match &self.cur_token {
-            Token::IntLiteral(literal) => Self::parse_integer_literal(literal, token).unwrap(),
-            Token::StringLiteral(literal) => Self::parse_string_literal(literal, token).unwrap(),
+            Token::IntLiteral(literal) => {
+                Self::parse_integer_literal(literal.as_str(), token, &mut self.errors)
+            }
+            Token::StringLiteral(literal) => {
+                Some(Self::parse_string_literal(literal.as_str(), token))
+            }
             _ => unimplemented!("{:?}", self.cur_token),
         }
     }
 
-    fn parse_integer_literal(literal: &str, token: Token) -> Result<Expression, String> {
+    fn parse_integer_literal(
+        literal: &str,
+        token: Token,
+        errors: &mut Vec<String>,
+    ) -> Option<Expression> {
         match literal.parse::<i64>() {
-            Ok(value) => Ok(Expression::IntLiteral { value, token }),
-            Err(_) => Err(format!("could not parse {} as integer", literal)),
+            Ok(value) => Some(Expression::IntLiteral { value, token }),
+            Err(_) => {
+                errors.push(format!("could not parse {} as integer", literal));
+                None
+            }
         }
     }
 
-    fn parse_string_literal(value: &str, token: Token) -> Result<Expression, String> {
-        Ok(Expression::StringLiteral {
+    fn parse_string_literal(value: &str, token: Token) -> Expression {
+        Expression::StringLiteral {
             value: value.to_string(),
             token,
-        })
+        }
     }
+
 }
 
 #[cfg(test)]
