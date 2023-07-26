@@ -1,5 +1,3 @@
-use crate::lexer::Token;
-
 #[derive(Debug)]
 pub enum Statement {
     Expression(Expression),
@@ -8,8 +6,8 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub enum Expression {
-    IntLiteral { value: i64, token: Token },
-    StringLiteral { value: String, token: Token },
+    IntLiteral(i64),
+    StringLiteral(String),
 }
 
 #[derive(Debug)]
