@@ -83,7 +83,7 @@ impl Lexer {
     fn read_ident(&mut self) -> String {
         let pos = self.position;
 
-        while self.ch.is_ascii_alphabetic() || self.ch == b'_' {
+        while self.ch.is_ascii_alphanumeric() || self.ch == b'_' {
             self.read_char()
         }
 
@@ -231,7 +231,9 @@ WRITE: | |, | { } |, |a{ |b| }c|.
 WRITE: |{}|.
 }abc|.
 WRITE: |nested { | string | } templates|.
-WRITE: |nested { | { 'string' } | } templates|."#;
+WRITE: |nested { | { 'string' } | } templates|.
+
+DATA lv_string2 TYPE string."#;
 
         let tokens = vec![
             Token::Data,
@@ -377,7 +379,11 @@ WRITE: |nested { | { 'string' } | } templates|."#;
             Token::StringLiteral(" templates".into()),
             Token::VSlash,
             Token::Period,
-            // WRITE: |nested { | { 'string' } | } templates|."#;
+            Token::Data,
+            Token::Ident("lv_string2".into()),
+            Token::Type,
+            Token::String,
+            Token::Period,
             Token::Eof,
         ];
 
