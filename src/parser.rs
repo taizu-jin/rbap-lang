@@ -268,6 +268,11 @@ mod tests {
                 expected_ident: "lv_int",
                 expected_type: DataType::Int,
             },
+            TestCase {
+                input: "DATA: lv_int type i.",
+                expected_ident: "lv_int",
+                expected_type: DataType::Int,
+            },
         ];
 
         for test in tests {
