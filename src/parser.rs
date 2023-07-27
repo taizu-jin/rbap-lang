@@ -2,17 +2,17 @@ use crate::{
     ast::{Expression, Program, Statement},
     lexer::{Lexer, Token},
 };
+use std::fmt::Write;
 
-pub struct Parser {
+pub struct Carriage {
     lexer: Lexer,
-    cur_token: Token,
     peek_token: Token,
-
+    cur_token: Token,
     errors: Vec<String>,
 }
 
-impl Parser {
-    pub fn new(mut lexer: Lexer) -> Self {
+impl Carriage {
+    fn new(mut lexer: Lexer) -> Self {
         let cur_token = lexer.next_token();
         let peek_token = lexer.next_token();
 
@@ -29,17 +29,55 @@ impl Parser {
         self.peek_token = self.lexer.next_token();
     }
 
+    fn expect_tokens(&mut self, tokens: &[Token]) -> bool {
+        let mut expected = String::from("expected next token to be one of the following:");
+
+        for token in tokens {
+            if self.is_peek_token(token) {
+                self.next_token();
+                return true;
+            } else {
+                write!(expected, " {:?}", token).unwrap();
+            }
+        }
+
+        self.errors
+            .push(format!("{}\ngot {:?} instead", expected, self.peek_token));
+
+        false
+    }
+
+    fn is_cur_token(&self, token: &Token) -> bool {
+        &self.cur_token == token
+    }
+
+    fn is_peek_token(&self, token: &Token) -> bool {
+        &self.peek_token == token
+    }
+}
+
+pub struct Parser {
+    carriage: Carriage,
+}
+
+impl Parser {
+    pub fn new(mut lexer: Lexer) -> Self {
+        let carriage = Carriage::new(lexer);
+
+        Self { carriage }
+    }
+
     fn parse_program(&mut self) -> Program {
         let mut program = Program::new();
 
-        while !self.is_cur_token(&Token::Eof) {
+        while !self.carriage.is_cur_token(&Token::Eof) {
             match self.parse_statement() {
                 Some(statement) => {
-                    self.next_token();
+                    self.carriage.next_token();
                     program.statements.push(statement)
                 }
                 None => {
-                    self.next_token();
+                    self.carriage.next_token();
                     continue;
                 }
             }
@@ -48,11 +86,9 @@ impl Parser {
         program
     }
 
-    fn is_cur_token(&self, token: &Token) -> bool {
-        &self.cur_token == token
-    }
     fn parse_statement(&mut self) -> Option<Statement> {
-        match self.cur_token {
+        match self.carriage.cur_token {
+            Token::Data => self.parse_data_declaration_statement(),
             _ => self.parse_expression_statement(),
         }
     }
@@ -60,25 +96,20 @@ impl Parser {
     fn parse_expression_statement(&mut self) -> Option<Statement> {
         let statement = Statement::Expression(self.parse_expression()?);
 
-        if self.is_peek_token(&Token::Period) {
-            self.next_token()
+        if self.carriage.is_peek_token(&Token::Period) {
+            self.carriage.next_token()
         }
 
         Some(statement)
     }
 
-    fn is_peek_token(&self, token: &Token) -> bool {
-        &self.peek_token == token
-    }
-
     fn parse_expression(&mut self) -> Option<Expression> {
-
-        match &self.cur_token {
+        match &self.carriage.cur_token {
             Token::IntLiteral(literal) => {
-                Self::parse_integer_literal(literal.as_str(), &mut self.errors)
+                Self::parse_integer_literal(literal.as_str(), &mut self.carriage.errors)
             }
             Token::StringLiteral(literal) => Some(Self::parse_string_literal(literal.as_str())),
-            _ => unimplemented!("{:?}", self.cur_token),
+            _ => unimplemented!("{:?}", self.carriage.cur_token),
         }
     }
 
@@ -143,13 +174,18 @@ mod tests {
     }
 
     fn check_parser_errors(parser: Parser) {
-        if parser.errors.is_empty() {
+        if parser.carriage.errors.is_empty() {
             return;
         }
 
         let mut message = String::new();
-        writeln!(message, "parsers has {} errors", parser.errors.len()).unwrap();
-        for msg in parser.errors {
+        writeln!(
+            message,
+            "parsers has {} errors",
+            parser.carriage.errors.len()
+        )
+        .unwrap();
+        for msg in parser.carriage.errors {
             writeln!(message, "\tparser error: {}", msg).unwrap();
         }
 
