@@ -128,6 +128,37 @@ impl Parser {
     }
 
     fn parse_data_declaration_statement(&mut self) -> Option<Statement> {
+        let mut declarations = Vec::new();
+
+        match self.carriage.is_peek_token(&Token::Colon) {
+            true => {
+                self.carriage.next_token();
+
+                loop {
+                    let declaration = self.parse_data_declaration()?;
+                    declarations.push(declaration);
+
+                    if self.carriage.is_peek_token(&Token::Comma) {
+                        self.carriage.next_token();
+                    } else {
+                        break;
+                    }
+                }
+            }
+            false => {
+                let declaration = self.parse_data_declaration()?;
+                declarations.push(declaration);
+            }
+        }
+
+        if !self.carriage.expect_tokens(&[Token::Period]) {
+            return None;
+        }
+
+        Some(Statement::DataDeclaration(declarations))
+    }
+
+    fn parse_data_declaration(&mut self) -> Option<DataDeclaration> {
         // Tokens are equal, if they are of same type, no matter what is the actual literal
         if !self.carriage.expect_tokens(&[Token::Ident("Dummy".into())]) {
             return None;
@@ -151,14 +182,7 @@ impl Parser {
             _ => unreachable!("current token must be either Int or String type"),
         };
 
-        if !self.carriage.expect_tokens(&[Token::Period]) {
-            return None;
-        }
-
-        Some(Statement::DataDeclaration(vec![DataDeclaration {
-            ident,
-            ty,
-        }]))
+        Some(DataDeclaration { ident, ty })
     }
 }
 
