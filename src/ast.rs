@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub enum Statement {
     Expression(Expression),
-    DataDeclaration(DataDeclaration),
+    DataDeclaration(Vec<DataDeclaration>),
 }
 
 #[derive(Debug)]
