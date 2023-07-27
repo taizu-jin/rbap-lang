@@ -155,7 +155,10 @@ impl Parser {
             return None;
         }
 
-        Some(Statement::DataDeclaration(DataDeclaration { ident, ty }))
+        Some(Statement::DataDeclaration(vec![DataDeclaration {
+            ident,
+            ty,
+        }]))
     }
 }
 
@@ -253,25 +256,30 @@ mod tests {
     fn test_data_declaration_statement() {
         struct TestCase {
             input: &'static str,
-            expected_ident: &'static str,
-            expected_type: DataType,
+            expected: Vec<DataDeclaration>,
         }
 
         let tests = vec![
             TestCase {
                 input: "DATA lv_string TYPE string.",
-                expected_ident: "lv_string",
-                expected_type: DataType::String,
+                expected: vec![DataDeclaration {
+                    ident: "lv_string".into(),
+                    ty: DataType::String,
+                }],
             },
             TestCase {
                 input: "DATA lv_int type i.",
-                expected_ident: "lv_int",
-                expected_type: DataType::Int,
+                expected: vec![DataDeclaration {
+                    ident: "lv_int".into(),
+                    ty: DataType::Int,
+                }],
             },
             TestCase {
                 input: "DATA: lv_int type i.",
-                expected_ident: "lv_int",
-                expected_type: DataType::Int,
+                expected: vec![DataDeclaration {
+                    ident: "lv_int".into(),
+                    ty: DataType::Int,
+                }],
             },
         ];
 
@@ -285,19 +293,21 @@ mod tests {
                 program.statements.len()
             );
 
-            if let Statement::DataDeclaration(DataDeclaration { ident, ty }) =
-                &program.statements[0]
-            {
-                assert_eq!(
-                    test.expected_ident, ident,
-                    "identifier is not '{}'. got={}",
-                    test.expected_ident, ident
-                );
-                assert_eq!(
-                    &test.expected_type, ty,
-                    "type is not '{:?}'. got={:?}",
-                    &test.expected_type, ty
-                );
+            if let Statement::DataDeclaration(data_declaration) = &program.statements[0] {
+                for (i, dd) in data_declaration.iter().enumerate() {
+                    let expected = &test.expected[i];
+
+                    assert_eq!(
+                        expected.ident, dd.ident,
+                        "identifier is not '{}'. got={}",
+                        expected.ident, dd.ident
+                    );
+                    assert_eq!(
+                        expected.ty, dd.ty,
+                        "type is not '{:?}'. got={:?}",
+                        expected.ty, dd.ty
+                    );
+                }
             } else {
                 panic!(
                     "program.statements[0] is not an Statement::DataDeclaration. got={:?}",
