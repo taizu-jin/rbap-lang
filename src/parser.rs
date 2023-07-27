@@ -61,7 +61,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(mut lexer: Lexer) -> Self {
+    pub fn new(lexer: Lexer) -> Self {
         let carriage = Carriage::new(lexer);
 
         Self { carriage }
