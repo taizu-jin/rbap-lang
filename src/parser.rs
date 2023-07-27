@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expression, Program, Statement},
+    ast::{DataDeclaration, DataType, Expression, Program, Statement},
     lexer::{Lexer, Token},
 };
 use std::fmt::Write;
@@ -127,6 +127,36 @@ impl Parser {
         Expression::StringLiteral(value.to_string())
     }
 
+    fn parse_data_declaration_statement(&mut self) -> Option<Statement> {
+        // Tokens are equal, if they are of same type, no matter what is the actual literal
+        if !self.carriage.expect_tokens(&[Token::Ident("Dummy".into())]) {
+            return None;
+        }
+
+        let ident = if let Token::Ident(ref ident) = self.carriage.cur_token {
+            ident.clone()
+        } else {
+            unreachable!("current token must be Identifier type")
+        };
+
+        if !self.carriage.expect_tokens(&[Token::Type])
+            || !self.carriage.expect_tokens(&[Token::String, Token::Int])
+        {
+            return None;
+        }
+
+        let ty = match self.carriage.cur_token {
+            Token::Int => DataType::Int,
+            Token::String => DataType::String,
+            _ => unreachable!("current token must be either Int or String type"),
+        };
+
+        if !self.carriage.expect_tokens(&[Token::Period]) {
+            return None;
+        }
+
+        Some(Statement::DataDeclaration(DataDeclaration { ident, ty }))
+    }
 }
 
 #[cfg(test)]
