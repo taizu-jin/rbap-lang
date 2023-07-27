@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum Token {
     Eof,
     _Illegal,
@@ -32,6 +32,39 @@ pub enum Token {
     Write,
     String,
     Int,
+}
+
+impl PartialEq for Token {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Token::Eof, Token::Eof)
+                | (Token::_Illegal, Token::_Illegal)
+                | (Token::Assign, Token::Assign)
+                | (Token::Plus, Token::Plus)
+                | (Token::Minus, Token::Minus)
+                | (Token::Asterisk, Token::Asterisk)
+                | (Token::Slash, Token::Slash)
+                | (Token::VSlash, Token::VSlash)
+                | (Token::Ident(_), Token::Ident(_))
+                | (Token::IntLiteral(_), Token::IntLiteral(_))
+                | (Token::StringLiteral(_), Token::StringLiteral(_))
+                | (Token::_True, Token::_True)
+                | (Token::_False, Token::_False)
+                | (Token::Comma, Token::Comma)
+                | (Token::Colon, Token::Colon)
+                | (Token::Period, Token::Period)
+                | (Token::LParen, Token::LParen)
+                | (Token::RParen, Token::RParen)
+                | (Token::LSquirly, Token::LSquirly)
+                | (Token::RSquirly, Token::RSquirly)
+                | (Token::Data, Token::Data)
+                | (Token::Type, Token::Type)
+                | (Token::Write, Token::Write)
+                | (Token::String, Token::String)
+                | (Token::Int, Token::Int)
+        )
+    }
 }
 
 impl Token {
