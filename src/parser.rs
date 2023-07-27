@@ -281,6 +281,30 @@ mod tests {
                     ty: DataType::Int,
                 }],
             },
+            TestCase {
+                input: "DATA: lv_int type i,
+lv_int2 TYPE i,
+lv_string TYPE string,
+lv_string2 TYPE string.",
+                expected: vec![
+                    DataDeclaration {
+                        ident: "lv_int".into(),
+                        ty: DataType::Int,
+                    },
+                    DataDeclaration {
+                        ident: "lv_int2".into(),
+                        ty: DataType::Int,
+                    },
+                    DataDeclaration {
+                        ident: "lv_string".into(),
+                        ty: DataType::String,
+                    },
+                    DataDeclaration {
+                        ident: "lv_string2".into(),
+                        ty: DataType::String,
+                    },
+                ],
+            },
         ];
 
         for test in tests {
