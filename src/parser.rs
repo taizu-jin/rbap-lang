@@ -188,7 +188,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{DataDeclaration, DataType};
+    use crate::ast::{Data, DataDeclaration, DataType};
 
     use super::*;
     use std::fmt::Write;
@@ -356,6 +356,60 @@ lv_string2 TYPE string.",
                         expected.ty, dd.ty
                     );
                 }
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::DataDeclaration. got={:?}",
+                    program.statements[1]
+                )
+            }
+        }
+    }
+
+    #[test]
+    fn test_data_statement() {
+        struct TestCase {
+            input: &'static str,
+            expected: Data,
+        }
+
+        let tests = vec![
+            TestCase {
+                input: "DATA(lv_string) = '5'.",
+                expected: Data {
+                    ident: "lv_string".into(),
+                    value: Expression::StringLiteral("5".into()),
+                },
+            },
+            TestCase {
+                input: "DATA lv_int TYPE i.",
+                expected: Data {
+                    ident: "lv_string".into(),
+                    value: Expression::StringLiteral("5".into()),
+                },
+            },
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Data(data) = &program.statements[0] {
+                assert_eq!(
+                    test.expected.ident, data.ident,
+                    "identifier is not '{}'. got={}",
+                    test.expected.ident, data.ident
+                );
+                assert_eq!(
+                    test.expected.value, data.value,
+                    "type is not '{:?}'. got={:?}",
+                    test.expected.value, data.value,
+                );
             } else {
                 panic!(
                     "program.statements[0] is not an Statement::DataDeclaration. got={:?}",
