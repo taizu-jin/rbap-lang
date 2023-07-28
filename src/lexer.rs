@@ -43,11 +43,11 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    fn _peek_char(lexer: &mut Lexer) -> u8 {
-        if lexer.read_position >= lexer.input.len() {
+    fn peek_char(&self) -> u8 {
+        if self.read_position >= self.input.len() {
             0
         } else {
-            lexer.input[lexer.read_position]
+            self.input[self.read_position]
         }
     }
 
@@ -72,7 +72,11 @@ impl Lexer {
         let literal = self.read_ident();
 
         let token = match Token::from_keyword(&literal) {
-            Some(token) => token,
+            Some(token) => match token {
+                Token::Data if self.ch == b'(' => self.get_data_inline(),
+                Token::Data => Token::Data,
+                _ => token,
+            },
             None => Token::Ident(literal),
         };
 
@@ -88,6 +92,28 @@ impl Lexer {
         }
 
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
+    }
+
+    fn get_data_inline(&mut self) -> Token {
+        let position = self.position;
+        let read_position = self.read_position;
+        let ch = self.ch;
+
+        self.read_char();
+
+        let literal = self.read_ident();
+
+        if self.ch != b')' {
+            self.position = position;
+            self.read_position = read_position;
+            self.ch = ch;
+
+            return Token::Data;
+        }
+
+        self.read_char();
+
+        Token::DataInline(literal)
     }
 
     fn get_int(&mut self) -> Token {
