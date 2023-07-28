@@ -2,9 +2,10 @@
 pub enum Statement {
     Expression(Expression),
     DataDeclaration(Vec<DataDeclaration>),
+    Data(Data),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     IntLiteral(i64),
     StringLiteral(String),
@@ -14,6 +15,12 @@ pub enum Expression {
 pub struct DataDeclaration {
     pub ident: String,
     pub ty: DataType,
+}
+
+#[derive(Debug)]
+pub struct Data {
+    pub ident: String,
+    pub value: Expression,
 }
 
 #[derive(Debug, PartialEq)]
