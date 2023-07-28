@@ -28,6 +28,7 @@ pub enum Token {
     RSquirly,
 
     Data,
+    DataInline(String),
     Type,
     Write,
     String,
@@ -63,6 +64,7 @@ impl PartialEq for Token {
                 | (Token::Write, Token::Write)
                 | (Token::String, Token::String)
                 | (Token::Int, Token::Int)
+                | (Token::DataInline(_), Token::DataInline(_))
         )
     }
 }
@@ -101,6 +103,7 @@ impl Display for Token {
             Token::LSquirly => write!(f, "LSquirly"),
             Token::RSquirly => write!(f, "RSquirly"),
             Token::Data => write!(f, "Data"),
+            Token::DataInline(l) => write!(f, "Data({})", l),
             Token::Type => write!(f, "Type"),
             Token::Write => write!(f, "Write"),
             Token::String => write!(f, "String"),
