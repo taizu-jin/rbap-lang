@@ -90,6 +90,7 @@ impl Parser {
         let statement = match &self.carriage.cur_token {
             Token::Data => self.parse_data_declaration_statement(),
             Token::DataInline(ident) => self.parse_data_statement(ident.to_string()),
+            Token::Write => self.parse_write_statement(),
             _ => self.parse_expression_statement(),
         };
 
@@ -207,6 +208,19 @@ impl Parser {
             ident: ident.to_string(),
             value: expression,
         }))
+    }
+
+    fn parse_write_statement(&mut self) -> Option<Statement> {
+        // Tokens are equal, if they are of same type, no matter what is the actual literal
+        if !self.carriage.expect_tokens(&[
+            Token::Ident("Dummy".into()),
+            Token::IntLiteral("Dummy".into()),
+            Token::StringLiteral("Dummy".into()),
+        ]) {
+            return None;
+        }
+
+        Some(Statement::Write(vec![self.parse_expression()?]))
     }
 }
 
