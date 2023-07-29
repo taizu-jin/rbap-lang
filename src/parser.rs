@@ -103,7 +103,6 @@ impl Parser {
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
         let statement = Statement::Expression(self.parse_expression()?);
-
         Some(statement)
     }
 
@@ -215,16 +214,45 @@ impl Parser {
     }
 
     fn parse_write_statement(&mut self) -> Option<Statement> {
-        // Tokens are equal, if they are of same type, no matter what is the actual literal
-        if !self.carriage.expect_tokens(&[
-            Token::Ident("Dummy".into()),
-            Token::IntLiteral("Dummy".into()),
-            Token::StringLiteral("Dummy".into()),
-        ]) {
-            return None;
-        }
+        let mut expressions = Vec::new();
 
-        Some(Statement::Write(vec![self.parse_expression()?]))
+        // Tokens are equal, if they are of same type, no matter what is the actual literal
+        match self.carriage.is_peek_token(&Token::Colon) {
+            true => {
+                self.carriage.next_token();
+
+                loop {
+                    if !self.carriage.expect_tokens(&[
+                        Token::Ident("Dummy".into()),
+                        Token::IntLiteral("Dummy".into()),
+                        Token::StringLiteral("Dummy".into()),
+                    ]) {
+                        return None;
+                    }
+
+                    let expression = self.parse_expression()?;
+                    expressions.push(expression);
+
+                    if self.carriage.is_peek_token(&Token::Comma) {
+                        self.carriage.next_token();
+                    } else {
+                        break;
+                    }
+                }
+            }
+            false => {
+                if !self.carriage.expect_tokens(&[
+                    Token::Ident("Dummy".into()),
+                    Token::IntLiteral("Dummy".into()),
+                    Token::StringLiteral("Dummy".into()),
+                ]) {
+                    return None;
+                }
+
+                expressions.push(self.parse_expression()?);
+            }
+        }
+        Some(Statement::Write(expressions))
     }
 }
 
