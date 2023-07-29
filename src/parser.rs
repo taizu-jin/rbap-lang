@@ -91,7 +91,7 @@ impl Parser {
             Token::Data => self.parse_data_declaration_statement(),
             Token::DataInline(ident) => self.parse_data_statement(ident.to_string()),
             Token::Write => self.parse_write_statement(),
-            _ => self.parse_expression_statement(),
+            _ => Some(Statement::Expression(self.parse_expression()?)),
         };
 
         if !self.carriage.expect_tokens(&[Token::Period]) {
@@ -99,11 +99,6 @@ impl Parser {
         }
 
         statement
-    }
-
-    fn parse_expression_statement(&mut self) -> Option<Statement> {
-        let statement = Statement::Expression(self.parse_expression()?);
-        Some(statement)
     }
 
     fn parse_expression(&mut self) -> Option<Expression> {
