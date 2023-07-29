@@ -239,7 +239,7 @@ mod tests {
         } else {
             panic!(
                 "program.statements[0] is not an Statement::Expression. got={:?}",
-                program.statements[1]
+                program.statements[0]
             )
         }
     }
@@ -295,7 +295,7 @@ mod tests {
         } else {
             panic!(
                 "program.statements[0] is not an Statement::Expression. got={:?}",
-                program.statements[1]
+                program.statements[0]
             )
         }
     }
