@@ -114,7 +114,11 @@ impl Parser {
             }
             Token::StringLiteral(literal) => Some(Self::parse_string_literal(literal.as_str())),
             Token::Ident(ident) => Some(Expression::Ident(ident.to_owned())),
-            _ => unimplemented!("can't parse expression '{}(:?)'", self.carriage.cur_token),
+            _ => unimplemented!(
+                "can't parse expression '{}({:?})'",
+                self.carriage.cur_token,
+                self.carriage.cur_token
+            ),
         }
     }
 
