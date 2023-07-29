@@ -381,10 +381,10 @@ lv_string2 TYPE string.",
                 },
             },
             TestCase {
-                input: "DATA lv_int TYPE i.",
+                input: "DATA(lv_int) = 1.",
                 expected: Data {
-                    ident: "lv_string".into(),
-                    value: Expression::StringLiteral("5".into()),
+                    ident: "lv_int".into(),
+                    value: Expression::IntLiteral(1),
                 },
             },
         ];
