@@ -1,5 +1,5 @@
 use crate::{
-    ast::{DataDeclaration, DataType, Expression, Program, Statement},
+    ast::{Data, DataDeclaration, DataType, Expression, Program, Statement},
     lexer::{Lexer, Token},
 };
 use std::fmt::Write;
@@ -89,6 +89,7 @@ impl Parser {
     fn parse_statement(&mut self) -> Option<Statement> {
         let statement = match &self.carriage.cur_token {
             Token::Data => self.parse_data_declaration_statement(),
+            Token::DataInline(ident) => self.parse_data_statement(ident.to_string()),
             _ => self.parse_expression_statement(),
         };
 
@@ -181,6 +182,30 @@ impl Parser {
         };
 
         Some(DataDeclaration { ident, ty })
+    }
+
+    fn parse_data_statement(&mut self, ident: String) -> Option<Statement> {
+        if !self.carriage.expect_tokens(&[Token::Assign]) {
+            return None;
+        }
+
+        // Skip assign token
+        self.carriage.next_token();
+
+        let expression = match self.parse_expression() {
+            Some(expression) => expression,
+            None => {
+                self.carriage
+                    .errors
+                    .push("expected an expression after '='".to_string());
+                return None;
+            }
+        };
+
+        Some(Statement::Data(Data {
+            ident: ident.to_string(),
+            value: expression,
+        }))
     }
 }
 
