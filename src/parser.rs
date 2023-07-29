@@ -211,7 +211,6 @@ impl Parser {
     fn parse_write_statement(&mut self) -> Option<Statement> {
         let mut expressions = Vec::new();
 
-        // Tokens are equal, if they are of same type, no matter what is the actual literal
         match self.carriage.is_peek_token(&Token::Colon) {
             true => {
                 self.carriage.next_token();
