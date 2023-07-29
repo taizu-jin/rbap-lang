@@ -121,7 +121,7 @@ impl Parser {
         match literal.parse::<i64>() {
             Ok(value) => Some(Expression::IntLiteral(value)),
             Err(_) => {
-                errors.push(format!("could not parse {} as integer", literal));
+                errors.push(format!("can't not parse {} as integer", literal));
                 None
             }
         }
