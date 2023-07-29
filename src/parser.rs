@@ -87,18 +87,20 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
-        match self.carriage.cur_token {
+        let statement = match &self.carriage.cur_token {
             Token::Data => self.parse_data_declaration_statement(),
             _ => self.parse_expression_statement(),
+        };
+
+        if !self.carriage.expect_tokens(&[Token::Period]) {
+            return None;
         }
+
+        statement
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
         let statement = Statement::Expression(self.parse_expression()?);
-
-        if self.carriage.is_peek_token(&Token::Period) {
-            self.carriage.next_token()
-        }
 
         Some(statement)
     }
@@ -149,10 +151,6 @@ impl Parser {
                 let declaration = self.parse_data_declaration()?;
                 declarations.push(declaration);
             }
-        }
-
-        if !self.carriage.expect_tokens(&[Token::Period]) {
-            return None;
         }
 
         Some(Statement::DataDeclaration(declarations))
