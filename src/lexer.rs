@@ -43,7 +43,7 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    fn peek_char(&self) -> u8 {
+    fn _peek_char(&self) -> u8 {
         if self.read_position >= self.input.len() {
             0
         } else {
