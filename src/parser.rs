@@ -469,4 +469,51 @@ lv_string2 TYPE string.",
             }
         }
     }
+
+    #[test]
+    fn test_write_statement() {
+        struct TestCase {
+            input: &'static str,
+            expected: Vec<Expression>,
+        }
+
+        let tests = vec![
+            TestCase {
+                input: "WRITE '5'.",
+                expected: vec![Expression::StringLiteral("5".to_string())],
+            },
+            TestCase {
+                input: "WRITE 1.",
+                expected: vec![Expression::IntLiteral(1)],
+            },
+            TestCase {
+                input: "WRITE lv_string.",
+                expected: vec![Expression::Ident("lv_string".to_string())],
+            },
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Write(expressions) = &program.statements[0] {
+                assert_eq!(
+                    &test.expected, expressions,
+                    "expression is not '{:?}'. got={:?}",
+                    test.expected, expressions
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::Write. got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
 }
