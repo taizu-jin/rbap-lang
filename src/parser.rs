@@ -189,10 +189,7 @@ impl Parser {
             return None;
         }
 
-        // Skip assign token
-        self.carriage.next_token();
-
-        let expression = match self.parse_expression() {
+        let expression = match self.expect_and_parse_expression() {
             Some(expression) => expression,
             None => {
                 self.carriage
