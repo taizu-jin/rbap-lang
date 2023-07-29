@@ -259,7 +259,8 @@ WRITE: |{}|.
 WRITE: |nested { | string | } templates|.
 WRITE: |nested { | { 'string' } | } templates|.
 
-DATA lv_string2 TYPE string."#;
+DATA lv_string2 TYPE string.
+DATA( lv_test) = '5'."#;
 
         let tokens = vec![
             Token::Data,
@@ -406,6 +407,13 @@ DATA lv_string2 TYPE string."#;
             Token::Ident("lv_string2".into()),
             Token::Type,
             Token::String,
+            Token::Period,
+            Token::Data,
+            Token::LParen,
+            Token::Ident("lv_test".into()),
+            Token::RParen,
+            Token::Assign,
+            Token::StringLiteral("5".into()),
             Token::Period,
             Token::Eof,
         ];
