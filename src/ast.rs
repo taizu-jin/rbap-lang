@@ -9,6 +9,7 @@ pub enum Statement {
 pub enum Expression {
     IntLiteral(i64),
     StringLiteral(String),
+    Ident(String),
 }
 
 #[derive(Debug)]
