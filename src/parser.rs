@@ -217,16 +217,7 @@ impl Parser {
                 self.carriage.next_token();
 
                 loop {
-                    if !self.carriage.expect_tokens(&[
-                        Token::Ident("Dummy".into()),
-                        Token::IntLiteral("Dummy".into()),
-                        Token::StringLiteral("Dummy".into()),
-                    ]) {
-                        return None;
-                    }
-
-                    let expression = self.parse_expression()?;
-                    expressions.push(expression);
+                    expressions.push(self.expect_and_parse_expression()?);
 
                     if self.carriage.is_peek_token(&Token::Comma) {
                         self.carriage.next_token();
@@ -235,19 +226,21 @@ impl Parser {
                     }
                 }
             }
-            false => {
-                if !self.carriage.expect_tokens(&[
-                    Token::Ident("Dummy".into()),
-                    Token::IntLiteral("Dummy".into()),
-                    Token::StringLiteral("Dummy".into()),
-                ]) {
-                    return None;
-                }
-
-                expressions.push(self.parse_expression()?);
-            }
+            false => expressions.push(self.expect_and_parse_expression()?),
         }
         Some(Statement::Write(expressions))
+    }
+
+    fn expect_and_parse_expression(&mut self) -> Option<Expression> {
+        if !self.carriage.expect_tokens(&[
+            Token::Ident("Dummy".into()),
+            Token::IntLiteral("Dummy".into()),
+            Token::StringLiteral("Dummy".into()),
+        ]) {
+            return None;
+        }
+
+        self.parse_expression()
     }
 }
 
