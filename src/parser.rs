@@ -508,6 +508,18 @@ lv_string2 TYPE string.",
                 input: "WRITE lv_string.",
                 expected: vec![Expression::Ident("lv_string".to_string())],
             },
+            TestCase {
+                input: "WRITE: lv_string.",
+                expected: vec![Expression::Ident("lv_string".to_string())],
+            },
+            TestCase {
+                input: "WRITE: lv_string, 5, '5'.",
+                expected: vec![
+                    Expression::Ident("lv_string".to_string()),
+                    Expression::IntLiteral(5),
+                    Expression::StringLiteral("5".to_string()),
+                ],
+            },
         ];
 
         for test in tests {
