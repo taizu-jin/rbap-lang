@@ -301,6 +301,33 @@ mod tests {
     }
 
     #[test]
+    fn test_identifier_expression() {
+        let input = String::from("lv_string.");
+        let program = parse_program(input);
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+
+        if let Statement::Expression(expression) = &program.statements[0] {
+            match expression {
+                Expression::Ident(ident) => {
+                    assert_eq!("lv_string", ident, "value is not {}, got={}", "5", ident);
+                }
+                _ => panic!("expression is not StringLiteral. got={:?}", expression),
+            }
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::Expression. got={:?}",
+                program.statements[0]
+            )
+        }
+    }
+
+    #[test]
     fn test_data_declaration_statement() {
         struct TestCase {
             input: &'static str,
