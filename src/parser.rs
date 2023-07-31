@@ -532,6 +532,31 @@ lv_string2 TYPE string.",
                     Expression::StringLiteral("5".to_string()),
                 ],
             },
+            TestCase {
+                input: "WRITE: / lv_string, / 5, / '5'.",
+                expected: vec![
+                    Expression::StringLiteral("\n".to_string()),
+                    Expression::Ident("lv_string".to_string()),
+                    Expression::StringLiteral("\n".to_string()),
+                    Expression::IntLiteral(5),
+                    Expression::StringLiteral("\n".to_string()),
+                    Expression::StringLiteral("5".to_string()),
+                ],
+            },
+            TestCase {
+                input: "WRITE: / lv_string.",
+                expected: vec![
+                    Expression::StringLiteral("\n".to_string()),
+                    Expression::Ident("lv_string".to_string()),
+                ],
+            },
+            TestCase {
+                input: "WRITE/ lv_string.",
+                expected: vec![
+                    Expression::StringLiteral("\n".to_string()),
+                    Expression::Ident("lv_string".to_string()),
+                ],
+            },
         ];
 
         for test in tests {
