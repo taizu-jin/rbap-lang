@@ -67,6 +67,10 @@ impl Parser {
         Self { carriage }
     }
 
+    pub fn errors(&self) -> &Vec<String> {
+        &self.carriage.errors
+    }
+
     pub fn parse(&mut self) -> Program {
         let mut program = Program::new();
 
