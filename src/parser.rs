@@ -90,6 +90,9 @@ impl Parser {
         let statement = match &self.carriage.cur_token {
             Token::Data => self.parse_data_declaration_statement(),
             Token::DataInline(ident) => self.parse_data_statement(ident.to_string()),
+            Token::Ident(ident) if self.carriage.is_peek_token(&Token::Assign) => {
+                self.parse_data_statement(ident.to_string())
+            }
             Token::Write => self.parse_write_statement(),
             _ => Some(Statement::Expression(self.parse_expression()?)),
         };
