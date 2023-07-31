@@ -11,6 +11,7 @@ pub enum Expression {
     IntLiteral(i64),
     StringLiteral(String),
     Ident(String),
+    StringTemplate(Vec<Expression>),
 }
 
 #[derive(Debug, PartialEq)]
