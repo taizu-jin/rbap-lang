@@ -539,6 +539,17 @@ lv_string2 TYPE string.",
                     value: Expression::IntLiteral(1),
                 },
             },
+            TestCase {
+                input: "lv_int = |some { lv_string } literal|.",
+                expected: Data {
+                    ident: "lv_int".into(),
+                    value: Expression::StringTemplate(vec![
+                        Expression::StringLiteral("some ".into()),
+                        Expression::Ident("lv_string".into()),
+                        Expression::StringLiteral(" literal".into()),
+                    ]),
+                },
+            },
         ];
 
         for test in tests {
