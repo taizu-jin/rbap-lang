@@ -247,6 +247,7 @@ impl Parser {
             Token::Ident("Dummy".into()),
             Token::IntLiteral("Dummy".into()),
             Token::StringLiteral("Dummy".into()),
+            Token::VSlash,
         ]) {
             return None;
         }
