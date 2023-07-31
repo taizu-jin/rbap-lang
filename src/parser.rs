@@ -67,7 +67,7 @@ impl Parser {
         Self { carriage }
     }
 
-    fn parse_program(&mut self) -> Program {
+    pub fn parse(&mut self) -> Program {
         let mut program = Program::new();
 
         while !self.carriage.is_cur_token(&Token::Eof) {
@@ -341,7 +341,7 @@ mod tests {
     fn parse_program(input: String) -> Program {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
+        let program = parser.parse();
 
         check_parser_errors(parser);
 
