@@ -213,6 +213,11 @@ impl Parser {
                 self.carriage.next_token();
 
                 loop {
+                    if self.carriage.is_peek_token(&Token::Slash) {
+                        expressions.push(Expression::StringLiteral("\n".to_string()));
+                        self.carriage.next_token();
+                    }
+
                     expressions.push(self.expect_and_parse_expression()?);
 
                     if self.carriage.is_peek_token(&Token::Comma) {
@@ -222,7 +227,13 @@ impl Parser {
                     }
                 }
             }
-            false => expressions.push(self.expect_and_parse_expression()?),
+            false => {
+                if self.carriage.is_peek_token(&Token::Slash) {
+                    expressions.push(Expression::StringLiteral("\n".to_string()));
+                    self.carriage.next_token();
+                }
+                expressions.push(self.expect_and_parse_expression()?)
+            }
         }
         Some(Statement::Write(expressions))
     }
