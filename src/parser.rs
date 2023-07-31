@@ -604,4 +604,66 @@ lv_string2 TYPE string.",
             }
         }
     }
+
+    #[test]
+    fn test_string_template_statement() {
+        struct TestCase {
+            input: &'static str,
+            expected: Vec<Expression>,
+        }
+
+        let tests = vec![
+            TestCase {
+                input: "|this { lv_that } those|.",
+                expected: vec![
+                    Expression::StringLiteral("this ".to_string()),
+                    Expression::Ident("lv_that".to_string()),
+                    Expression::StringLiteral(" those".to_string()),
+                ],
+            },
+            TestCase {
+                input: "||.",
+                expected: vec![],
+            },
+            TestCase {
+                input: "|this{ | is | }{ |a { nested } string| } template|.",
+                expected: vec![
+                    Expression::StringLiteral("this".to_string()),
+                    Expression::StringTemplate(vec![Expression::StringLiteral(" is ".to_string())]),
+                    Expression::StringTemplate(vec![
+                        Expression::StringLiteral("a ".to_string()),
+                        Expression::Ident("nested".to_string()),
+                        Expression::StringLiteral(" string".to_string()),
+                    ]),
+                    Expression::StringLiteral(" template".to_string()),
+                ],
+            },
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(Expression::StringTemplate(expressions)) =
+                &program.statements[0]
+            {
+                assert_eq!(
+                    &test.expected, expressions,
+                    "expression is not '{:?}'. got={:?}",
+                    test.expected, expressions
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::Expression(Expression::StringTemplate). got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
 }
