@@ -111,6 +111,7 @@ impl Parser {
             }
             Token::StringLiteral(literal) => Some(Self::parse_string_literal(literal.as_str())),
             Token::Ident(ident) => Some(Expression::Ident(ident.to_owned())),
+            Token::VSlash => self.parse_string_template_expression(),
             _ => unimplemented!(
                 "can't parse expression '{}({:?})'",
                 self.carriage.cur_token,
@@ -251,6 +252,55 @@ impl Parser {
         }
 
         self.parse_expression()
+    }
+
+    fn parse_string_template_expression(&mut self) -> Option<Expression> {
+        if !self.carriage.expect_tokens(&[
+            Token::StringLiteral("Dummy".into()),
+            Token::LSquirly,
+            Token::VSlash,
+        ]) {
+            return None;
+        }
+
+        let mut expressions = Vec::new();
+
+        while let Some(expression) = self.parse_string_template() {
+            match expression {
+                Expression::StringLiteral(literal) if literal.is_empty() => continue,
+                expression => expressions.push(expression),
+            }
+        }
+
+        Some(Expression::StringTemplate(expressions))
+    }
+
+    fn parse_string_template(&mut self) -> Option<Expression> {
+        match &self.carriage.cur_token {
+            Token::StringLiteral(_) => {
+                let expression = self.parse_expression()?;
+                self.carriage.next_token();
+                Some(expression)
+            }
+            Token::LSquirly => {
+                self.carriage.next_token();
+                let expression = self.parse_expression()?;
+                if !self.carriage.expect_tokens(&[Token::RSquirly]) {
+                    return None;
+                } else {
+                    self.carriage.next_token();
+                }
+
+                Some(expression)
+            }
+            Token::VSlash => None,
+            token => {
+                self.carriage
+                    .errors
+                    .push(format!("Unrecognized string template token. got={}", token));
+                None
+            }
+        }
     }
 }
 
