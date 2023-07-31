@@ -479,6 +479,13 @@ lv_string2 TYPE string.",
                     value: Expression::IntLiteral(1),
                 },
             },
+            TestCase {
+                input: "lv_int = 1.",
+                expected: Data {
+                    ident: "lv_int".into(),
+                    value: Expression::IntLiteral(1),
+                },
+            },
         ];
 
         for test in tests {
