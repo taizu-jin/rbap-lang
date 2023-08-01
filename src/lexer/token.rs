@@ -1,5 +1,100 @@
 use std::fmt::Display;
 
+#[derive(Debug, PartialEq)]
+pub enum TokenKind {
+    Eof,
+    Illegal,
+
+    Assign,
+    Plus,
+    Minus,
+    Asterisk,
+    Slash,
+    VSlash,
+
+    Ident,
+    IntLiteral,
+    StringLiteral,
+    _True,
+    _False,
+
+    Comma,
+    Colon,
+    Period,
+
+    LParen,
+    RParen,
+    LSquirly,
+    RSquirly,
+
+    Data,
+    DataInline,
+    Type,
+    Write,
+    String,
+    Int,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TokenNew<'a> {
+    literal: &'a str,
+    kind: TokenKind,
+}
+
+impl<'a> TokenNew<'a> {
+    pub fn new(kind: TokenKind, literal: &'a str) -> TokenNew {
+        Self { literal, kind }
+    }
+
+    pub fn kind(&self) -> &TokenKind {
+        &self.kind
+    }
+
+    pub fn is_keyword(&self) -> bool {
+        matches!(
+            self.kind,
+            TokenKind::Type
+                | TokenKind::Data
+                | TokenKind::Write
+                | TokenKind::String
+                | TokenKind::Int
+        )
+    }
+}
+
+impl<'a> Display for TokenNew<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.kind {
+            TokenKind::Eof => write!(f, "EOF"),
+            TokenKind::Illegal => write!(f, "Illegal({})", self.literal),
+            TokenKind::Assign => write!(f, "Assign({})", self.literal),
+            TokenKind::Plus => write!(f, "Plus({})", self.literal),
+            TokenKind::Minus => write!(f, "Minus({})", self.literal),
+            TokenKind::Asterisk => write!(f, "Asterisk({})", self.literal),
+            TokenKind::Slash => write!(f, "Slash({})", self.literal),
+            TokenKind::VSlash => write!(f, "VSlash({})", self.literal),
+            TokenKind::Ident => write!(f, "Ident({})", self.literal),
+            TokenKind::IntLiteral => write!(f, "IntLiteral({})", self.literal),
+            TokenKind::StringLiteral => write!(f, "StringLiteral({})", self.literal),
+            TokenKind::_True => write!(f, "True({})", self.literal),
+            TokenKind::_False => write!(f, "False({})", self.literal),
+            TokenKind::Comma => write!(f, "Comma({})", self.literal),
+            TokenKind::Colon => write!(f, "Colon({})", self.literal),
+            TokenKind::Period => write!(f, "Period({})", self.literal),
+            TokenKind::LParen => write!(f, "LParen({})", self.literal),
+            TokenKind::RParen => write!(f, "RParen({})", self.literal),
+            TokenKind::LSquirly => write!(f, "LSquirly({})", self.literal),
+            TokenKind::RSquirly => write!(f, "RSquirly({})", self.literal),
+            TokenKind::Data => write!(f, "Data({})", self.literal),
+            TokenKind::DataInline => write!(f, "DataInline({})", self.literal),
+            TokenKind::Type => write!(f, "Type({})", self.literal),
+            TokenKind::Write => write!(f, "Write({})", self.literal),
+            TokenKind::String => write!(f, "String({})", self.literal),
+            TokenKind::Int => write!(f, "Int({})", self.literal),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Token {
     Eof,
