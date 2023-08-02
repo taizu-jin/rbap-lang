@@ -4,15 +4,15 @@ use crate::{
 };
 use std::fmt::Write;
 
-pub struct Carriage<'a> {
-    lexer: Lexer<'a>,
-    peek_token: Token<'a>,
-    cur_token: Token<'a>,
+pub struct Carriage {
+    lexer: Lexer,
+    peek_token: Token,
+    cur_token: Token,
     errors: Vec<String>,
 }
 
-impl<'a> Carriage<'a> {
-    fn new(mut lexer: Lexer<'a>) -> Self {
+impl Carriage {
+    fn new(mut lexer: Lexer) -> Self {
         let cur_token = lexer.next_token();
         let peek_token = lexer.next_token();
 
@@ -56,12 +56,12 @@ impl<'a> Carriage<'a> {
     }
 }
 
-pub struct Parser<'a> {
-    carriage: Carriage<'a>,
+pub struct Parser {
+    carriage: Carriage,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
+impl Parser {
+    pub fn new(lexer: Lexer) -> Self {
         let carriage = Carriage::new(lexer);
 
         Self { carriage }

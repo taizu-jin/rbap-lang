@@ -36,12 +36,12 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token<'a> {
-    literal: Cow<'a, str>,
+pub struct Token {
+    literal: Cow<'static, str>,
     kind: TokenKind,
 }
 
-impl<'a> Token<'a> {
+impl Token {
     pub fn kind(&self) -> &TokenKind {
         &self.kind
     }
@@ -51,14 +51,14 @@ impl<'a> Token<'a> {
     }
 }
 
-impl<'a> Token<'a> {
+impl Token {
     pub fn eof() -> Self {
         Token {
             kind: TokenKind::Eof,
             literal: "EOF".into(),
         }
     }
-    pub fn illegal(literal: Cow<'a, str>) -> Self {
+    pub fn illegal(literal: Cow<'static, str>) -> Self {
         Token {
             kind: TokenKind::Illegal,
             literal,
@@ -100,19 +100,19 @@ impl<'a> Token<'a> {
             literal: "|".into(),
         }
     }
-    pub fn ident(literal: Cow<'a, str>) -> Self {
+    pub fn ident(literal: Cow<'static, str>) -> Self {
         Token {
             kind: TokenKind::Ident,
             literal,
         }
     }
-    pub fn int_literal(literal: Cow<'a, str>) -> Self {
+    pub fn int_literal(literal: Cow<'static, str>) -> Self {
         Token {
             kind: TokenKind::IntLiteral,
             literal,
         }
     }
-    pub fn string_literal(literal: Cow<'a, str>) -> Self {
+    pub fn string_literal(literal: Cow<'static, str>) -> Self {
         Token {
             kind: TokenKind::StringLiteral,
             literal,
@@ -178,7 +178,7 @@ impl<'a> Token<'a> {
             literal: "data".into(),
         }
     }
-    pub fn data_inline(literal: Cow<'a, str>) -> Self {
+    pub fn data_inline(literal: Cow<'static, str>) -> Self {
         Token {
             kind: TokenKind::DataInline,
             literal,
@@ -210,7 +210,7 @@ impl<'a> Token<'a> {
     }
 }
 
-impl<'a> Display for Token<'a> {
+impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
             TokenKind::Eof => write!(f, "EOF"),
@@ -243,7 +243,7 @@ impl<'a> Display for Token<'a> {
     }
 }
 
-impl<'a> From<u8> for Token<'a> {
+impl From<u8> for Token {
     fn from(value: u8) -> Self {
         match value {
             b'=' => Token::assign(),
@@ -265,8 +265,8 @@ impl<'a> From<u8> for Token<'a> {
     }
 }
 
-impl<'a, 'b> From<&'a str> for Token<'b> {
-    fn from(value: &'a str) -> Self {
+impl From<&str> for Token {
+    fn from(value: &str) -> Self {
         match value {
             "type" => Token::ty(),
             "data" => Token::data(),
@@ -280,7 +280,7 @@ impl<'a, 'b> From<&'a str> for Token<'b> {
     }
 }
 
-impl<'a> From<String> for Token<'a> {
+impl From<String> for Token {
     fn from(value: String) -> Self {
         match value.as_str() {
             "type" => Token::ty(),
