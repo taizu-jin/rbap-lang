@@ -1,26 +1,26 @@
 mod token;
 
-pub use token::Token;
+pub use token::{Token, TokenKind};
 
-pub(super) enum Strategy {
+pub(super) enum Strategy<'a> {
     Ident,
     String,
     Int,
     StrTemplate,
     Token,
-    Single(Token),
+    Single(Token<'a>),
 }
 
-pub struct Lexer {
+pub struct Lexer<'a> {
     input: Vec<u8>,
     position: usize,
     read_position: usize,
     ch: u8,
-    strategy: Strategy,
+    strategy: Strategy<'a>,
 }
 
-impl Lexer {
-    pub fn new(input: String) -> Lexer {
+impl<'a> Lexer<'a> {
+    pub fn new(input: String) -> Self {
         let mut lexer = Self {
             input: input.to_lowercase().into_bytes(),
             position: 0,
@@ -49,7 +49,7 @@ impl Lexer {
         }
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token<'a> {
         match self.strategy {
             Strategy::Ident => self.get_ident(),
             Strategy::Int => self.get_int(),
@@ -60,16 +60,13 @@ impl Lexer {
         }
     }
 
-    fn get_ident(&mut self) -> Token {
+    fn get_ident(&mut self) -> Token<'a> {
         let literal = self.read_ident();
+        let token = Token::from(literal);
 
-        let token = match Token::from_keyword(&literal) {
-            Some(token) => match token {
-                Token::Data if self.ch == b'(' => self.get_data_inline(),
-                Token::Data => Token::Data,
-                _ => token,
-            },
-            None => Token::Ident(literal),
+        let token = match token.kind() {
+            TokenKind::Data if self.ch == b'(' => self.get_data_inline(),
+            _ => token,
         };
 
         self.switch_strategy(Strategy::Token);
@@ -86,7 +83,7 @@ impl Lexer {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_data_inline(&mut self) -> Token {
+    fn get_data_inline(&mut self) -> Token<'a> {
         let position = self.position;
         let read_position = self.read_position;
         let ch = self.ch;
@@ -100,18 +97,18 @@ impl Lexer {
             self.read_position = read_position;
             self.ch = ch;
 
-            return Token::Data;
+            return Token::data();
         }
 
         self.read_char();
 
-        Token::DataInline(literal)
+        Token::data_inline(literal.into())
     }
 
-    fn get_int(&mut self) -> Token {
+    fn get_int(&mut self) -> Token<'a> {
         let literal = self.read_int();
 
-        let token = Token::IntLiteral(literal);
+        let token = Token::int_literal(literal.into());
         self.switch_strategy(Strategy::Token);
         token
     }
@@ -126,8 +123,8 @@ impl Lexer {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_string(&mut self) -> Token {
-        let token = Token::StringLiteral(self.read_string());
+    fn get_string(&mut self) -> Token<'a> {
+        let token = Token::string_literal(self.read_string().into());
         self.switch_strategy(Strategy::Token);
         token
     }
@@ -144,7 +141,7 @@ impl Lexer {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_str_template(&mut self) -> Token {
+    fn get_str_template(&mut self) -> Token<'a> {
         let pos = self.position;
 
         loop {
@@ -154,7 +151,7 @@ impl Lexer {
                     break;
                 }
                 b'|' => {
-                    self.switch_strategy(Strategy::Single(Token::VSlash));
+                    self.switch_strategy(Strategy::Single(Token::vertical_slash()));
                     break;
                 }
                 0 => {
@@ -166,62 +163,48 @@ impl Lexer {
         }
 
         let literal = String::from_utf8_lossy(&self.input[pos..self.position]).to_string();
-        Token::StringLiteral(literal)
+        Token::string_literal(literal.into())
     }
 
-    fn get_token(&mut self) -> Token {
+    fn get_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
 
-        let token = match self.ch {
-            b'=' => Token::Assign,
-            b'+' => Token::Plus,
-            b'-' => Token::Minus,
-            b'/' => Token::Slash,
-            b'|' => {
+        let token = Token::from(self.ch);
+
+        let token = match token.kind() {
+            TokenKind::VSlash | TokenKind::RSquirly => {
                 self.switch_strategy(Strategy::StrTemplate);
-                Token::VSlash
+                token
             }
-            b'*' => Token::Asterisk,
-            b'(' => Token::LParen,
-            b')' => Token::RParen,
-            b'{' => Token::LSquirly,
-            b'}' => {
-                self.switch_strategy(Strategy::StrTemplate);
-                Token::RSquirly
-            }
-            b'.' => Token::Period,
-            b':' => Token::Colon,
-            b',' => Token::Comma,
-            b'\'' => {
-                self.switch_strategy(Strategy::String);
-                self.next_token()
-            }
-            ch if ch.is_ascii_alphabetic() || ch == b'_' => {
-                self.switch_strategy(Strategy::Ident);
-                return self.next_token();
-            }
-            ch if ch.is_ascii_digit() => {
-                self.switch_strategy(Strategy::Int);
-                return self.next_token();
-            }
-            0 => Token::Eof,
-            _ => unreachable!(
-                "( ⚆ _ ⚆) Sorry, we're regressive here, so we don't recognize such tokens '{}'",
-                String::from_utf8_lossy(&[self.ch])
-            ),
+            TokenKind::Illegal => match self.ch {
+                b'\'' => {
+                    self.switch_strategy(Strategy::String);
+                    self.next_token()
+                }
+                ch if ch.is_ascii_alphabetic() || ch == b'_' => {
+                    self.switch_strategy(Strategy::Ident);
+                    return self.next_token();
+                }
+                ch if ch.is_ascii_digit() => {
+                    self.switch_strategy(Strategy::Int);
+                    return self.next_token();
+                }
+                ch => Token::illegal(ch.to_string().into()),
+            },
+            _ => token,
         };
 
         self.read_char();
         token
     }
 
-    fn get_single_token(&mut self, token: Token) -> Token {
+    fn get_single_token(&mut self, token: Token<'a>) -> Token<'a> {
         self.read_char();
         self.switch_strategy(Strategy::Token);
         token
     }
 
-    fn switch_strategy(&mut self, scope: Strategy) {
+    fn switch_strategy(&mut self, scope: Strategy<'a>) {
         self.strategy = scope
     }
 }
@@ -255,159 +238,159 @@ DATA lv_string2 TYPE string.
 DATA( lv_test) = '5'."#;
 
         let tokens = vec![
-            Token::Data,
-            Token::Colon,
-            Token::Ident("lv_string".into()),
-            Token::Type,
-            Token::String,
-            Token::Comma,
-            Token::Ident("lv_int".into()),
-            Token::Type,
-            Token::Int,
-            Token::Period,
-            Token::Ident("lv_string".into()),
-            Token::Assign,
-            Token::StringLiteral("(ツ)".into()),
-            Token::Period,
-            Token::Write,
-            Token::Ident("lv_string".into()),
-            Token::Period,
-            Token::DataInline("lv_template_string".into()),
-            Token::Assign,
-            Token::VSlash,
-            Token::StringLiteral("\\_".into()),
-            Token::LSquirly,
-            Token::Ident("lv_string".into()),
-            Token::RSquirly,
-            Token::StringLiteral("_/".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::Slash,
-            Token::StringLiteral(" ".into()),
-            Token::Comma,
-            Token::Ident("lv_template_string".into()),
-            Token::Comma,
-            Token::StringLiteral(" ".into()),
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::Slash,
-            Token::Ident("lv_int".into()),
-            Token::Period,
-            Token::Ident("lv_int".into()),
-            Token::Assign,
-            Token::IntLiteral("5".into()),
-            Token::Plus,
-            Token::IntLiteral("10".into()),
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::Slash,
-            Token::Ident("lv_int".into()),
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::Slash,
-            Token::StringLiteral("answer to life:".into()),
-            Token::Comma,
-            Token::Slash,
-            Token::LParen,
-            Token::Ident("lv_int".into()),
-            Token::Minus,
-            Token::IntLiteral("2".into()),
-            Token::Asterisk,
-            Token::IntLiteral("5".into()),
-            Token::RParen,
-            Token::Asterisk,
-            Token::LParen,
-            Token::IntLiteral("16".into()),
-            Token::Minus,
-            Token::IntLiteral("32".into()),
-            Token::Slash,
-            Token::IntLiteral("4".into()),
-            Token::RParen,
-            Token::Plus,
-            Token::IntLiteral("2".into()),
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::VSlash,
-            Token::StringLiteral(" ".into()),
-            Token::VSlash,
-            Token::Comma,
-            Token::VSlash,
-            Token::StringLiteral(" ".into()),
-            Token::LSquirly,
-            Token::RSquirly,
-            Token::StringLiteral(" ".into()),
-            Token::VSlash,
-            Token::Comma,
-            Token::VSlash,
-            Token::StringLiteral("a".into()),
-            Token::LSquirly,
-            Token::VSlash,
-            Token::StringLiteral("b".into()),
-            Token::VSlash,
-            Token::RSquirly,
-            Token::StringLiteral("c".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::VSlash,
-            Token::StringLiteral("".into()),
-            Token::LSquirly,
-            Token::RSquirly,
-            Token::StringLiteral("".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::RSquirly,
-            Token::StringLiteral("abc".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::VSlash,
-            Token::StringLiteral("nested ".into()),
-            Token::LSquirly,
-            Token::VSlash,
-            Token::StringLiteral(" string ".into()),
-            Token::VSlash,
-            Token::RSquirly,
-            Token::StringLiteral(" templates".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::Write,
-            Token::Colon,
-            Token::VSlash,
-            Token::StringLiteral("nested ".into()),
-            Token::LSquirly,
-            Token::VSlash,
-            Token::StringLiteral(" ".into()),
-            Token::LSquirly,
-            Token::StringLiteral("string".into()),
-            Token::RSquirly,
-            Token::StringLiteral(" ".into()),
-            Token::VSlash,
-            Token::RSquirly,
-            Token::StringLiteral(" templates".into()),
-            Token::VSlash,
-            Token::Period,
-            Token::Data,
-            Token::Ident("lv_string2".into()),
-            Token::Type,
-            Token::String,
-            Token::Period,
-            Token::Data,
-            Token::LParen,
-            Token::Ident("lv_test".into()),
-            Token::RParen,
-            Token::Assign,
-            Token::StringLiteral("5".into()),
-            Token::Period,
-            Token::Eof,
+            Token::data(),
+            Token::colon(),
+            Token::ident("lv_string".into()),
+            Token::ty(),
+            Token::string(),
+            Token::comma(),
+            Token::ident("lv_int".into()),
+            Token::ty(),
+            Token::int(),
+            Token::period(),
+            Token::ident("lv_string".into()),
+            Token::assign(),
+            Token::string_literal("(ツ)".into()),
+            Token::period(),
+            Token::write(),
+            Token::ident("lv_string".into()),
+            Token::period(),
+            Token::data_inline("lv_template_string".into()),
+            Token::assign(),
+            Token::vertical_slash(),
+            Token::string_literal("\\_".into()),
+            Token::left_squirly(),
+            Token::ident("lv_string".into()),
+            Token::right_squirly(),
+            Token::string_literal("_/".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::slash(),
+            Token::string_literal(" ".into()),
+            Token::comma(),
+            Token::ident("lv_template_string".into()),
+            Token::comma(),
+            Token::string_literal(" ".into()),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::slash(),
+            Token::ident("lv_int".into()),
+            Token::period(),
+            Token::ident("lv_int".into()),
+            Token::assign(),
+            Token::int_literal("5".into()),
+            Token::plus(),
+            Token::int_literal("10".into()),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::slash(),
+            Token::ident("lv_int".into()),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::slash(),
+            Token::string_literal("answer to life:".into()),
+            Token::comma(),
+            Token::slash(),
+            Token::left_paren(),
+            Token::ident("lv_int".into()),
+            Token::minus(),
+            Token::int_literal("2".into()),
+            Token::asterisk(),
+            Token::int_literal("5".into()),
+            Token::right_paren(),
+            Token::asterisk(),
+            Token::left_paren(),
+            Token::int_literal("16".into()),
+            Token::minus(),
+            Token::int_literal("32".into()),
+            Token::slash(),
+            Token::int_literal("4".into()),
+            Token::right_paren(),
+            Token::plus(),
+            Token::int_literal("2".into()),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::vertical_slash(),
+            Token::string_literal(" ".into()),
+            Token::vertical_slash(),
+            Token::comma(),
+            Token::vertical_slash(),
+            Token::string_literal(" ".into()),
+            Token::left_squirly(),
+            Token::right_squirly(),
+            Token::string_literal(" ".into()),
+            Token::vertical_slash(),
+            Token::comma(),
+            Token::vertical_slash(),
+            Token::string_literal("a".into()),
+            Token::left_squirly(),
+            Token::vertical_slash(),
+            Token::string_literal("b".into()),
+            Token::vertical_slash(),
+            Token::right_squirly(),
+            Token::string_literal("c".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::vertical_slash(),
+            Token::string_literal("".into()),
+            Token::left_squirly(),
+            Token::right_squirly(),
+            Token::string_literal("".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::right_squirly(),
+            Token::string_literal("abc".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::vertical_slash(),
+            Token::string_literal("nested ".into()),
+            Token::left_squirly(),
+            Token::vertical_slash(),
+            Token::string_literal(" string ".into()),
+            Token::vertical_slash(),
+            Token::right_squirly(),
+            Token::string_literal(" templates".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::write(),
+            Token::colon(),
+            Token::vertical_slash(),
+            Token::string_literal("nested ".into()),
+            Token::left_squirly(),
+            Token::vertical_slash(),
+            Token::string_literal(" ".into()),
+            Token::left_squirly(),
+            Token::string_literal("string".into()),
+            Token::right_squirly(),
+            Token::string_literal(" ".into()),
+            Token::vertical_slash(),
+            Token::right_squirly(),
+            Token::string_literal(" templates".into()),
+            Token::vertical_slash(),
+            Token::period(),
+            Token::data(),
+            Token::ident("lv_string2".into()),
+            Token::ty(),
+            Token::string(),
+            Token::period(),
+            Token::data(),
+            Token::left_paren(),
+            Token::ident("lv_test".into()),
+            Token::right_paren(),
+            Token::assign(),
+            Token::string_literal("5".into()),
+            Token::period(),
+            Token::eof(),
         ];
 
         let mut lexer = Lexer::new(input.into());
