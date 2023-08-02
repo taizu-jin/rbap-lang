@@ -1,32 +1,36 @@
 use crate::{
     ast::{Data, DataDeclaration, DataType, Expression, Program, Statement},
-    lexer::{Lexer, Token, TokenKind},
+    lexer::{Lexer, LexerIter, Token, TokenKind},
 };
 use std::fmt::Write;
 
-pub struct Carriage {
-    lexer: Lexer,
-    peek_token: Token,
-    cur_token: Token,
+pub struct Carriage<'a> {
+    lexer: LexerIter<'a>,
+    peek_token: Option<Token<'a>>,
+    cur_token: Option<Token<'a>>,
     errors: Vec<String>,
 }
 
-impl Carriage {
-    fn new(mut lexer: Lexer) -> Self {
-        let cur_token = lexer.next_token();
-        let peek_token = lexer.next_token();
-
-        Self {
-            lexer,
-            cur_token,
-            peek_token,
+impl<'a> Carriage<'a> {
+    fn new(lexer: &'a mut Lexer) -> Self {
+        let mut carriage = Self {
+            lexer: lexer.iter(),
+            peek_token: None,
+            cur_token: None,
             errors: Vec::new(),
-        }
-    }
+        };
 
+        carriage.next_token();
+        carriage.next_token();
+
+        carriage
+    }
+}
+
+impl Carriage<'_> {
     fn next_token(&mut self) {
-        self.cur_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
+        self.cur_token = self.lexer.next();
+        std::mem::swap(&mut self.cur_token, &mut self.peek_token);
     }
 
     fn expect_tokens(&mut self, tokens: &[TokenKind]) -> bool {
@@ -47,26 +51,27 @@ impl Carriage {
         false
     }
 
-    fn is_cur_token(&self, token: &TokenKind) -> bool {
-        self.cur_token.kind() == token
-    }
-
     fn is_peek_token(&self, token: &TokenKind) -> bool {
-        self.peek_token.kind() == token
+        match self.peek_token.as_ref() {
+            Some(peek) => peek.kind() == token,
+            None => false,
+        }
     }
 }
 
-pub struct Parser {
-    carriage: Carriage,
+pub struct Parser<'a> {
+    carriage: Carriage<'a>,
 }
 
-impl Parser {
-    pub fn new(lexer: Lexer) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(lexer: &'a mut Lexer) -> Self {
         let carriage = Carriage::new(lexer);
 
         Self { carriage }
     }
+}
 
+impl Parser<'_> {
     pub fn errors(&self) -> &Vec<String> {
         &self.carriage.errors
     }
@@ -74,7 +79,7 @@ impl Parser {
     pub fn parse(&mut self) -> Program {
         let mut program = Program::new();
 
-        while !self.carriage.is_cur_token(&TokenKind::Eof) {
+        while self.carriage.cur_token.is_some() {
             match self.parse_statement() {
                 Some(statement) => {
                     self.carriage.next_token();
@@ -91,17 +96,16 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Option<Statement> {
-        let statement = match &self.carriage.cur_token.kind() {
-            TokenKind::Data => self.parse_data_declaration_statement(),
-            TokenKind::DataInline => {
-                self.parse_data_statement(self.carriage.cur_token.literal().to_string())
-            }
-            TokenKind::Ident if self.carriage.is_peek_token(&TokenKind::Assign) => {
-                self.parse_data_statement(self.carriage.cur_token.literal().to_string())
-            }
-            TokenKind::Write => self.parse_write_statement(),
-            _ => Some(Statement::Expression(self.parse_expression()?)),
-        };
+        let statement =
+            match &self.carriage.cur_token.as_ref()?.kind() {
+                TokenKind::Data => self.parse_data_declaration_statement(),
+                TokenKind::DataInline => self
+                    .parse_data_statement(self.carriage.cur_token.as_ref()?.literal().to_string()),
+                TokenKind::Ident if self.carriage.is_peek_token(&TokenKind::Assign) => self
+                    .parse_data_statement(self.carriage.cur_token.as_ref()?.literal().to_string()),
+                TokenKind::Write => self.parse_write_statement(),
+                _ => Some(Statement::Expression(self.parse_expression()?)),
+            };
 
         if !self.carriage.expect_tokens(&[TokenKind::Period]) {
             return None;
@@ -111,22 +115,22 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Option<Expression> {
-        match &self.carriage.cur_token.kind() {
+        match &self.carriage.cur_token.as_ref()?.kind() {
             TokenKind::IntLiteral => Self::parse_integer_literal(
-                self.carriage.cur_token.literal(),
+                self.carriage.cur_token.as_ref()?.literal(),
                 &mut self.carriage.errors,
             ),
             TokenKind::StringLiteral => Some(Self::parse_string_literal(
-                self.carriage.cur_token.literal(),
+                self.carriage.cur_token.as_ref()?.literal(),
             )),
             TokenKind::Ident => Some(Expression::Ident(
-                self.carriage.cur_token.literal().to_owned(),
+                self.carriage.cur_token.as_ref()?.literal().to_owned(),
             )),
             TokenKind::VSlash => self.parse_string_template_expression(),
             _ => unimplemented!(
                 "can't parse expression '{}({:?})'",
-                self.carriage.cur_token,
-                self.carriage.cur_token
+                self.carriage.cur_token.as_ref()?,
+                self.carriage.cur_token.as_ref()?
             ),
         }
     }
@@ -177,8 +181,8 @@ impl Parser {
             return None;
         }
 
-        let ident = if let TokenKind::Ident = self.carriage.cur_token.kind() {
-            self.carriage.cur_token.literal().to_owned()
+        let ident = if let TokenKind::Ident = self.carriage.cur_token.as_ref()?.kind() {
+            self.carriage.cur_token.as_ref()?.literal().to_owned()
         } else {
             unreachable!("current token must be Identifier type")
         };
@@ -191,7 +195,7 @@ impl Parser {
             return None;
         }
 
-        let ty = match self.carriage.cur_token.kind() {
+        let ty = match self.carriage.cur_token.as_ref()?.kind() {
             TokenKind::Int => DataType::Int,
             TokenKind::String => DataType::String,
             _ => unreachable!("current token must be either Int or String type"),
@@ -289,7 +293,7 @@ impl Parser {
     }
 
     fn parse_string_template(&mut self) -> Option<Expression> {
-        match self.carriage.cur_token.kind() {
+        match self.carriage.cur_token.as_ref()?.kind() {
             TokenKind::StringLiteral => {
                 let expression = self.parse_expression()?;
                 self.carriage.next_token();
@@ -310,7 +314,7 @@ impl Parser {
             _ => {
                 self.carriage.errors.push(format!(
                     "Unrecognized string template token. got={}",
-                    self.carriage.cur_token.literal()
+                    self.carriage.cur_token.as_ref()?.literal()
                 ));
                 None
             }
@@ -353,8 +357,8 @@ mod tests {
     }
 
     fn parse_program(input: String) -> Program {
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut lexer = Lexer::new(input);
+        let mut parser = Parser::new(&mut lexer);
         let program = parser.parse();
 
         check_parser_errors(parser);
