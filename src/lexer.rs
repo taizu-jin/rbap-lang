@@ -2,24 +2,24 @@ mod token;
 
 pub use token::{Token, TokenKind};
 
-pub(super) enum Strategy<'a> {
+pub(super) enum Strategy {
     Ident,
     String,
     Int,
     StrTemplate,
     Token,
-    Single(Token<'a>),
+    Single(Token),
 }
 
-pub struct Lexer<'a> {
+pub struct Lexer {
     input: Vec<u8>,
     position: usize,
     read_position: usize,
     ch: u8,
-    strategy: Strategy<'a>,
+    strategy: Strategy,
 }
 
-impl<'a> Lexer<'a> {
+impl Lexer {
     pub fn new(input: String) -> Self {
         let mut lexer = Self {
             input: input.to_lowercase().into_bytes(),
@@ -49,7 +49,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn next_token(&mut self) -> Token<'a> {
+    pub fn next_token(&mut self) -> Token {
         match self.strategy {
             Strategy::Ident => self.get_ident(),
             Strategy::Int => self.get_int(),
@@ -60,7 +60,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn get_ident(&mut self) -> Token<'a> {
+    fn get_ident(&mut self) -> Token {
         let literal = self.read_ident();
         let token = Token::from(literal);
 
@@ -83,7 +83,7 @@ impl<'a> Lexer<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_data_inline(&mut self) -> Token<'a> {
+    fn get_data_inline(&mut self) -> Token {
         let position = self.position;
         let read_position = self.read_position;
         let ch = self.ch;
@@ -105,7 +105,7 @@ impl<'a> Lexer<'a> {
         Token::data_inline(literal.into())
     }
 
-    fn get_int(&mut self) -> Token<'a> {
+    fn get_int(&mut self) -> Token {
         let literal = self.read_int();
 
         let token = Token::int_literal(literal.into());
@@ -123,7 +123,7 @@ impl<'a> Lexer<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_string(&mut self) -> Token<'a> {
+    fn get_string(&mut self) -> Token {
         let token = Token::string_literal(self.read_string().into());
         self.switch_strategy(Strategy::Token);
         token
@@ -141,7 +141,7 @@ impl<'a> Lexer<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position]).to_string()
     }
 
-    fn get_str_template(&mut self) -> Token<'a> {
+    fn get_str_template(&mut self) -> Token {
         let pos = self.position;
 
         loop {
@@ -166,7 +166,7 @@ impl<'a> Lexer<'a> {
         Token::string_literal(literal.into())
     }
 
-    fn get_token(&mut self) -> Token<'a> {
+    fn get_token(&mut self) -> Token {
         self.skip_whitespace();
 
         let token = Token::from(self.ch);
@@ -198,13 +198,13 @@ impl<'a> Lexer<'a> {
         token
     }
 
-    fn get_single_token(&mut self, token: Token<'a>) -> Token<'a> {
+    fn get_single_token(&mut self, token: Token) -> Token {
         self.read_char();
         self.switch_strategy(Strategy::Token);
         token
     }
 
-    fn switch_strategy(&mut self, scope: Strategy<'a>) {
+    fn switch_strategy(&mut self, scope: Strategy) {
         self.strategy = scope
     }
 }
