@@ -2,7 +2,6 @@ use std::{borrow::Cow, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
-    Eof,
     Illegal,
 
     Assign,
@@ -35,13 +34,33 @@ pub enum TokenKind {
     False,
 }
 
+impl TokenKind {
+    pub fn from(literal: &str) -> Option<TokenKind> {
+        let kind = match literal {
+            "type" => TokenKind::Type,
+            "data" => TokenKind::Data,
+            "write" => TokenKind::Write,
+            "string" => TokenKind::String,
+            "i" => TokenKind::Int,
+            "rbap_true" => TokenKind::True,
+            "rbap_false" => TokenKind::False,
+            _ => return None,
+        };
+
+        Some(kind)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct Token {
-    literal: Cow<'static, str>,
+pub struct Token<'a> {
+    literal: Cow<'a, str>,
     kind: TokenKind,
 }
 
-impl Token {
+impl<'a> Token<'a> {
+    pub fn new(literal: Cow<'a, str>, kind: TokenKind) -> Self {
+        Self { literal, kind }
+    }
     pub fn kind(&self) -> &TokenKind {
         &self.kind
     }
@@ -51,169 +70,9 @@ impl Token {
     }
 }
 
-impl Token {
-    pub fn eof() -> Self {
-        Token {
-            kind: TokenKind::Eof,
-            literal: "EOF".into(),
-        }
-    }
-    pub fn illegal(literal: Cow<'static, str>) -> Self {
-        Token {
-            kind: TokenKind::Illegal,
-            literal,
-        }
-    }
-    pub fn assign() -> Self {
-        Token {
-            kind: TokenKind::Assign,
-            literal: "=".into(),
-        }
-    }
-    pub fn plus() -> Self {
-        Token {
-            kind: TokenKind::Plus,
-            literal: "+".into(),
-        }
-    }
-    pub fn minus() -> Self {
-        Token {
-            kind: TokenKind::Minus,
-            literal: "-".into(),
-        }
-    }
-    pub fn asterisk() -> Self {
-        Token {
-            kind: TokenKind::Asterisk,
-            literal: "*".into(),
-        }
-    }
-    pub fn slash() -> Self {
-        Token {
-            kind: TokenKind::Slash,
-            literal: "/".into(),
-        }
-    }
-    pub fn vertical_slash() -> Self {
-        Token {
-            kind: TokenKind::VSlash,
-            literal: "|".into(),
-        }
-    }
-    pub fn ident(literal: Cow<'static, str>) -> Self {
-        Token {
-            kind: TokenKind::Ident,
-            literal,
-        }
-    }
-    pub fn int_literal(literal: Cow<'static, str>) -> Self {
-        Token {
-            kind: TokenKind::IntLiteral,
-            literal,
-        }
-    }
-    pub fn string_literal(literal: Cow<'static, str>) -> Self {
-        Token {
-            kind: TokenKind::StringLiteral,
-            literal,
-        }
-    }
-    pub fn rbap_true() -> Self {
-        Token {
-            kind: TokenKind::True,
-            literal: "rbap_true".into(),
-        }
-    }
-    pub fn rbap_false() -> Self {
-        Token {
-            kind: TokenKind::False,
-            literal: "rbap_false".into(),
-        }
-    }
-    pub fn comma() -> Self {
-        Token {
-            kind: TokenKind::Comma,
-            literal: ",".into(),
-        }
-    }
-    pub fn colon() -> Self {
-        Token {
-            kind: TokenKind::Colon,
-            literal: ":".into(),
-        }
-    }
-    pub fn period() -> Self {
-        Token {
-            kind: TokenKind::Period,
-            literal: ".".into(),
-        }
-    }
-    pub fn left_paren() -> Self {
-        Token {
-            kind: TokenKind::LParen,
-            literal: "(".into(),
-        }
-    }
-    pub fn right_paren() -> Self {
-        Token {
-            kind: TokenKind::RParen,
-            literal: ")".into(),
-        }
-    }
-    pub fn left_squirly() -> Self {
-        Token {
-            kind: TokenKind::LSquirly,
-            literal: "{".into(),
-        }
-    }
-    pub fn right_squirly() -> Self {
-        Token {
-            kind: TokenKind::RSquirly,
-            literal: "}".into(),
-        }
-    }
-    pub fn data() -> Self {
-        Token {
-            kind: TokenKind::Data,
-            literal: "data".into(),
-        }
-    }
-    pub fn data_inline(literal: Cow<'static, str>) -> Self {
-        Token {
-            kind: TokenKind::DataInline,
-            literal,
-        }
-    }
-    pub fn ty() -> Self {
-        Token {
-            kind: TokenKind::Type,
-            literal: "TYPE".into(),
-        }
-    }
-    pub fn write() -> Self {
-        Token {
-            kind: TokenKind::Write,
-            literal: "WRITE".into(),
-        }
-    }
-    pub fn string() -> Self {
-        Token {
-            kind: TokenKind::String,
-            literal: "string".into(),
-        }
-    }
-    pub fn int() -> Self {
-        Token {
-            kind: TokenKind::Int,
-            literal: "i".into(),
-        }
-    }
-}
-
-impl Display for Token {
+impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            TokenKind::Eof => write!(f, "EOF"),
             TokenKind::Illegal => write!(f, "Illegal({})", self.literal),
             TokenKind::Assign => write!(f, "Assign({})", self.literal),
             TokenKind::Plus => write!(f, "Plus({})", self.literal),
@@ -243,54 +102,101 @@ impl Display for Token {
     }
 }
 
-impl From<u8> for Token {
-    fn from(value: u8) -> Self {
-        match value {
-            b'=' => Token::assign(),
-            b'+' => Token::plus(),
-            b'-' => Token::minus(),
-            b'/' => Token::slash(),
-            b'|' => Token::vertical_slash(),
-            b'*' => Token::asterisk(),
-            b'(' => Token::left_paren(),
-            b')' => Token::right_paren(),
-            b'{' => Token::left_squirly(),
-            b'}' => Token::right_squirly(),
-            b'.' => Token::period(),
-            b':' => Token::colon(),
-            b',' => Token::comma(),
-            0 => Token::eof(),
-            ch => Token::illegal(String::from_utf8_lossy(&[ch]).to_string().into()),
-        }
-    }
-}
-
-impl From<&str> for Token {
-    fn from(value: &str) -> Self {
-        match value {
-            "type" => Token::ty(),
-            "data" => Token::data(),
-            "write" => Token::write(),
-            "string" => Token::string(),
-            "i" => Token::int(),
-            "rbap_true" => Token::rbap_true(),
-            "rbap_false" => Token::rbap_false(),
-            value => Token::ident(value.to_string().into()),
-        }
-    }
-}
-
-impl From<String> for Token {
-    fn from(value: String) -> Self {
-        match value.as_str() {
-            "type" => Token::ty(),
-            "data" => Token::data(),
-            "write" => Token::write(),
-            "string" => Token::string(),
-            "i" => Token::int(),
-            "rbap_true" => Token::rbap_true(),
-            "rbap_false" => Token::rbap_false(),
-            _ => Token::ident(value.into()),
+impl<'a> From<Cow<'a, str>> for Token<'a> {
+    fn from(literal: Cow<'a, str>) -> Self {
+        match literal.as_ref() {
+            "=" => Token {
+                literal,
+                kind: TokenKind::Assign,
+            },
+            "+" => Token {
+                literal,
+                kind: TokenKind::Plus,
+            },
+            "-" => Token {
+                literal,
+                kind: TokenKind::Minus,
+            },
+            "/" => Token {
+                literal,
+                kind: TokenKind::Slash,
+            },
+            "|" => Token {
+                literal,
+                kind: TokenKind::VSlash,
+            },
+            "*" => Token {
+                literal,
+                kind: TokenKind::Asterisk,
+            },
+            "(" => Token {
+                literal,
+                kind: TokenKind::LParen,
+            },
+            ")" => Token {
+                literal,
+                kind: TokenKind::RParen,
+            },
+            "{" => Token {
+                literal,
+                kind: TokenKind::LSquirly,
+            },
+            "}" => Token {
+                literal,
+                kind: TokenKind::RSquirly,
+            },
+            "." => Token {
+                literal,
+                kind: TokenKind::Period,
+            },
+            ":" => Token {
+                literal,
+                kind: TokenKind::Colon,
+            },
+            "," => Token {
+                literal,
+                kind: TokenKind::Comma,
+            },
+            "type" => Token {
+                literal,
+                kind: TokenKind::Type,
+            },
+            "data" => Token {
+                literal,
+                kind: TokenKind::Data,
+            },
+            "write" => Token {
+                literal,
+                kind: TokenKind::Write,
+            },
+            "string" => Token {
+                literal,
+                kind: TokenKind::String,
+            },
+            "i" => Token {
+                literal,
+                kind: TokenKind::Int,
+            },
+            "rbap_true" => Token {
+                literal,
+                kind: TokenKind::True,
+            },
+            "rbap_false" => Token {
+                literal,
+                kind: TokenKind::False,
+            },
+            value if value.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') => Token {
+                literal,
+                kind: TokenKind::Ident,
+            },
+            value if value.chars().all(|c| c.is_ascii_digit() || c == '_') => Token {
+                literal,
+                kind: TokenKind::IntLiteral,
+            },
+            _ => Token {
+                literal,
+                kind: TokenKind::Illegal,
+            },
         }
     }
 }

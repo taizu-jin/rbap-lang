@@ -12,8 +12,8 @@ pub fn start() -> io::Result<()> {
         let mut input = String::new();
         let _ = stdin.read_line(&mut input)?;
 
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut lexer = Lexer::new(input);
+        let mut parser = Parser::new(&mut lexer);
         let program = parser.parse();
 
         for error in parser.errors() {
