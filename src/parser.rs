@@ -1,20 +1,20 @@
 use crate::{
     ast::{Data, DataDeclaration, DataType, Expression, Program, Statement},
-    lexer::{Lexer, LexerIter, Token, TokenKind},
+    lexer::{LexerIter, Token, TokenKind},
 };
 use std::fmt::Write;
 
 pub struct Carriage<'a> {
-    lexer: LexerIter<'a>,
+    iter: LexerIter<'a>,
     peek_token: Option<Token<'a>>,
     cur_token: Option<Token<'a>>,
     errors: Vec<String>,
 }
 
 impl<'a> Carriage<'a> {
-    fn new(lexer: &'a mut Lexer) -> Self {
+    fn new(iter: LexerIter<'a>) -> Self {
         let mut carriage = Self {
-            lexer: lexer.iter(),
+            iter,
             peek_token: None,
             cur_token: None,
             errors: Vec::new(),
@@ -29,7 +29,7 @@ impl<'a> Carriage<'a> {
 
 impl Carriage<'_> {
     fn next_token(&mut self) {
-        self.cur_token = self.lexer.next();
+        self.cur_token = self.iter.next();
         std::mem::swap(&mut self.cur_token, &mut self.peek_token);
     }
 
@@ -64,8 +64,8 @@ pub struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut Lexer) -> Self {
-        let carriage = Carriage::new(lexer);
+    pub fn new(iter: LexerIter<'a>) -> Self {
+        let carriage = Carriage::new(iter);
 
         Self { carriage }
     }
@@ -324,7 +324,10 @@ impl Parser<'_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{Data, DataDeclaration, DataType};
+    use crate::{
+        ast::{Data, DataDeclaration, DataType},
+        lexer::Lexer,
+    };
 
     use super::*;
     use std::fmt::Write;
@@ -357,8 +360,8 @@ mod tests {
     }
 
     fn parse_program(input: String) -> Program {
-        let mut lexer = Lexer::new(input);
-        let mut parser = Parser::new(&mut lexer);
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer.iter());
         let program = parser.parse();
 
         check_parser_errors(parser);
