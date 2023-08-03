@@ -1,3 +1,5 @@
+mod error;
+
 use crate::{
     ast::{Data, DataDeclaration, DataType, Expression, Program, Statement},
     lexer::{LexerIter, Token, TokenKind},
