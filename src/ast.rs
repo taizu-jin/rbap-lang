@@ -152,6 +152,13 @@ impl Parse<i64> for Expression {
     }
 }
 
+impl Parse<String> for Expression {
+    fn parse(carriage: &mut Carriage) -> Result<String> {
+        let token = carriage.next_token()?;
+        Ok(token.literal().to_owned())
+    }
+}
+
 impl Parse<Vec<Expression>> for Expression {
     fn parse(carriage: &mut Carriage) -> Result<Vec<Expression>> {
         carriage.next_token()?;
