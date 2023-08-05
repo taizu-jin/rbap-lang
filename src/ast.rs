@@ -24,6 +24,38 @@ pub enum Statement {
     Data(Data),
 }
 
+
+
+
+impl Parse<Vec<DataDeclaration>> for Statement {
+    fn parse(carriage: &mut Carriage) -> Result<Vec<DataDeclaration>> {
+        carriage.next_token()?;
+
+        let mut declarations = Vec::new();
+
+        match carriage.is_peek_token(&TokenKind::Colon) {
+            true => {
+                carriage.next_token()?;
+
+                loop {
+                    let declaration = DataDeclaration::parse(carriage)?;
+                    declarations.push(declaration);
+
+                    if carriage.is_peek_token(&TokenKind::Comma) {
+                        carriage.next_token()?;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            false => {
+                let declaration = DataDeclaration::parse(carriage)?;
+                declarations.push(declaration);
+            }
+        }
+
+        Ok(declarations)
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -38,7 +70,28 @@ pub enum DataType {
     Int,
 }
 
+impl Parse<DataDeclaration> for DataDeclaration {
+    fn parse(carriage: &mut Carriage) -> Result<Self> {
+        let token = carriage.expect_tokens(&[TokenKind::Ident])?;
 
+        let ident = if let TokenKind::Ident = token.kind() {
+            token.literal().to_owned()
+        } else {
+            unreachable!("current token must be Identifier kind")
+        };
+
+        carriage.expect_tokens(&[TokenKind::Type])?;
+        let token = carriage.expect_tokens(&[TokenKind::String, TokenKind::Int])?;
+
+        let ty = match token.kind() {
+            TokenKind::Int => DataType::Int,
+            TokenKind::String => DataType::String,
+            _ => unreachable!("current token must be either Int or String kind"),
+        };
+
+        Ok(DataDeclaration { ident, ty })
+    }
+}
 #[derive(Debug, PartialEq)]
 pub struct Data {
     pub ident: String,
