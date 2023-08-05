@@ -34,6 +34,63 @@ pub enum TokenKind {
     False,
 }
 
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Illegal => write!(f, "Illegal"),
+            TokenKind::Assign => write!(f, "Assign"),
+            TokenKind::Plus => write!(f, "Plus"),
+            TokenKind::Minus => write!(f, "Minus"),
+            TokenKind::Asterisk => write!(f, "Asterisk"),
+            TokenKind::Slash => write!(f, "Slash"),
+            TokenKind::VSlash => write!(f, "VSlash"),
+            TokenKind::Ident => write!(f, "Ident"),
+            TokenKind::IntLiteral => write!(f, "IntLiteral"),
+            TokenKind::StringLiteral => write!(f, "StringLiteral"),
+            TokenKind::Comma => write!(f, "Comma"),
+            TokenKind::Colon => write!(f, "Colon"),
+            TokenKind::Period => write!(f, "Period"),
+            TokenKind::LParen => write!(f, "LParen"),
+            TokenKind::RParen => write!(f, "RParen"),
+            TokenKind::LSquirly => write!(f, "LSquirly"),
+            TokenKind::RSquirly => write!(f, "RSquirly"),
+            TokenKind::Data => write!(f, "Data"),
+            TokenKind::DataInline => write!(f, "DataInline"),
+            TokenKind::Type => write!(f, "Type"),
+            TokenKind::Write => write!(f, "Write"),
+            TokenKind::String => write!(f, "String"),
+            TokenKind::Int => write!(f, "Int"),
+            TokenKind::True => write!(f, "True"),
+            TokenKind::False => write!(f, "False"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TokenKinds(Vec<TokenKind>);
+
+impl<'a> From<&'a [TokenKind]> for TokenKinds {
+    fn from(value: &'a [TokenKind]) -> Self {
+        Self(value.to_owned())
+    }
+}
+
+impl Display for TokenKinds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut iter = self.0.iter().peekable();
+
+        while let Some(kind) = iter.next() {
+            if iter.peek().is_some() {
+                write!(f, "{}, ", kind)?
+            } else {
+                write!(f, "{}", kind)?
+            };
+        }
+
+        Ok(())
+    }
+}
+
 impl TokenKind {
     pub fn from(literal: &str) -> Option<TokenKind> {
         let kind = match literal {
@@ -72,33 +129,7 @@ impl<'a> Token<'a> {
 
 impl Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.kind {
-            TokenKind::Illegal => write!(f, "Illegal({})", self.literal),
-            TokenKind::Assign => write!(f, "Assign({})", self.literal),
-            TokenKind::Plus => write!(f, "Plus({})", self.literal),
-            TokenKind::Minus => write!(f, "Minus({})", self.literal),
-            TokenKind::Asterisk => write!(f, "Asterisk({})", self.literal),
-            TokenKind::Slash => write!(f, "Slash({})", self.literal),
-            TokenKind::VSlash => write!(f, "VSlash({})", self.literal),
-            TokenKind::Ident => write!(f, "Ident({})", self.literal),
-            TokenKind::IntLiteral => write!(f, "IntLiteral({})", self.literal),
-            TokenKind::StringLiteral => write!(f, "StringLiteral({})", self.literal),
-            TokenKind::True => write!(f, "True({})", self.literal),
-            TokenKind::False => write!(f, "False({})", self.literal),
-            TokenKind::Comma => write!(f, "Comma({})", self.literal),
-            TokenKind::Colon => write!(f, "Colon({})", self.literal),
-            TokenKind::Period => write!(f, "Period({})", self.literal),
-            TokenKind::LParen => write!(f, "LParen({})", self.literal),
-            TokenKind::RParen => write!(f, "RParen({})", self.literal),
-            TokenKind::LSquirly => write!(f, "LSquirly({})", self.literal),
-            TokenKind::RSquirly => write!(f, "RSquirly({})", self.literal),
-            TokenKind::Data => write!(f, "Data({})", self.literal),
-            TokenKind::DataInline => write!(f, "DataInline({})", self.literal),
-            TokenKind::Type => write!(f, "Type({})", self.literal),
-            TokenKind::Write => write!(f, "Write({})", self.literal),
-            TokenKind::String => write!(f, "String({})", self.literal),
-            TokenKind::Int => write!(f, "Int({})", self.literal),
-        }
+        write!(f, "{}({})", self.kind, self.literal)
     }
 }
 
