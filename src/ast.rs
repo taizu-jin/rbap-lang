@@ -145,6 +145,11 @@ pub enum Expression {
     StringTemplate(Vec<Expression>),
 }
 
+impl Parse<i64> for Expression {
+    fn parse(carriage: &mut Carriage) -> Result<i64> {
+        let token = carriage.next_token()?;
+        token.literal().parse::<i64>().map_err(|e| e.into())
+    }
 }
 
 impl Parse<Vec<Expression>> for Expression {
