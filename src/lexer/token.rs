@@ -110,8 +110,8 @@ impl TokenKind {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token<'a> {
-    literal: Cow<'a, str>,
-    kind: TokenKind,
+    pub literal: Cow<'a, str>,
+    pub kind: TokenKind,
 }
 
 impl<'a> Token<'a> {
