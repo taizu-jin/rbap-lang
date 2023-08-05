@@ -15,6 +15,8 @@ pub enum Error {
         got: Option<TokenKind>,
         expected: TokenKinds,
     },
+    #[error("Failed to parse data assingment.\n\tcurrent token kind - {current}\n\tpeek token kind - {peek}")]
+    ParseDataAssign { current: TokenKind, peek: TokenKind },
     #[error("unrecognized string template token: \n\tkind - {kind}\n\tliteral - {literal}")]
     ParseStringTemplate { kind: TokenKind, literal: String },
     #[error("expected a token, but reached EOF")]

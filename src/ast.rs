@@ -92,10 +92,49 @@ impl Parse<DataDeclaration> for DataDeclaration {
         Ok(DataDeclaration { ident, ty })
     }
 }
+
 #[derive(Debug, PartialEq)]
 pub struct Data {
     pub ident: String,
     pub value: Expression,
+}
+
+impl Parse<Data> for Statement {
+    fn parse(carriage: &mut Carriage) -> Result<Data> {
+        let ident = match carriage.next_token()? {
+            Token {
+                literal,
+                kind: TokenKind::DataInline,
+            } => literal.to_string(),
+
+            Token {
+                literal,
+                kind: TokenKind::Ident,
+            } if carriage.is_peek_token(&TokenKind::Assign) => literal.to_string(),
+
+            current => {
+                return Err(Error::ParseDataAssign {
+                    current: current.kind().to_owned(),
+                    peek: carriage.peek_token()?.kind().to_owned(),
+                })
+            }
+        };
+
+        carriage.expect_tokens(&[TokenKind::Assign])?;
+        let value = expect_and_parse_expression(carriage)?;
+
+        Ok(Data { ident, value })
+    }
+}
+
+fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
+    carriage.expect_tokens(&[
+        TokenKind::Ident,
+        TokenKind::IntLiteral,
+        TokenKind::StringLiteral,
+        TokenKind::VSlash,
+    ])?;
+    Expression::parse(carriage)
 }
 
 #[derive(Debug, PartialEq)]
