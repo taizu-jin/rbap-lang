@@ -8,6 +8,10 @@ use std::iter::Peekable;
 
 pub use self::error::{Error, Result};
 
+pub trait Parse<T: Sized> {
+    fn parse(carriage: &mut Carriage) -> Result<T>;
+}
+
 pub struct Carriage<'t, 's: 't> {
     iter: Peekable<LexerIter<'t, 's>>,
     errors: Vec<String>,
@@ -29,6 +33,13 @@ impl<'t, 's: 't> Carriage<'t, 's> {
 
     pub fn next_token(&mut self) -> Result<Token<'t>> {
         match self.iter.next() {
+            Some(token) => Ok(token),
+            None => Err(Error::Eof),
+        }
+    }
+
+    pub fn peek_token(&mut self) -> Result<&Token<'t>> {
+        match self.iter.peek() {
             Some(token) => Ok(token),
             None => Err(Error::Eof),
         }
@@ -56,10 +67,8 @@ impl<'t, 's: 't> Carriage<'t, 's> {
             expected: tokens.into(),
         })
     }
-}
 
-impl Carriage<'_, '_> {
-    fn is_peek_token(&mut self, token: &TokenKind) -> bool {
+    pub fn is_peek_token(&mut self, token: &TokenKind) -> bool {
         match self.iter.peek() {
             Some(peeked) => peeked.kind() == token,
             None => false,
