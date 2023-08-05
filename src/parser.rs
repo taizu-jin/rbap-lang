@@ -4,166 +4,109 @@ use crate::{
     ast::{Data, DataDeclaration, DataType, Expression, Program, Statement},
     lexer::{LexerIter, Token, TokenKind},
 };
-use std::fmt::Write;
+use std::iter::Peekable;
 
-pub struct Carriage<'a> {
-    iter: LexerIter<'a>,
-    peek_token: Option<Token<'a>>,
-    cur_token: Option<Token<'a>>,
+pub use self::error::{Error, Result};
+
+pub struct Carriage<'t, 's: 't> {
+    iter: Peekable<LexerIter<'t, 's>>,
     errors: Vec<String>,
 }
 
-impl<'a> Carriage<'a> {
-    fn new(iter: LexerIter<'a>) -> Self {
-        let mut carriage = Self {
-            iter,
-            peek_token: None,
-            cur_token: None,
+impl<'t, 's: 't> Carriage<'t, 's> {
+    fn new(iter: LexerIter<'t, 's>) -> Self {
+        Self {
+            iter: iter.peekable(),
             errors: Vec::new(),
-        };
-
-        carriage.next_token();
-        carriage.next_token();
-
-        carriage
+        }
     }
 }
 
-impl Carriage<'_> {
-    fn next_token(&mut self) {
-        self.cur_token = self.iter.next();
-        std::mem::swap(&mut self.cur_token, &mut self.peek_token);
+impl<'t, 's: 't> Carriage<'t, 's> {
+    fn next(&mut self) -> Option<Token<'t>> {
+        self.iter.next()
     }
 
-    fn expect_tokens(&mut self, tokens: &[TokenKind]) -> bool {
-        let mut expected = String::from("expected next token to be one of the following:");
+    pub fn next_token(&mut self) -> Result<Token<'t>> {
+        match self.iter.next() {
+            Some(token) => Ok(token),
+            None => Err(Error::Eof),
+        }
+    }
+
+    pub fn expect_tokens(&mut self, tokens: &[TokenKind]) -> Result<Token<'t>> {
+        let peeked = match self.iter.peek() {
+            Some(peeked) => peeked,
+            None => {
+                return Err(Error::ExpectToken {
+                    got: None,
+                    expected: tokens.into(),
+                })
+            }
+        };
 
         for token in tokens {
-            if self.is_peek_token(token) {
-                self.next_token();
-                return true;
-            } else {
-                write!(expected, " {:?}", token).unwrap();
+            if peeked.kind() == token {
+                return self.next_token();
             }
         }
 
-        self.errors
-            .push(format!("{}\ngot {:?} instead", expected, self.peek_token));
-
-        false
+        Err(Error::ExpectToken {
+            got: Some(peeked.kind().to_owned()),
+            expected: tokens.into(),
+        })
     }
+}
 
-    fn is_peek_token(&self, token: &TokenKind) -> bool {
-        match self.peek_token.as_ref() {
-            Some(peek) => peek.kind() == token,
+impl Carriage<'_, '_> {
+    fn is_peek_token(&mut self, token: &TokenKind) -> bool {
+        match self.iter.peek() {
+            Some(peeked) => peeked.kind() == token,
             None => false,
         }
     }
 }
 
-pub struct Parser<'a> {
-    carriage: Carriage<'a>,
+pub struct Parser<'t, 's: 't> {
+    carriage: Carriage<'t, 's>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(iter: LexerIter<'a>) -> Self {
+impl<'t, 's: 't> Parser<'t, 's> {
+    pub fn new(iter: LexerIter<'t, 's>) -> Self {
         let carriage = Carriage::new(iter);
 
         Self { carriage }
     }
-}
 
-impl Parser<'_> {
-    pub fn errors(&self) -> &Vec<String> {
-        &self.carriage.errors
-    }
-
-    pub fn parse(&mut self) -> Program {
-        let mut program = Program::new();
-
-        while self.carriage.cur_token.is_some() {
-            match self.parse_statement() {
-                Some(statement) => {
-                    self.carriage.next_token();
-                    program.statements.push(statement)
-                }
-                None => {
-                    self.carriage.next_token();
-                    continue;
-                }
+    fn parse_statement(&mut self, token: Token<'t>) -> Result<Statement> {
+        let statement = match token.kind() {
+            TokenKind::Data => self.parse_data_declaration_statement()?,
+            TokenKind::DataInline => self.parse_data_statement(token.literal().to_string())?,
+            TokenKind::Ident if self.carriage.is_peek_token(&TokenKind::Assign) => {
+                self.parse_data_statement(token.literal().to_string())?
             }
-        }
+            TokenKind::Write => self.parse_write_statement()?,
+            _ => Statement::Expression(self.parse_expression(&token)?),
+        };
 
-        program
+        self.carriage.expect_tokens(&[TokenKind::Period])?;
+
+        Ok(statement)
     }
 
-    fn parse_statement(&mut self) -> Option<Statement> {
-        let statement =
-            match &self.carriage.cur_token.as_ref()?.kind() {
-                TokenKind::Data => self.parse_data_declaration_statement(),
-                TokenKind::DataInline => self
-                    .parse_data_statement(self.carriage.cur_token.as_ref()?.literal().to_string()),
-                TokenKind::Ident if self.carriage.is_peek_token(&TokenKind::Assign) => self
-                    .parse_data_statement(self.carriage.cur_token.as_ref()?.literal().to_string()),
-                TokenKind::Write => self.parse_write_statement(),
-                _ => Some(Statement::Expression(self.parse_expression()?)),
-            };
-
-        if !self.carriage.expect_tokens(&[TokenKind::Period]) {
-            return None;
-        }
-
-        statement
-    }
-
-    fn parse_expression(&mut self) -> Option<Expression> {
-        match &self.carriage.cur_token.as_ref()?.kind() {
-            TokenKind::IntLiteral => Self::parse_integer_literal(
-                self.carriage.cur_token.as_ref()?.literal(),
-                &mut self.carriage.errors,
-            ),
-            TokenKind::StringLiteral => Some(Self::parse_string_literal(
-                self.carriage.cur_token.as_ref()?.literal(),
-            )),
-            TokenKind::Ident => Some(Expression::Ident(
-                self.carriage.cur_token.as_ref()?.literal().to_owned(),
-            )),
-            TokenKind::VSlash => self.parse_string_template_expression(),
-            _ => unimplemented!(
-                "can't parse expression '{}({:?})'",
-                self.carriage.cur_token.as_ref()?,
-                self.carriage.cur_token.as_ref()?
-            ),
-        }
-    }
-
-    fn parse_integer_literal(literal: &str, errors: &mut Vec<String>) -> Option<Expression> {
-        match literal.parse::<i64>() {
-            Ok(value) => Some(Expression::IntLiteral(value)),
-            Err(_) => {
-                errors.push(format!("can't not parse {} as integer", literal));
-                None
-            }
-        }
-    }
-
-    fn parse_string_literal(value: &str) -> Expression {
-        Expression::StringLiteral(value.to_string())
-    }
-
-    fn parse_data_declaration_statement(&mut self) -> Option<Statement> {
+    fn parse_data_declaration_statement(&mut self) -> Result<Statement> {
         let mut declarations = Vec::new();
 
         match self.carriage.is_peek_token(&TokenKind::Colon) {
             true => {
-                self.carriage.next_token();
+                self.carriage.next_token()?;
 
                 loop {
                     let declaration = self.parse_data_declaration()?;
                     declarations.push(declaration);
 
                     if self.carriage.is_peek_token(&TokenKind::Comma) {
-                        self.carriage.next_token();
+                        self.carriage.next_token()?;
                     } else {
                         break;
                     }
@@ -175,75 +118,179 @@ impl Parser<'_> {
             }
         }
 
-        Some(Statement::DataDeclaration(declarations))
+        Ok(Statement::DataDeclaration(declarations))
     }
 
-    fn parse_data_declaration(&mut self) -> Option<DataDeclaration> {
-        if !self.carriage.expect_tokens(&[TokenKind::Ident]) {
-            return None;
-        }
+    fn parse_data_declaration(&mut self) -> Result<DataDeclaration> {
+        let token = self.carriage.expect_tokens(&[TokenKind::Ident])?;
 
-        let ident = if let TokenKind::Ident = self.carriage.cur_token.as_ref()?.kind() {
-            self.carriage.cur_token.as_ref()?.literal().to_owned()
+        let ident = if let TokenKind::Ident = token.kind() {
+            token.literal().to_owned()
         } else {
             unreachable!("current token must be Identifier type")
         };
 
-        if !self.carriage.expect_tokens(&[TokenKind::Type])
-            || !self
-                .carriage
-                .expect_tokens(&[TokenKind::String, TokenKind::Int])
-        {
-            return None;
-        }
+        self.carriage.expect_tokens(&[TokenKind::Type])?;
+        let token = self
+            .carriage
+            .expect_tokens(&[TokenKind::String, TokenKind::Int])?;
 
-        let ty = match self.carriage.cur_token.as_ref()?.kind() {
+        let ty = match token.kind() {
             TokenKind::Int => DataType::Int,
             TokenKind::String => DataType::String,
             _ => unreachable!("current token must be either Int or String type"),
         };
 
-        Some(DataDeclaration { ident, ty })
+        Ok(DataDeclaration { ident, ty })
     }
 
-    fn parse_data_statement(&mut self, ident: String) -> Option<Statement> {
-        if !self.carriage.expect_tokens(&[TokenKind::Assign]) {
-            return None;
-        }
+    fn expect_and_parse_expression(&mut self) -> Result<Expression> {
+        let token = self.carriage.expect_tokens(&[
+            TokenKind::Ident,
+            TokenKind::IntLiteral,
+            TokenKind::StringLiteral,
+            TokenKind::VSlash,
+        ])?;
 
-        let expression = match self.expect_and_parse_expression() {
-            Some(expression) => expression,
-            None => {
-                self.carriage
-                    .errors
-                    .push("expected an expression after '='".to_string());
-                return None;
-            }
+        self.parse_expression(&token)
+    }
+
+    fn parse_expression(&mut self, token: &Token<'t>) -> Result<Expression> {
+        let expression = match token.kind() {
+            TokenKind::IntLiteral => Self::parse_integer_literal(token.literal())?,
+            TokenKind::StringLiteral => Self::parse_string_literal(token.literal()),
+            TokenKind::Ident => Expression::Ident(token.literal().to_owned()),
+            TokenKind::VSlash => self.parse_string_template_expression()?,
+            _ => unimplemented!("can't parse expression '{}({:?})'", token, token),
         };
 
-        Some(Statement::Data(Data {
+        Ok(expression)
+    }
+
+    fn parse_string_template_expression(&mut self) -> Result<Expression> {
+        let mut token = self.carriage.expect_tokens(&[
+            TokenKind::StringLiteral,
+            TokenKind::LSquirly,
+            TokenKind::VSlash,
+        ])?;
+
+        let mut expressions = Vec::new();
+
+        while let Some(expression) = self.parse_string_template(&token) {
+            let (expression, t) = expression?;
+            token = t;
+            match expression {
+                Expression::StringLiteral(literal) if literal.is_empty() => continue,
+                expression => expressions.push(expression),
+            }
+        }
+
+        Ok(Expression::StringTemplate(expressions))
+    }
+
+    fn parse_string_template(
+        &mut self,
+        token: &Token<'t>,
+    ) -> Option<Result<(Expression, Token<'t>)>> {
+        match token.kind() {
+            TokenKind::StringLiteral => {
+                let expression = match self.parse_expression(token) {
+                    Ok(expression) => expression,
+                    Err(e) => return Some(Err(e)),
+                };
+                let token = match self.carriage.next_token() {
+                    Ok(token) => token,
+                    Err(e) => return Some(Err(e)),
+                };
+
+                Some(Ok((expression, token)))
+            }
+            TokenKind::LSquirly => {
+                let token = match self.carriage.next_token() {
+                    Ok(token) => token,
+                    Err(e) => return Some(Err(e)),
+                };
+                let expression = match self.parse_expression(&token) {
+                    Ok(expression) => expression,
+                    Err(e) => return Some(Err(e)),
+                };
+
+                let token = match self.carriage.expect_tokens(&[TokenKind::RSquirly]) {
+                    Ok(_) => match self.carriage.next_token() {
+                        Ok(token) => token,
+                        Err(e) => return Some(Err(e)),
+                    },
+                    Err(err) => return Some(Err(err)),
+                };
+
+                Some(Ok((expression, token)))
+            }
+            TokenKind::VSlash => None,
+            _ => Some(Err(Error::ParseStringTemplate {
+                kind: token.kind().to_owned(),
+                literal: token.literal().to_owned(),
+            })),
+        }
+    }
+}
+
+impl Parser<'_, '_> {
+    pub fn errors(&self) -> &Vec<String> {
+        &self.carriage.errors
+    }
+
+    pub fn parse(&mut self) -> Program {
+        let mut program = Program::new();
+
+        while let Some(token) = self.carriage.next() {
+            match self.parse_statement(token) {
+                Ok(statement) => program.statements.push(statement),
+                Err(error) => self.carriage.errors.push(error.to_string()),
+            }
+        }
+
+        program
+    }
+
+    fn parse_string_literal(value: &str) -> Expression {
+        Expression::StringLiteral(value.to_string())
+    }
+
+    fn parse_integer_literal(literal: &str) -> Result<Expression> {
+        match literal.parse::<i64>() {
+            Ok(value) => Ok(Expression::IntLiteral(value)),
+            Err(err) => Err(Error::ParseInt(err)),
+        }
+    }
+
+    fn parse_data_statement(&mut self, ident: String) -> Result<Statement> {
+        self.carriage.expect_tokens(&[TokenKind::Assign])?;
+
+        let expression = self.expect_and_parse_expression()?;
+
+        Ok(Statement::Data(Data {
             ident: ident.to_string(),
             value: expression,
         }))
     }
 
-    fn parse_write_statement(&mut self) -> Option<Statement> {
+    fn parse_write_statement(&mut self) -> Result<Statement> {
         let mut expressions = Vec::new();
 
         match self.carriage.is_peek_token(&TokenKind::Colon) {
             true => {
-                self.carriage.next_token();
+                self.carriage.next_token()?;
 
                 loop {
                     if self.carriage.is_peek_token(&TokenKind::Slash) {
                         expressions.push(Expression::StringLiteral("\n".to_string()));
-                        self.carriage.next_token();
+                        self.carriage.next_token()?;
                     }
 
                     expressions.push(self.expect_and_parse_expression()?);
 
                     if self.carriage.is_peek_token(&TokenKind::Comma) {
-                        self.carriage.next_token();
+                        self.carriage.next_token()?;
                     } else {
                         break;
                     }
@@ -252,75 +299,13 @@ impl Parser<'_> {
             false => {
                 if self.carriage.is_peek_token(&TokenKind::Slash) {
                     expressions.push(Expression::StringLiteral("\n".to_string()));
-                    self.carriage.next_token();
+                    self.carriage.next_token()?;
                 }
                 expressions.push(self.expect_and_parse_expression()?)
             }
         }
-        Some(Statement::Write(expressions))
-    }
 
-    fn expect_and_parse_expression(&mut self) -> Option<Expression> {
-        if !self.carriage.expect_tokens(&[
-            TokenKind::Ident,
-            TokenKind::IntLiteral,
-            TokenKind::StringLiteral,
-            TokenKind::VSlash,
-        ]) {
-            return None;
-        }
-
-        self.parse_expression()
-    }
-
-    fn parse_string_template_expression(&mut self) -> Option<Expression> {
-        if !self.carriage.expect_tokens(&[
-            TokenKind::StringLiteral,
-            TokenKind::LSquirly,
-            TokenKind::VSlash,
-        ]) {
-            return None;
-        }
-
-        let mut expressions = Vec::new();
-
-        while let Some(expression) = self.parse_string_template() {
-            match expression {
-                Expression::StringLiteral(literal) if literal.is_empty() => continue,
-                expression => expressions.push(expression),
-            }
-        }
-
-        Some(Expression::StringTemplate(expressions))
-    }
-
-    fn parse_string_template(&mut self) -> Option<Expression> {
-        match self.carriage.cur_token.as_ref()?.kind() {
-            TokenKind::StringLiteral => {
-                let expression = self.parse_expression()?;
-                self.carriage.next_token();
-                Some(expression)
-            }
-            TokenKind::LSquirly => {
-                self.carriage.next_token();
-                let expression = self.parse_expression()?;
-                if !self.carriage.expect_tokens(&[TokenKind::RSquirly]) {
-                    return None;
-                } else {
-                    self.carriage.next_token();
-                }
-
-                Some(expression)
-            }
-            TokenKind::VSlash => None,
-            _ => {
-                self.carriage.errors.push(format!(
-                    "Unrecognized string template token. got={}",
-                    self.carriage.cur_token.as_ref()?.literal()
-                ));
-                None
-            }
-        }
+        Ok(Statement::Write(expressions))
     }
 }
 
