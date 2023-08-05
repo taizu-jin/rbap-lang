@@ -145,6 +145,20 @@ pub enum Expression {
     StringTemplate(Vec<Expression>),
 }
 
+impl Parse<Expression> for Expression {
+    fn parse(carriage: &mut Carriage) -> Result<Self> {
+        let expression = match carriage.peek_token()?.kind() {
+            TokenKind::IntLiteral => Expression::IntLiteral(Expression::parse(carriage)?),
+            TokenKind::StringLiteral => Expression::StringLiteral(Expression::parse(carriage)?),
+            TokenKind::Ident => Expression::Ident(Expression::parse(carriage)?),
+            TokenKind::VSlash => Expression::StringTemplate(Expression::parse(carriage)?),
+            token => unimplemented!("can't parse expression '{}({:?})", token, token),
+        };
+
+        Ok(expression)
+    }
+}
+
 impl Parse<i64> for Expression {
     fn parse(carriage: &mut Carriage) -> Result<i64> {
         let token = carriage.next_token()?;
