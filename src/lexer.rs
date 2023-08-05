@@ -2,7 +2,7 @@ mod token;
 
 use std::borrow::Cow;
 
-pub use token::{Token, TokenKind};
+pub use token::{Token, TokenKind, TokenKinds};
 
 pub struct Lexer {
     input: Vec<u8>,
@@ -37,16 +37,16 @@ pub(super) enum Strategy<'a> {
     Single(Token<'a>),
 }
 
-pub struct LexerIter<'a> {
-    input: &'a [u8],
+pub struct LexerIter<'t, 's: 't> {
+    input: &'s [u8],
     position: usize,
     read_position: usize,
     ch: u8,
-    strategy: Strategy<'a>,
+    strategy: Strategy<'t>,
 }
 
-impl<'a> LexerIter<'a> {
-    fn next_token(&mut self) -> Option<Token<'a>> {
+impl<'t, 's: 't> LexerIter<'t, 's> {
+    fn next_token(&mut self) -> Option<Token<'t>> {
         match self.strategy {
             Strategy::Ident => Some(self.get_ident()),
             Strategy::String => Some(self.get_string()),
@@ -57,13 +57,13 @@ impl<'a> LexerIter<'a> {
         }
     }
 
-    fn get_single_token(&mut self, token: Token<'a>) -> Token<'a> {
+    fn get_single_token(&mut self, token: Token<'t>) -> Token<'t> {
         self.read_char();
         self.switch_strategy(Strategy::Token);
         token
     }
 
-    fn get_string_template(&mut self) -> Token<'a> {
+    fn get_string_template(&mut self) -> Token<'t> {
         let pos = self.position;
 
         loop {
@@ -92,7 +92,7 @@ impl<'a> LexerIter<'a> {
         Token::new(literal, TokenKind::StringLiteral)
     }
 
-    fn get_token(&mut self) -> Option<Token<'a>> {
+    fn get_token(&mut self) -> Option<Token<'t>> {
         self.skip_whitespace();
 
         let token = match self.ch {
@@ -142,11 +142,11 @@ impl<'a> LexerIter<'a> {
         }
     }
 
-    fn switch_strategy(&mut self, strategy: Strategy<'a>) {
+    fn switch_strategy(&mut self, strategy: Strategy<'t>) {
         self.strategy = strategy
     }
 
-    fn tokenize_char(&mut self, kind: TokenKind) -> Token<'a> {
+    fn tokenize_char(&mut self, kind: TokenKind) -> Token<'t> {
         let literal = String::from_utf8_lossy(&self.input[self.position..self.position + 1]);
         Token::new(literal, kind)
     }
@@ -162,7 +162,7 @@ impl<'a> LexerIter<'a> {
         self.read_position += 1;
     }
 
-    fn get_ident(&mut self) -> Token<'a> {
+    fn get_ident(&mut self) -> Token<'t> {
         let literal = self.read_ident();
 
         let token = if literal == "data" && self.ch == b'(' {
@@ -182,7 +182,7 @@ impl<'a> LexerIter<'a> {
         token
     }
 
-    fn read_ident(&mut self) -> Cow<'a, str> {
+    fn read_ident(&mut self) -> Cow<'t, str> {
         let pos = self.position;
 
         while self.ch.is_ascii_alphanumeric() || self.ch == b'_' {
@@ -192,14 +192,14 @@ impl<'a> LexerIter<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position])
     }
 
-    fn get_int(&mut self) -> Token<'a> {
+    fn get_int(&mut self) -> Token<'t> {
         self.switch_strategy(Strategy::Token);
         let literal = self.read_int();
 
         Token::new(literal, TokenKind::IntLiteral)
     }
 
-    fn read_int(&mut self) -> Cow<'a, str> {
+    fn read_int(&mut self) -> Cow<'t, str> {
         let pos = self.position;
 
         while self.ch.is_ascii_digit() || self.ch == b'_' {
@@ -209,14 +209,14 @@ impl<'a> LexerIter<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position])
     }
 
-    fn get_string(&mut self) -> Token<'a> {
+    fn get_string(&mut self) -> Token<'t> {
         self.switch_strategy(Strategy::Token);
         let literal = self.read_string();
 
         Token::new(literal, TokenKind::StringLiteral)
     }
 
-    fn read_string(&mut self) -> Cow<'a, str> {
+    fn read_string(&mut self) -> Cow<'t, str> {
         let pos = self.position + 1;
 
         loop {
@@ -229,7 +229,7 @@ impl<'a> LexerIter<'a> {
         String::from_utf8_lossy(&self.input[pos..self.position])
     }
 
-    fn get_data_inline(&mut self, token: Token<'a>) -> Token<'a> {
+    fn get_data_inline(&mut self, token: Token<'t>) -> Token<'t> {
         let position = self.position;
         let read_position = self.read_position;
         let ch = self.ch;
@@ -251,10 +251,10 @@ impl<'a> LexerIter<'a> {
     }
 }
 
-impl<'a> Iterator for LexerIter<'a> {
-    type Item = Token<'a>;
+impl<'t, 's: 't> Iterator for LexerIter<'t, 's> {
+    type Item = Token<'t>;
 
-    fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Token<'t>> {
         self.next_token()
     }
 }
