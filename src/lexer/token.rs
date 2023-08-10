@@ -118,13 +118,6 @@ impl<'a> Token<'a> {
     pub fn new(literal: Cow<'a, str>, kind: TokenKind) -> Self {
         Self { literal, kind }
     }
-    pub fn kind(&self) -> &TokenKind {
-        &self.kind
-    }
-
-    pub fn literal(&self) -> &str {
-        &self.literal
-    }
 }
 
 impl Display for Token<'_> {
