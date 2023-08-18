@@ -74,3 +74,48 @@ pub fn make(op: &Opcode, operands: &[i32]) -> Vec<u8> {
 
     instruction
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{make, Opcode, OP_ADD, OP_CONSTANT};
+
+    struct TestCase {
+        op: Opcode,
+        operands: Vec<i32>,
+        expected: Vec<u8>,
+    }
+
+    macro_rules! define_case {
+        ($op_code:expr; $($operand:expr),*; $($expected:expr),*) => {
+            TestCase {
+                op: $op_code,
+                operands: vec![$($operand), *],
+                expected: vec![*$op_code, $($expected), *],
+            }
+        };
+    }
+
+    #[test]
+    fn test_make() {
+        let tests = vec![
+            define_case!(OP_CONSTANT; 65534; 255, 254),
+            define_case!(OP_ADD;;),
+        ];
+
+        for test in tests {
+            let instruction = make(&test.op, &test.operands);
+
+            assert_eq!(
+                instruction.len(),
+                test.expected.len(),
+                "insruction has wrong length. want={}, got={}",
+                test.expected.len(),
+                instruction.len(),
+            );
+
+            for (i, (a, e)) in instruction.iter().zip(test.expected.iter()).enumerate() {
+                assert_eq!(a, e, "wrong byte at pos {}. want={}, got={}", i, e, a)
+            }
+        }
+    }
+}
