@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn test_next_token() {
-        let input = r#"DATA: lv_string TYPE string,
+        let input = r"DATA: lv_string TYPE string,
       lv_int TYPE i.
 
 lv_string = '(ツ)'.
@@ -318,7 +318,7 @@ DATA( lv_test) = '5'.
 
 IF lv_int = 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
-ENDIF."#;
+ENDIF.";
         let tokens = define_cases!(
             "data":Data,
             ":":Colon,
