@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::lexer::{LexerIter, Token, TokenKind};
 
-use super::{Error, Result};
+use crate::error::{Error, Result};
 
 pub struct Carriage<'t, 's: 't> {
     iter: Peekable<LexerIter<'t, 's>>,

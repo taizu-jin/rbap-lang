@@ -1,7 +1,7 @@
 use crate::lexer::Token;
 
 use super::Carriage;
-use super::Result;
+use crate::error::Result;
 
 pub struct Context<'t> {
     pub current_token: Token<'t>,

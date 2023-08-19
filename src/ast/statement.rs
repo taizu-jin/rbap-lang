@@ -1,6 +1,7 @@
 use crate::{
+    error::{Error, Result},
     lexer::{Token, TokenKind},
-    parser::{context::Current, context::Peek, parse, Carriage, Context, Error, Result},
+    parser::{context::Current, context::Peek, parse, Carriage, Context},
 };
 
 use super::{Data, DataDeclaration, DataType, Expression};

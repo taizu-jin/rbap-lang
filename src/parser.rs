@@ -1,15 +1,14 @@
 mod carriage;
 pub mod context;
-mod error;
 
 use crate::{
     ast::{Program, Statement},
     lexer::LexerIter,
 };
 
+use crate::error::{Error, Result};
 pub use carriage::Carriage;
 pub use context::Context;
-pub use error::{Error, Result};
 
 pub use context::Handler;
 
