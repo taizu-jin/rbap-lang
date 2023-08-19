@@ -3,11 +3,10 @@ pub mod context;
 
 use crate::{
     ast::{Program, Statement},
-    error::ErrorKind,
+    error::{Error, ErrorKind, Result},
     lexer::{LexerIter, Token, TokenKind},
 };
 
-use crate::error::{Error, Result};
 pub use carriage::Carriage;
 pub use context::Context;
 
