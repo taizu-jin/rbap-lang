@@ -201,6 +201,24 @@ mod tests {
     }
 
     #[test]
+    fn test_instructions_string() {
+        let instructions =
+            Instructions([make(&OP_ADD, &[]), make(&OP_CONSTANT, &[65535])].concat());
+
+        let expected = r#"0000 OP_ADD
+0001 OP_CONSTANT 65535
+"#;
+
+        assert_eq!(
+            instructions.to_string(),
+            expected,
+            "instructions wrongly formatted.\nwant={}\ngot={}",
+            expected,
+            instructions
+        )
+    }
+
+    #[test]
     fn test_read_operands() {
         struct TestCase {
             op: Opcode,
