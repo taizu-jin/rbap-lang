@@ -105,12 +105,17 @@ pub fn make(op: &Opcode, operands: &[i32]) -> Vec<u8> {
             None => panic!("expected opcode to have {} operands", i),
         };
 
-        let operand = match width {
-            2 => i16::to_be_bytes(*o as i16),
+        match width {
+            1 => {
+                let operand = u8::to_be_bytes(*o as u8);
+                instruction.splice(offset..offset + width, operand);
+            }
+            2 => {
+                let operand = u16::to_be_bytes(*o as u16);
+                instruction.splice(offset..offset + width, operand);
+            }
             w => panic!("unsupported operand width of {} bytes", w),
         };
-
-        instruction.splice(offset..offset + width, operand);
 
         offset += width;
     }
