@@ -39,6 +39,27 @@ impl Deref for Opcode {
     }
 }
 
+impl<'a> Opcode {
+    fn read_operands(op: &Opcode, instructions: &[u8]) -> (Vec<i32>, usize) {
+        let mut offset = 0;
+
+        let operands =
+            op.operand_widths
+                .iter()
+                .map(|w| {
+                    let o = match w {
+                        1 => u8::from_be_bytes([instructions[offset]]) as i32,
+                        2 => u16::from_be_bytes([instructions[offset], instructions[offset + 1]])
+                            as i32,
+                        w => panic!("unsupported operand width of {} bytes", w),
+                    };
+                    offset += **w;
+                    o
+                })
+                .collect();
+        (operands, offset)
+    }
+}
 /// Create an instruction from opcode & a slice of operands.
 ///
 /// # Panics
