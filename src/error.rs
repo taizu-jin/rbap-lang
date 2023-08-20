@@ -35,6 +35,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
+            ErrorRepr::UndefinedOpcode(_) => Self::UndefinedOpcode,
         }
     }
 }
@@ -119,7 +120,6 @@ impl Error {
             repr: ErrorRepr::UndefinedOpcode(opcode),
         }
     }
-
     pub fn unknown_operator(operator: String) -> Self {
         Self {
             kind: ErrorKind::UnknownOperator,
@@ -178,6 +178,8 @@ enum ErrorRepr {
     ParseInfixError(#[from] ParseInfixError),
     #[error("unknown operator {0}")]
     UnknownOperator(String),
+    #[error("opcode {0} is undefined")]
+    UndefinedOpcode(u8),
 }
 
 #[derive(Debug, Error)]
