@@ -98,7 +98,6 @@ pub fn make(op: &Opcode, operands: &[i32]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::{make, Opcode, OP_ADD, OP_CONSTANT};
 
     struct TestCase {
         op: Opcode,
@@ -115,6 +114,7 @@ mod tests {
             }
         };
     }
+    use super::*;
 
     #[test]
     fn test_make() {
@@ -136,6 +136,42 @@ mod tests {
 
             for (i, (a, e)) in instruction.iter().zip(test.expected.iter()).enumerate() {
                 assert_eq!(a, e, "wrong byte at pos {}. want={}, got={}", i, e, a)
+            }
+        }
+    }
+    #[test]
+    fn test_read_operands() {
+        struct TestCase {
+            op: Opcode,
+            operands: Vec<i32>,
+            bytes_read: usize,
+        }
+
+        macro_rules! define_case {
+            ($op_code:expr; $($operand:expr),*; $bytes_read:expr) => {
+                TestCase {
+                    op: $op_code,
+                    operands: vec![$($operand), *],
+                    bytes_read: $bytes_read,
+                }
+            };
+        }
+
+        let tests = vec![define_case!(OP_CONSTANT; 65535; 2)];
+
+        for test in tests {
+            let instruction = make(&test.op, &test.operands);
+
+            let (operands, read) = Opcode::read_operands(&test.op, &instruction[1..]);
+
+            assert_eq!(
+                read, test.bytes_read,
+                "bytes read is incorrect. want={}, got={}",
+                test.bytes_read, read
+            );
+
+            for (want, got) in test.operands.iter().zip(operands.iter()) {
+                assert_eq!(want, got, "operand wrong. want={} , got={}", want, got);
             }
         }
     }
