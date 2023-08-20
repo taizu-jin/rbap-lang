@@ -21,4 +21,6 @@ pub enum Error {
     ParseStringTemplate { kind: TokenKind, literal: String },
     #[error("expected a token, but reached EOF")]
     Eof,
+    #[error("opcode {0} is undefined")]
+    UndefinedOpcode(u8),
 }

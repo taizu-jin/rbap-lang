@@ -1,4 +1,5 @@
-use std::ops::Deref;
+use crate::error::{Error, Result};
+use std::{collections::HashMap, fmt::Display, ops::Deref, sync::OnceLock};
 
 /// Define an `Opcode` constant.
 ///
@@ -27,6 +28,7 @@ macro_rules! define_constant {
 define_constant!(OP_CONSTANT, 0x00, 2);
 define_constant!(OP_ADD, 0x01);
 
+static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 pub struct Opcode {
     pub code: u8,
     pub label: &'static str,
@@ -42,6 +44,23 @@ impl Deref for Opcode {
 }
 
 impl<'a> Opcode {
+    fn lookup(op: u8) -> Result<&'static Opcode> {
+        let defitions = Opcode::get_definitions();
+        match defitions.get(&op) {
+            Some(opcode) => Ok(*opcode),
+            None => Err(Error::UndefinedOpcode(op)),
+        }
+    }
+
+    fn get_definitions() -> &'a HashMap<u8, &'static Opcode> {
+        DEFINITIONS.get_or_init(|| {
+            let mut map = HashMap::new();
+            map.insert(*OP_CONSTANT, &OP_CONSTANT);
+            map.insert(*OP_ADD, &OP_ADD);
+            map
+        })
+    }
+
     fn read_operands(op: &Opcode, instructions: &[u8]) -> (Vec<i32>, usize) {
         let mut offset = 0;
 
@@ -62,6 +81,7 @@ impl<'a> Opcode {
         (operands, offset)
     }
 }
+
 /// Create an instruction from opcode & a slice of operands.
 ///
 /// # Panics
