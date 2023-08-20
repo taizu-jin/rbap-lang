@@ -18,6 +18,7 @@ macro_rules! define_constant {
     ($name:ident, $opcode:expr $(, $width:expr)*) => {
         pub const $name: $crate::code::Opcode = $crate::code::Opcode {
             code: $opcode,
+            label: stringify!($name),
             operand_widths: &[$(&$width),*],
         };
     };
@@ -28,6 +29,7 @@ define_constant!(OP_ADD, 0x01);
 
 pub struct Opcode {
     pub code: u8,
+    pub label: &'static str,
     pub operand_widths: &'static [&'static usize],
 }
 
