@@ -29,6 +29,39 @@ define_constant!(OP_CONSTANT, 0x00, 2);
 define_constant!(OP_ADD, 0x01);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
+
+pub struct Instructions(Vec<u8>);
+
+impl From<Vec<u8>> for Instructions {
+    fn from(value: Vec<u8>) -> Self {
+        Instructions(value)
+    }
+}
+
+impl Display for Instructions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut i = 0;
+        while i < self.0.len() {
+            let opcode = match Opcode::lookup(self.0[i]) {
+                Ok(opcode) => opcode,
+                Err(e) => panic!("index: {}, error: {}", i, e),
+            };
+
+            let (operands, read) = Opcode::read_operands(opcode, &self.0[i + 1..]);
+
+            write!(f, "{:04} {}", i, opcode.label)?;
+            for operand in operands {
+                write!(f, " {}", operand)?;
+            }
+            writeln!(f)?;
+
+            i += 1 + read;
+        }
+
+        Ok(())
+    }
+}
+
 pub struct Opcode {
     pub code: u8,
     pub label: &'static str,
@@ -166,6 +199,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn test_read_operands() {
         struct TestCase {
