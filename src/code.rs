@@ -1,5 +1,10 @@
 use crate::error::{Error, Result};
-use std::{collections::HashMap, fmt::Display, ops::Deref, sync::OnceLock};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    ops::{Deref, DerefMut},
+    sync::OnceLock,
+};
 
 /// Define an `Opcode` constant.
 ///
@@ -26,11 +31,26 @@ macro_rules! define_constant {
 }
 
 define_constant!(OP_CONSTANT, 0x00, 2);
-define_constant!(OP_ADD, 0x01);
+define_constant!(OP_POP, 0x01);
+define_constant!(OP_ADD, 0x02);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
+#[derive(Default)]
 pub struct Instructions(Vec<u8>);
+
+impl Deref for Instructions {
+    type Target = Vec<u8>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Instructions {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 impl From<Vec<u8>> for Instructions {
     fn from(value: Vec<u8>) -> Self {
