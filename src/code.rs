@@ -125,26 +125,26 @@ pub fn make(op: &Opcode, operands: &[i32]) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-
-    struct TestCase {
-        op: Opcode,
-        operands: Vec<i32>,
-        expected: Vec<u8>,
-    }
-
-    macro_rules! define_case {
-        ($op_code:expr; $($operand:expr),*; $($expected:expr),*) => {
-            TestCase {
-                op: $op_code,
-                operands: vec![$($operand), *],
-                expected: vec![*$op_code, $($expected), *],
-            }
-        };
-    }
     use super::*;
 
     #[test]
     fn test_make() {
+        struct TestCase {
+            op: Opcode,
+            operands: Vec<i32>,
+            expected: Vec<u8>,
+        }
+
+        macro_rules! define_case {
+            ($op_code:expr; $($operand:expr),*; $($expected:expr),*) => {
+                TestCase {
+                    op: $op_code,
+                    operands: vec![$($operand), *],
+                    expected: vec![*$op_code, $($expected), *],
+                }
+            };
+        }
+
         let tests = vec![
             define_case!(OP_CONSTANT; 65534; 255, 254),
             define_case!(OP_ADD;;),
