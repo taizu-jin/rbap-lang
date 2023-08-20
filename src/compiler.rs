@@ -122,3 +122,76 @@ impl Default for Compiler {
         Compiler::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{ast::Program, error::Result, lexer::Lexer, parser::Parser};
+
+    use super::*;
+
+    struct TestCase {
+        input: &'static str,
+        expected_constants: Vec<Object>,
+        expected_instructions: Instructions,
+    }
+
+    macro_rules! define_case {
+            ($input:expr; $($constants:expr),*; $instructions:expr) => {
+                TestCase {
+                    input: $input,
+                    expected_constants: vec![$($constants), *],
+                    expected_instructions: $instructions,
+                }
+            };
+
+        }
+
+    #[test]
+    fn test_string_expressions() -> Result<()> {
+        let tests = vec![define_case!("'monkey'.";
+                         Object::String("monkey".into());
+                         [make(&OP_CONSTANT, &[0]),
+                          make(&OP_POP, &[])].concat().into())];
+
+        run_compiler_tests(tests)
+    }
+
+    fn run_compiler_tests(tests: Vec<TestCase>) -> Result<()> {
+        for test in tests {
+            let program = parse(test.input.into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program.into())?;
+
+            let bytecode = compiler.bytecode();
+
+            test_instructions(&test.expected_instructions, &bytecode.instructions);
+        }
+
+        Ok(())
+    }
+
+    fn parse(input: String) -> Program {
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer.iter());
+        parser.parse()
+    }
+
+    fn test_instructions(want: &Instructions, got: &Instructions) {
+        assert_eq!(
+            want.len(),
+            got.len(),
+            "wrong instructions length.\nwant={}\ngot={}",
+            want.len(),
+            got.len()
+        );
+
+        for (i, (want, got)) in want.iter().zip(got.iter()).enumerate() {
+            assert_eq!(
+                want, got,
+                "wrong instruction at {}.\nwant={}\ngot={}",
+                i, want, got
+            );
+        }
+    }
+}
