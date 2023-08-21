@@ -62,7 +62,7 @@ mod tests {
         lexer::Lexer,
     };
 
-    use std::fmt::Write;
+    use std::{borrow::Cow, fmt::Write};
 
     #[test]
     fn test_integer_literal_expression() {
@@ -425,6 +425,88 @@ mod tests {
             } else {
                 panic!(
                     "program.statements[0] is not an Statement::Expression(Expression::StringTemplate). got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
+
+    struct TestCaseInfix<'a> {
+        input: &'static str,
+        operator: Cow<'a, str>,
+        left_value: crate::ast::Expression<'a>,
+        right_value: crate::ast::Expression<'a>,
+    }
+
+    macro_rules! def_case_infix {
+        ($input:expr,$operator:literal,$left:expr,$right:expr) => {
+            TestCaseInfix {
+                input: $input,
+                operator: $operator.into(),
+                left_value: $left,
+                right_value: $right,
+            }
+        };
+    }
+
+    #[test]
+    fn test_infix_expression() {
+        let tests = vec![
+            def_case_infix!("5 + 5.", "+", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 - 5.", "-", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 * 5.", "*", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 / 5.", "/", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!(
+                "foobar + barfoo.",
+                "+",
+                StringLiteral("foobar".into()),
+                StringLiteral("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar - barfoo.",
+                "-",
+                StringLiteral("foobar".into()),
+                StringLiteral("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar * barfoo.",
+                "*",
+                StringLiteral("foobar".into()),
+                StringLiteral("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar / barfoo.",
+                "/",
+                StringLiteral("foobar".into()),
+                StringLiteral("barfoo".into())
+            ),
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(InfixExpression(infix)) = &program.statements[0] {
+                assert_eq!(
+                    &test.operator, &infix.operator,
+                    "operator does not match. want={}, got={}",
+                    test.operator, &infix.operator,
+                );
+
+                assert_eq!(
+                    test.left_value, *infix.left,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.left_value, *infix.left,
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::InfixExpression. got={:?}",
                     program.statements[0]
                 )
             }
