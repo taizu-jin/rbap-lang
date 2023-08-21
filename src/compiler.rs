@@ -62,7 +62,11 @@ impl Compiler {
                 crate::ast::Statement::Data(_) => todo!(),
             },
             Node::Expression(e) => match e {
-                crate::ast::Expression::IntLiteral(_) => todo!(),
+                crate::ast::Expression::IntLiteral(i) => {
+                    let int = Object::Int(i);
+                    let constant = self.add_constant(int);
+                    self.emit(OP_CONSTANT, &[constant]);
+                }
                 crate::ast::Expression::StringLiteral(s) => {
                     let str = Object::String(s);
                     let constant = self.add_constant(str);
