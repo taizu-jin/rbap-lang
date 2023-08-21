@@ -35,7 +35,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
         Self { carriage }
     }
 
-    pub fn parse(&mut self) -> Program {
+    pub fn parse<'a>(&mut self) -> Program<'a> {
         let mut program = Program::new();
 
         loop {
@@ -92,7 +92,7 @@ mod tests {
         }
     }
 
-    fn parse_program(input: String) -> Program {
+    fn parse_program<'a>(input: String) -> Program<'a> {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer.iter());
         let program = parser.parse();
@@ -266,9 +266,9 @@ lv_string2 TYPE string.",
 
     #[test]
     fn test_data_statement() {
-        struct TestCase {
+        struct TestCase<'a> {
             input: &'static str,
-            expected: Data,
+            expected: Data<'a>,
         }
 
         let tests = vec![
@@ -338,9 +338,9 @@ lv_string2 TYPE string.",
 
     #[test]
     fn test_write_statement() {
-        struct TestCase {
+        struct TestCase<'a> {
             input: &'static str,
-            expected: Vec<Expression>,
+            expected: Vec<Expression<'a>>,
         }
 
         let tests = vec![
@@ -422,9 +422,9 @@ lv_string2 TYPE string.",
 
     #[test]
     fn test_string_template_statement() {
-        struct TestCase {
+        struct TestCase<'a> {
             input: &'static str,
-            expected: Vec<Expression>,
+            expected: Vec<Expression<'a>>,
         }
 
         let tests = vec![

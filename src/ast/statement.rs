@@ -6,15 +6,15 @@ use crate::{
 use super::{Data, DataDeclaration, DataType, Expression};
 
 #[derive(Debug)]
-pub enum Statement {
-    Expression(Expression),
+pub enum Statement<'a> {
+    Expression(Expression<'a>),
     DataDeclaration(Vec<DataDeclaration>),
-    Write(Vec<Expression>),
-    Data(Data),
+    Write(Vec<Expression<'a>>),
+    Data(Data<'a>),
 }
 
-impl Statement {
-    pub fn parse(carriage: &mut Carriage) -> Result<Statement> {
+impl<'a> Statement<'a> {
+    pub fn parse(carriage: &mut Carriage) -> Result<Statement<'a>> {
         let context = Context::from_carriage(carriage)?;
 
         let statement = match context.current_token.kind {
@@ -37,7 +37,7 @@ impl Statement {
     fn parse_data_declaration_statement(
         carriage: &mut Carriage,
         Peek(peek_token): Peek,
-    ) -> Result<Statement> {
+    ) -> Result<Statement<'a>> {
         let mut declarations = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -89,7 +89,7 @@ impl Statement {
         carriage: &mut Carriage,
         Current(current): Current,
         Peek(peek): Peek,
-    ) -> Result<Statement> {
+    ) -> Result<Statement<'a>> {
         let ident = match (current, peek) {
             (
                 Token {
@@ -124,7 +124,10 @@ impl Statement {
         Ok(Statement::Data(Data { ident, value }))
     }
 
-    fn parse_write_statement(carriage: &mut Carriage, Peek(peek_token): Peek) -> Result<Statement> {
+    fn parse_write_statement(
+        carriage: &mut Carriage,
+        Peek(peek_token): Peek,
+    ) -> Result<Statement<'a>> {
         let mut expressions = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -158,7 +161,7 @@ impl Statement {
         Ok(Statement::Write(expressions))
     }
 
-    fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
+    fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression<'a>> {
         let token = carriage.expect_tokens(&[
             TokenKind::Ident,
             TokenKind::IntLiteral,

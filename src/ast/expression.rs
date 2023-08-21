@@ -1,17 +1,34 @@
+use std::borrow::Cow;
+
 use crate::{
     lexer::{Token, TokenKind},
     parser::{context::Current, context::Peek, parse, Carriage, Context, Error, Result},
 };
 
 #[derive(Debug, PartialEq)]
-pub enum Expression {
+pub struct InfixExpression<'a> {
+    left: Box<Expression<'a>>,
+    operator: Cow<'a, str>,
+    right: Box<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PrefixExpression<'a> {
+    operator: Cow<'a, str>,
+    right: Box<Expression<'a>>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Expression<'a> {
     IntLiteral(i64),
     StringLiteral(String),
     Ident(String),
-    StringTemplate(Vec<Expression>),
+    StringTemplate(Vec<Expression<'a>>),
+    InfixExpression(InfixExpression<'a>),
+    PrefixExpression(PrefixExpression<'a>),
 }
 
-impl Expression {
+impl<'a> Expression<'a> {
     pub fn parse(
         carriage: &mut Carriage,
         Current(current): Current,
@@ -67,7 +84,7 @@ impl Expression {
         Ok(Expression::StringTemplate(expressions))
     }
 
-    fn parse_string_template(carriage: &mut Carriage) -> Option<Result<Expression>> {
+    fn parse_string_template(carriage: &mut Carriage) -> Option<Result<Expression<'a>>> {
         let context = match Context::from_carriage(carriage) {
             Ok(context) => context,
             Err(err) => return Some(Err(err)),
