@@ -7,15 +7,15 @@ use crate::{
 
 #[derive(Debug, PartialEq)]
 pub struct InfixExpression<'a> {
-    left: Box<Expression<'a>>,
-    operator: Cow<'a, str>,
-    right: Box<Expression<'a>>,
+    pub left: Box<Expression<'a>>,
+    pub operator: Cow<'a, str>,
+    pub right: Box<Expression<'a>>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct PrefixExpression<'a> {
-    operator: Cow<'a, str>,
-    right: Box<Expression<'a>>,
+    pub operator: Cow<'a, str>,
+    pub right: Box<Expression<'a>>,
 }
 
 #[derive(Debug, PartialEq)]
