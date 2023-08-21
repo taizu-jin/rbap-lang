@@ -166,6 +166,7 @@ mod tests {
             let bytecode = compiler.bytecode();
 
             test_instructions(&test.expected_instructions, &bytecode.instructions);
+            test_constants(&test.expected_constants, &bytecode.constants);
         }
 
         Ok(())
@@ -190,6 +191,24 @@ mod tests {
             assert_eq!(
                 want, got,
                 "wrong instruction at {}.\nwant={}\ngot={}",
+                i, want, got
+            );
+        }
+    }
+
+    fn test_constants(want: &Vec<Object>, got: &Vec<Object>) {
+        assert_eq!(
+            want.len(),
+            got.len(),
+            "wrong constants length.\nwant={}\ngot={}",
+            want.len(),
+            got.len()
+        );
+
+        for (i, (want, got)) in want.iter().zip(got.iter()).enumerate() {
+            assert_eq!(
+                want, got,
+                "wrong constant at {}.\nwant={}\ngot={}",
                 i, want, got
             );
         }

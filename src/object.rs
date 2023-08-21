@@ -1,5 +1,6 @@
-use std::{fmt::Display, fs::write};
+use std::fmt::Display;
 
+#[derive(Debug, PartialEq)]
 pub enum Object {
     String(String),
     Int(i64),
