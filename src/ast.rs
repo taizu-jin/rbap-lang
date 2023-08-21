@@ -11,9 +11,9 @@ pub enum DataType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Data {
+pub struct Data<'a> {
     pub ident: String,
-    pub value: Expression,
+    pub value: Expression<'a>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,11 +23,11 @@ pub struct DataDeclaration {
 }
 
 #[derive(Debug)]
-pub struct Program {
-    pub statements: Vec<Statement>,
+pub struct Program<'a> {
+    pub statements: Vec<Statement<'a>>,
 }
 
-impl Program {
+impl Program<'_> {
     pub fn new() -> Self {
         Self {
             statements: Vec::new(),
