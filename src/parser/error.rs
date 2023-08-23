@@ -2,7 +2,7 @@ use std::num::ParseIntError;
 
 use thiserror::Error;
 
-use crate::lexer::{TokenKind, TokenKinds};
+use crate::lexer::{Token, TokenKind, TokenKinds};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -21,4 +21,15 @@ pub enum Error {
     ParseStringTemplate { kind: TokenKind, literal: String },
     #[error("expected a token, but reached EOF")]
     Eof,
+    #[error("can't parse expression '{literal}({kind})")]
+    ParseExpression { literal: String, kind: TokenKind },
+}
+
+impl From<Token<'_>> for Error {
+    fn from(value: Token<'_>) -> Self {
+        Error::ParseExpression {
+            literal: value.literal.to_string(),
+            kind: value.kind,
+        }
+    }
 }

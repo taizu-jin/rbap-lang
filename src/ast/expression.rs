@@ -2,7 +2,9 @@ use std::borrow::Cow;
 
 use crate::{
     lexer::{Token, TokenKind},
-    parser::{context::Current, context::Peek, parse, Carriage, Context, Error, Result},
+    parser::{
+        context::Current, context::Peek, parse, Carriage, Context, Error, Precedence, Result,
+    },
 };
 
 #[derive(Debug, PartialEq)]
@@ -29,15 +31,25 @@ pub enum Expression<'a> {
 }
 
 impl<'a> Expression<'a> {
-    pub fn parse(
+    pub fn parse(carriage: &mut Carriage, current: Current, peek: Peek) -> Result<Self> {
+        let expression = Self::parse_prefix(carriage, current, peek)?;
+
+        Ok(expression)
+    }
+
+    fn parse_prefix(
         carriage: &mut Carriage,
         Current(current): Current,
         Peek(peek): Peek,
     ) -> Result<Self> {
-        let expression = match current.kind {
-            TokenKind::IntLiteral => Self::parse_int_literal_expression(current)?,
-            TokenKind::StringLiteral => {
-                Expression::StringLiteral(Self::parse_string_expression(current))
+        match current.kind {
+            TokenKind::IntLiteral => Self::parse_int_literal_expression(current),
+            TokenKind::StringLiteral => Self::parse_string_expression(current),
+            TokenKind::Ident => Self::parse_ident_expression(current),
+            TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
+            _ => Err(Error::from(current)),
+        }
+    }
             }
             TokenKind::Ident => Expression::Ident(Self::parse_string_expression(current)),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek)?,
@@ -52,8 +64,12 @@ impl<'a> Expression<'a> {
         Ok(Expression::IntLiteral(literal))
     }
 
-    fn parse_string_expression(token: Token) -> String {
-        token.literal.to_string()
+    fn parse_string_expression(token: Token) -> Result<Self> {
+        Ok(Expression::StringLiteral(token.literal.to_string()))
+    }
+
+    fn parse_ident_expression(token: Token) -> Result<Self> {
+        Ok(Expression::Ident(token.literal.to_string()))
     }
 
     fn parse_string_template_expression(carriage: &mut Carriage, peek: Token) -> Result<Self> {
