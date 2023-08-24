@@ -1,18 +1,23 @@
+use std::cell::RefCell;
+
+use crate::ast::Expression;
 use crate::lexer::Token;
 
 use super::Carriage;
 use super::Result;
 
-pub struct Context<'t> {
+pub struct Context<'t, 'e> {
     pub current_token: Token<'t>,
     pub peek_token: Token<'t>,
+    pub expression: RefCell<Option<Expression<'e>>>,
 }
 
-impl<'t> Context<'t> {
+impl<'t, 'e> Context<'t, 'e> {
     pub fn new(current_token: Token<'t>, peek_token: Token<'t>) -> Self {
         Context {
             current_token,
             peek_token,
+            expression: RefCell::new(None),
         }
     }
 
@@ -23,74 +28,99 @@ impl<'t> Context<'t> {
         Ok(Context {
             current_token,
             peek_token,
+            expression: RefCell::new(None),
         })
     }
 }
 
-trait FromContext<'t> {
-    fn from_context(context: &'t Context<'t>) -> Self;
+trait FromContext<'t, 'e> {
+    fn from_context(context: &Context<'t, 'e>) -> Self;
 }
 
 pub struct Peek<'t>(pub Token<'t>);
 
-impl<'t> FromContext<'t> for Peek<'t> {
-    fn from_context(context: &'t Context<'t>) -> Self {
+impl<'t> FromContext<'t, '_> for Peek<'t> {
+    fn from_context(context: &Context<'t, '_>) -> Self {
         Peek(context.peek_token.clone())
-    }
-}
-
-impl<'t> FromContext<'t> for Current<'t> {
-    fn from_context(context: &'t Context<'t>) -> Self {
-        Current(context.current_token.clone())
     }
 }
 
 pub struct Current<'t>(pub Token<'t>);
 
-pub trait Handler<'t, T, R> {
-    fn call(self, carriage: &mut Carriage, context: &'t Context<'t>) -> Result<R>;
+impl<'t> FromContext<'t, '_> for Current<'t> {
+    fn from_context(context: &Context<'t, '_>) -> Self {
+        Current(context.current_token.clone())
+    }
 }
 
-impl<'t, R, F> Handler<'t, (), R> for F
+impl<'t, 'e> FromContext<'t, 'e> for Option<Expression<'e>> {
+    fn from_context(context: &Context<'t, 'e>) -> Self {
+        let mut expr = context.expression.borrow_mut();
+        expr.take()
+    }
+}
+
+pub trait Handler<'t, 's: 't, 'e, T, R> {
+    fn call(self, carriage: &mut Carriage<'t, 's>, context: &Context<'t, 'e>) -> Result<R>;
+}
+
+impl<'t, 's: 't, 'e, R, F> Handler<'t, 's, 'e, (), R> for F
 where
     F: Fn(&mut Carriage) -> Result<R>,
 {
-    fn call(self, carriage: &mut Carriage, _context: &'t Context<'t>) -> Result<R> {
+    fn call(self, carriage: &mut Carriage, _context: &Context<'t, 'e>) -> Result<R> {
         (self)(carriage)
     }
 }
 
-impl<'t, T, R, F> Handler<'t, ((), T), R> for F
+impl<'t, 's: 't, 'e, T, R, F> Handler<'t, 's, 'e, ((), T), R> for F
 where
     F: Fn(T) -> Result<R>,
-    T: FromContext<'t>,
+    T: FromContext<'t, 'e>,
 {
-    fn call(self, _carriage: &mut Carriage, context: &'t Context<'t>) -> Result<R> {
+    fn call(self, _carriage: &mut Carriage, context: &Context<'t, 'e>) -> Result<R> {
         (self)(T::from_context(context))
     }
 }
 
-impl<'t, T, R, F> Handler<'t, T, R> for F
+impl<'t, 's: 't, 'e, T, R, F> Handler<'t, 's, 'e, T, R> for F
 where
     F: Fn(&mut Carriage, T) -> Result<R>,
-    T: FromContext<'t>,
+    T: FromContext<'t, 'e>,
 {
-    fn call(self, carriage: &mut Carriage, context: &'t Context<'t>) -> Result<R> {
+    fn call(self, carriage: &mut Carriage, context: &Context<'t, 'e>) -> Result<R> {
         (self)(carriage, T::from_context(context))
     }
 }
 
-impl<'t, T1, T2, R, F> Handler<'t, (T1, T2), R> for F
+impl<'t, 's: 't, 'e, T1, T2, R, F> Handler<'t, 's, 'e, (T1, T2), R> for F
 where
     F: Fn(&mut Carriage, T1, T2) -> Result<R>,
-    T1: FromContext<'t>,
-    T2: FromContext<'t>,
+    T1: FromContext<'t, 'e>,
+    T2: FromContext<'t, 'e>,
 {
-    fn call(self, carriage: &mut Carriage, context: &'t Context<'t>) -> Result<R> {
+    fn call(self, carriage: &mut Carriage<'t, 's>, context: &Context<'t, 'e>) -> Result<R> {
         (self)(
             carriage,
             T1::from_context(context),
             T2::from_context(context),
+        )
+    }
+}
+
+impl<'t, 's: 't, 'e, T1, T2, T3, R, F> Handler<'t, 's, 'e, (T1, T2, T3), R> for F
+where
+    F: Fn(&mut Carriage, T1, T2, T3) -> Result<R>,
+    T1: FromContext<'t, 'e>,
+    T2: FromContext<'t, 'e>,
+    T3: FromContext<'t, 'e>,
+{
+    fn call(self, carriage: &mut Carriage, context: &Context<'t, 'e>) -> Result<R> {
+        (self)(
+            carriage,
+            T1::from_context(context),
+            T2::from_context(context),
+            T3::from_context(context),
         )
     }
 }

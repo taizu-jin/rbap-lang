@@ -23,6 +23,8 @@ pub enum Error {
     Eof,
     #[error("can't parse expression '{literal}({kind})")]
     ParseExpression { literal: String, kind: TokenKind },
+    #[error("Context doesn't carry an expression to parse infix expression")]
+    ParseInfix,
 }
 
 impl From<Token<'_>> for Error {
