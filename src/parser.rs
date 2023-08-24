@@ -4,7 +4,7 @@ mod error;
 
 use crate::{
     ast::{Program, Statement},
-    lexer::LexerIter,
+    lexer::{LexerIter, Token, TokenKind},
 };
 
 pub use carriage::Carriage;
@@ -13,13 +13,34 @@ pub use error::{Error, Result};
 
 pub use context::Handler;
 
-pub fn parse<'t, T, R, H>(
-    carriage: &'t mut Carriage,
-    context: &'t Context<'t>,
+#[derive(PartialEq, PartialOrd)]
+pub enum Precedence {
+    Lowest,
+    _Equals,
+    _LessGreater,
+    Sum,
+    Product,
+    _Perfix,
+    _Call,
+}
+
+impl From<&Token<'_>> for Precedence {
+    fn from(value: &Token<'_>) -> Self {
+        match value.kind {
+            TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
+            TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
+            _ => Precedence::Lowest,
+        }
+    }
+}
+
+pub fn parse<'t, 's: 't, 'e, T, R, H>(
+    carriage: &'_ mut Carriage<'t, 's>,
+    context: &'_ Context<'t, 'e>,
     handler: H,
 ) -> Result<R>
 where
-    H: Handler<'t, T, R>,
+    H: Handler<'t, 's, 'e, T, R>,
 {
     handler.call(carriage, context)
 }
@@ -459,26 +480,26 @@ mod tests {
             def_case_infix!(
                 "foobar + barfoo.",
                 "+",
-                StringLiteral("foobar".into()),
-                StringLiteral("barfoo".into())
+                Ident("foobar".into()),
+                Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar - barfoo.",
                 "-",
-                StringLiteral("foobar".into()),
-                StringLiteral("barfoo".into())
+                Ident("foobar".into()),
+                Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar * barfoo.",
                 "*",
-                StringLiteral("foobar".into()),
-                StringLiteral("barfoo".into())
+                Ident("foobar".into()),
+                Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar / barfoo.",
                 "/",
-                StringLiteral("foobar".into()),
-                StringLiteral("barfoo".into())
+                Ident("foobar".into()),
+                Ident("barfoo".into())
             ),
         ];
 

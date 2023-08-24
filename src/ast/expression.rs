@@ -32,7 +32,14 @@ pub enum Expression<'a> {
 
 impl<'a> Expression<'a> {
     pub fn parse(carriage: &mut Carriage, current: Current, peek: Peek) -> Result<Self> {
-        let expression = Self::parse_prefix(carriage, current, peek)?;
+        let curr_precedence = Precedence::from(&current.0);
+        let peek_precedence = Precedence::from(&peek.0);
+
+        let mut expression = Self::parse_prefix(carriage, current, peek)?;
+
+        while !carriage.is_peek_token(&TokenKind::Period) && curr_precedence < peek_precedence {
+            expression = Self::parse_infix(carriage, expression)?;
+        }
 
         Ok(expression)
     }
@@ -50,13 +57,42 @@ impl<'a> Expression<'a> {
             _ => Err(Error::from(current)),
         }
     }
+
+    fn parse_infix(carriage: &mut Carriage, expression: Expression<'a>) -> Result<Self> {
+        let mut context = Context::from_carriage(carriage)?;
+        let ctxt_expr = context.expression.get_mut();
+        *ctxt_expr = Some(expression);
+
+        match &context.current_token.kind {
+            TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk => {
+                parse(carriage, &context, Self::parse_infix_expression)
             }
-            TokenKind::Ident => Expression::Ident(Self::parse_string_expression(current)),
-            TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek)?,
-            token => unimplemented!("can't parse expression '{}({:?})", token, token),
+            _ => Err(Error::from(context.current_token)),
+        }
+    }
+
+    fn parse_infix_expression(
+        carriage: &mut Carriage,
+        Current(current): Current,
+        left: Option<Expression<'a>>,
+    ) -> Result<Expression<'a>> {
+        let left = if let Some(left) = left {
+            left
+        } else {
+            return Err(Error::ParseInfix);
         };
 
-        Ok(expression)
+        let context = Context::from_carriage(carriage)?;
+
+        let right = parse(carriage, &context, Expression::parse)?;
+
+        let expression = InfixExpression {
+            left: Box::new(left),
+            operator: current.literal.to_string().into(),
+            right: Box::new(right),
+        };
+
+        Ok(Expression::InfixExpression(expression))
     }
 
     fn parse_int_literal_expression(token: Token) -> Result<Self> {
