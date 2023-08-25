@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, fmt::Display};
 
 use crate::{
     lexer::{Token, TokenKind},
@@ -174,6 +174,27 @@ impl<'a> Expression<'a> {
                 kind: context.current_token.kind,
                 literal: context.current_token.literal.to_string(),
             })),
+        }
+    }
+}
+
+impl Display for Expression<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::IntLiteral(il) => write!(f, "{}", il),
+            Expression::StringLiteral(sl) => write!(f, "{}", sl),
+            Expression::Ident(ident) => write!(f, "{}", ident),
+            Expression::StringTemplate(st) => {
+                write!(f, "|")?;
+                for s in st {
+                    write!(f, "{}", s)?;
+                }
+                write!(f, "|")
+            }
+            Expression::InfixExpression(ie) => {
+                write!(f, "({} {} {})", ie.left, ie.operator, ie.right)
+            }
+            Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
         }
     }
 }
