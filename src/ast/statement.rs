@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     lexer::{Token, TokenKind},
     parser::{context::Current, context::Peek, parse, Carriage, Context, Error, Result},
@@ -172,5 +174,35 @@ impl<'a> Statement<'a> {
         let context = Context::new(token, carriage.peek_token()?.clone());
 
         parse(carriage, &context, Expression::parse)
+    }
+}
+
+impl Display for Statement<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Expression(e) => write!(f, "{}.", e),
+            Statement::Data(d) => write!(f, "{}.", d),
+            Statement::DataDeclaration(dd) => {
+                write!(f, "DATA:")?;
+                if dd.len() == 1 {
+                    write!(f, "{}", dd[0])?;
+                } else {
+                    for d in dd {
+                        writeln!(f, "{}", d)?;
+                    }
+                }
+                write!(f, ".")
+            }
+            Statement::Write(strings) => {
+                write!(f, "WRITE:")?;
+                for s in strings {
+                    match s {
+                        Expression::StringLiteral(s) if s == "\n" => write!(f, " /")?,
+                        e => write!(f, " {}", e)?,
+                    }
+                }
+                write!(f, ".")
+            }
+        }
     }
 }
