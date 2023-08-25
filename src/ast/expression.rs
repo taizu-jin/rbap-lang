@@ -31,14 +31,19 @@ pub enum Expression<'a> {
 }
 
 impl<'a> Expression<'a> {
-    pub fn parse(carriage: &mut Carriage, current: Current, peek: Peek) -> Result<Self> {
-        let curr_precedence = Precedence::from(&current.0);
-        let peek_precedence = Precedence::from(&peek.0);
-
+    pub fn parse(
+        carriage: &mut Carriage,
+        current: Current,
+        peek: Peek,
+        mut precedence: Precedence,
+    ) -> Result<Self> {
         let mut expression = Self::parse_prefix(carriage, current, peek)?;
 
-        while !carriage.is_peek_token(&TokenKind::Period) && curr_precedence < peek_precedence {
-            expression = Self::parse_infix(carriage, expression)?;
+        while !carriage.is_peek_token(&TokenKind::Period)
+            && precedence < carriage.peek_token()?.into()
+        {
+            (expression, precedence) =
+                Self::parse_infix(carriage, expression).map(|(e, k)| (e, Precedence::from(&k)))?;
         }
 
         Ok(expression)
@@ -58,14 +63,17 @@ impl<'a> Expression<'a> {
         }
     }
 
-    fn parse_infix(carriage: &mut Carriage, expression: Expression<'a>) -> Result<Self> {
+    fn parse_infix(
+        carriage: &mut Carriage,
+        expression: Expression<'a>,
+    ) -> Result<(Self, TokenKind)> {
         let mut context = Context::from_carriage(carriage)?;
-        let ctxt_expr = context.expression.get_mut();
-        *ctxt_expr = Some(expression);
+        context.set_expression(expression);
 
         match &context.current_token.kind {
             TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk => {
-                parse(carriage, &context, Self::parse_infix_expression)
+                let expression = parse(carriage, &context, Self::parse_infix_expression)?;
+                Ok((expression, context.current_token.kind))
             }
             _ => Err(Error::from(context.current_token)),
         }

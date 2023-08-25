@@ -13,7 +13,7 @@ pub use error::{Error, Result};
 
 pub use context::Handler;
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedence {
     Lowest,
     _Equals,
@@ -26,7 +26,14 @@ pub enum Precedence {
 
 impl From<&Token<'_>> for Precedence {
     fn from(value: &Token<'_>) -> Self {
-        match value.kind {
+        let kind = &value.kind;
+        kind.into()
+    }
+}
+
+impl From<&TokenKind> for Precedence {
+    fn from(value: &TokenKind) -> Self {
+        match value {
             TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
             _ => Precedence::Lowest,
@@ -524,6 +531,12 @@ mod tests {
                     test.left_value, *infix.left,
                     "operator does not match. want={:?}, got={:?}",
                     test.left_value, *infix.left,
+                );
+
+                assert_eq!(
+                    test.right_value, *infix.right,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.right_value, *infix.right,
                 );
             } else {
                 panic!(
