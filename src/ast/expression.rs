@@ -8,29 +8,29 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq)]
-pub struct InfixExpression<'a> {
-    pub left: Box<Expression<'a>>,
-    pub operator: Cow<'a, str>,
-    pub right: Box<Expression<'a>>,
+pub struct InfixExpression {
+    pub left: Box<Expression>,
+    pub operator: Cow<'static, str>,
+    pub right: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct PrefixExpression<'a> {
-    pub operator: Cow<'a, str>,
-    pub right: Box<Expression<'a>>,
+pub struct PrefixExpression {
+    pub operator: Cow<'static, str>,
+    pub right: Box<Expression>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Expression<'a> {
+pub enum Expression {
     IntLiteral(i64),
     StringLiteral(String),
     Ident(String),
-    StringTemplate(Vec<Expression<'a>>),
-    InfixExpression(InfixExpression<'a>),
-    PrefixExpression(PrefixExpression<'a>),
+    StringTemplate(Vec<Expression>),
+    InfixExpression(InfixExpression),
+    PrefixExpression(PrefixExpression),
 }
 
-impl<'a> Expression<'a> {
+impl Expression {
     pub fn parse(
         carriage: &mut Carriage,
         current: Current,
@@ -63,10 +63,7 @@ impl<'a> Expression<'a> {
         }
     }
 
-    fn parse_infix(
-        carriage: &mut Carriage,
-        expression: Expression<'a>,
-    ) -> Result<(Self, TokenKind)> {
+    fn parse_infix(carriage: &mut Carriage, expression: Expression) -> Result<(Self, TokenKind)> {
         let mut context = Context::from_carriage(carriage)?;
         context.set_expression(expression);
 
@@ -82,8 +79,8 @@ impl<'a> Expression<'a> {
     fn parse_infix_expression(
         carriage: &mut Carriage,
         Current(current): Current,
-        left: Option<Expression<'a>>,
-    ) -> Result<Expression<'a>> {
+        left: Option<Expression>,
+    ) -> Result<Expression> {
         let left = if let Some(left) = left {
             left
         } else {
@@ -144,7 +141,7 @@ impl<'a> Expression<'a> {
         Ok(Expression::StringTemplate(expressions))
     }
 
-    fn parse_string_template(carriage: &mut Carriage) -> Option<Result<Expression<'a>>> {
+    fn parse_string_template(carriage: &mut Carriage) -> Option<Result<Expression>> {
         let context = match Context::from_carriage(carriage) {
             Ok(context) => context,
             Err(err) => return Some(Err(err)),
@@ -186,7 +183,7 @@ impl<'a> Expression<'a> {
     }
 }
 
-impl Display for Expression<'_> {
+impl Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expression::IntLiteral(il) => write!(f, "{}", il),

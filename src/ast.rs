@@ -22,12 +22,12 @@ impl Display for DataType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Data<'a> {
+pub struct Data {
     pub ident: String,
-    pub value: Expression<'a>,
+    pub value: Expression,
 }
 
-impl Display for Data<'_> {
+impl Display for Data {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} = {}", self.ident, self.value)
     }
@@ -46,11 +46,11 @@ impl Display for DataDeclaration {
 }
 
 #[derive(Debug)]
-pub struct Program<'a> {
-    pub statements: Vec<Statement<'a>>,
+pub struct Program {
+    pub statements: Vec<Statement>,
 }
 
-impl Program<'_> {
+impl Program {
     pub fn new() -> Self {
         Self {
             statements: Vec::new(),
