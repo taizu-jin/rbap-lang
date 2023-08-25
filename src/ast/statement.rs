@@ -8,15 +8,15 @@ use crate::{
 use super::{Data, DataDeclaration, DataType, Expression};
 
 #[derive(Debug)]
-pub enum Statement<'a> {
-    Expression(Expression<'a>),
+pub enum Statement {
+    Expression(Expression),
     DataDeclaration(Vec<DataDeclaration>),
-    Write(Vec<Expression<'a>>),
-    Data(Data<'a>),
+    Write(Vec<Expression>),
+    Data(Data),
 }
 
-impl<'a> Statement<'a> {
-    pub fn parse(carriage: &mut Carriage) -> Result<Statement<'a>> {
+impl Statement {
+    pub fn parse(carriage: &mut Carriage) -> Result<Statement> {
         let context = Context::from_carriage(carriage)?;
 
         let statement = match context.current_token.kind {
@@ -39,7 +39,7 @@ impl<'a> Statement<'a> {
     fn parse_data_declaration_statement(
         carriage: &mut Carriage,
         Peek(peek_token): Peek,
-    ) -> Result<Statement<'a>> {
+    ) -> Result<Statement> {
         let mut declarations = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -91,7 +91,7 @@ impl<'a> Statement<'a> {
         carriage: &mut Carriage,
         Current(current): Current,
         Peek(peek): Peek,
-    ) -> Result<Statement<'a>> {
+    ) -> Result<Statement> {
         let ident = match (current, peek) {
             (
                 Token {
@@ -126,10 +126,7 @@ impl<'a> Statement<'a> {
         Ok(Statement::Data(Data { ident, value }))
     }
 
-    fn parse_write_statement(
-        carriage: &mut Carriage,
-        Peek(peek_token): Peek,
-    ) -> Result<Statement<'a>> {
+    fn parse_write_statement(carriage: &mut Carriage, Peek(peek_token): Peek) -> Result<Statement> {
         let mut expressions = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -163,7 +160,7 @@ impl<'a> Statement<'a> {
         Ok(Statement::Write(expressions))
     }
 
-    fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression<'a>> {
+    fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
         let token = carriage.expect_tokens(&[
             TokenKind::Ident,
             TokenKind::IntLiteral,
@@ -177,7 +174,7 @@ impl<'a> Statement<'a> {
     }
 }
 
-impl Display for Statement<'_> {
+impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Statement::Expression(e) => write!(f, "{}.", e),

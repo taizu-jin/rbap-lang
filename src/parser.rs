@@ -42,12 +42,12 @@ impl From<&TokenKind> for Precedence {
 }
 
 pub fn parse<'t, 's: 't, 'e, T, R, H>(
-    carriage: &'_ mut Carriage<'t, 's>,
-    context: &'_ Context<'t, 'e>,
+    carriage: &mut Carriage<'t, 's>,
+    context: &Context<'t>,
     handler: H,
 ) -> Result<R>
 where
-    H: Handler<'t, 's, 'e, T, R>,
+    H: Handler<'t, 's, T, R>,
 {
     handler.call(carriage, context)
 }
@@ -63,7 +63,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
         Self { carriage }
     }
 
-    pub fn parse<'a>(&mut self) -> Program<'a> {
+    pub fn parse(&mut self) -> Program {
         let mut program = Program::new();
 
         loop {
@@ -119,7 +119,7 @@ mod tests {
         }
     }
 
-    fn parse_program<'a>(input: String) -> Program<'a> {
+    fn parse_program(input: String) -> Program {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer.iter());
         let program = parser.parse();
@@ -271,9 +271,9 @@ mod tests {
         }
     }
 
-    struct TestCaseData<'a> {
+    struct TestCaseData {
         input: &'static str,
-        expected: Data<'a>,
+        expected: Data,
     }
 
     macro_rules! def_case_data {
@@ -339,9 +339,9 @@ mod tests {
         }
     }
 
-    struct TestCaseExpression<'a> {
+    struct TestCaseExpression {
         input: &'static str,
-        expected: Vec<crate::ast::Expression<'a>>,
+        expected: Vec<crate::ast::Expression>,
     }
 
     macro_rules! def_case_expr {
@@ -459,11 +459,11 @@ mod tests {
         }
     }
 
-    struct TestCaseInfix<'a> {
+    struct TestCaseInfix {
         input: &'static str,
-        operator: Cow<'a, str>,
-        left_value: crate::ast::Expression<'a>,
-        right_value: crate::ast::Expression<'a>,
+        operator: Cow<'static, str>,
+        left_value: crate::ast::Expression,
+        right_value: crate::ast::Expression,
     }
 
     macro_rules! def_case_infix {
