@@ -546,4 +546,54 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
+        struct TestCase {
+            input: &'static str,
+            expected: &'static str,
+        }
+
+        macro_rules! define_case {
+            ($($input:expr,$expected:expr),+) => {
+                vec![$(TestCase{
+                    input: $input,
+                    expected: $expected,
+                }),+]
+            };
+        }
+        let tests = define_case!(
+            "a + b + c.",
+            "((a + b) + c).",
+            "a + b - c.",
+            "((a + b) - c).",
+            "a * b * c.",
+            "((a * b) * c).",
+            "a * b / c.",
+            "((a * b) / c).",
+            "a + b / c.",
+            "(a + (b / c)).",
+            "a + b * c + d / e - f.",
+            "(((a + (b * c)) + (d / e)) - f)."
+        );
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            let got = program.statements[0].to_string();
+
+            assert_eq!(
+                test.expected, got,
+                "\nexpected={}\ngot={}",
+                test.expected, got
+            )
+        }
+    }
 }
