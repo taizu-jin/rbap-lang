@@ -3,7 +3,7 @@ mod statement;
 
 use std::fmt::Display;
 
-pub use expression::Expression;
+pub use expression::{Expression, Operator};
 pub use statement::Statement;
 
 #[derive(Debug, PartialEq, Copy, Clone)]

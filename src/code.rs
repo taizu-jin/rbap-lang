@@ -33,6 +33,12 @@ macro_rules! define_constant {
 define_constant!(OP_CONSTANT, 0x00, 2);
 define_constant!(OP_POP, 0x01);
 define_constant!(OP_ADD, 0x02);
+define_constant!(OP_SUB, 0x03);
+define_constant!(OP_MUL, 0x04);
+define_constant!(OP_DIV, 0x05);
+define_constant!(OP_GREATER_THAN, 0x06);
+define_constant!(OP_EQUAL, 0x07);
+define_constant!(OP_NOT_EQUAL, 0x08);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 

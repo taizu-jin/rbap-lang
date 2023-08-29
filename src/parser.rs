@@ -86,7 +86,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
 mod tests {
     use super::*;
     use crate::{
-        ast::{Data, DataDeclaration, DataType, Expression::*},
+        ast::{Data, DataDeclaration, DataType, Expression::*, Operator},
         lexer::Lexer,
     };
 
@@ -476,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn test_prefix_expression() {
+    fn test_prefix_expression() -> Result<()> {
         let tests = vec![
             def_case_prefix!("-15.", "-", IntLiteral(15)),
             def_case_prefix!("-foobar.", "-", Ident("foobar".into())),
@@ -494,9 +494,11 @@ mod tests {
 
             if let Statement::Expression(PrefixExpression(infix)) = &program.statements[0] {
                 assert_eq!(
-                    &test.operator, &infix.operator,
+                    Operator::try_from(test.operator.as_ref())?,
+                    infix.operator,
                     "operator does not match. want={}, got={}",
-                    test.operator, &infix.operator,
+                    test.operator,
+                    &infix.operator,
                 );
 
                 assert_eq!(
@@ -511,6 +513,8 @@ mod tests {
                 )
             }
         }
+
+        Ok(())
     }
 
     struct TestCaseInfix {
@@ -532,7 +536,7 @@ mod tests {
     }
 
     #[test]
-    fn test_infix_expression() {
+    fn test_infix_expression() -> Result<()> {
         let tests = vec![
             def_case_infix!("5 + 5.", "+", IntLiteral(5), IntLiteral(5)),
             def_case_infix!("5 - 5.", "-", IntLiteral(5), IntLiteral(5)),
@@ -576,9 +580,11 @@ mod tests {
 
             if let Statement::Expression(InfixExpression(infix)) = &program.statements[0] {
                 assert_eq!(
-                    &test.operator, &infix.operator,
+                    Operator::try_from(test.operator.as_ref())?,
+                    infix.operator,
                     "operator does not match. want={}, got={}",
-                    test.operator, &infix.operator,
+                    test.operator,
+                    &infix.operator,
                 );
 
                 assert_eq!(
@@ -599,6 +605,8 @@ mod tests {
                 )
             }
         }
+
+        Ok(())
     }
 
     struct TestCasePrecedence {

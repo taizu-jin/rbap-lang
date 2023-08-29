@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
 
 use crate::{
     error::{Error, ErrorKind, ParseInfixError, Result},
@@ -12,13 +12,67 @@ use crate::{
 #[derive(Debug, PartialEq)]
 pub struct InfixExpression {
     pub left: Box<Expression>,
-    pub operator: Cow<'static, str>,
+    pub operator: Operator,
     pub right: Box<Expression>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Operator {
+    Add,
+    Div,
+    Mul,
+    Sub,
+    GreaterThan,
+    LesserThan,
+    Equal,
+    NotEqual,
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let literal: &'static str = Into::<&'static str>::into(*self);
+        write!(f, "{}", literal)
+    }
+}
+
+impl From<Operator> for &'static str {
+    fn from(value: Operator) -> Self {
+        match value {
+            Operator::Add => "+",
+            Operator::Div => "/",
+            Operator::Mul => "*",
+            Operator::Sub => "-",
+            Operator::GreaterThan => ">",
+            Operator::LesserThan => "<",
+            Operator::Equal => "=",
+            Operator::NotEqual => "<>",
+        }
+    }
+}
+
+impl TryFrom<&str> for Operator {
+    type Error = Error;
+
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+        let operator = match value {
+            "+" => Operator::Add,
+            "-" => Operator::Sub,
+            "*" => Operator::Mul,
+            "/" => Operator::Div,
+            ">" => Operator::GreaterThan,
+            "<" => Operator::LesserThan,
+            "=" => Operator::Equal,
+            "<>" => Operator::NotEqual,
+            _ => return Err(Error::unknown_operator(value.to_string())),
+        };
+
+        Ok(operator)
+    }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct PrefixExpression {
-    pub operator: Cow<'static, str>,
+    pub operator: Operator,
     pub right: Box<Expression>,
 }
 
@@ -81,7 +135,7 @@ impl Expression {
         let expression = parse(carriage, &context, Self::parse)?;
 
         let expression = PrefixExpression {
-            operator: current.literal.to_string().into(),
+            operator: Operator::try_from(current.literal.as_ref())?,
             right: Box::new(expression),
         };
 
@@ -131,7 +185,7 @@ impl Expression {
 
         let expression = InfixExpression {
             left: Box::new(left),
-            operator: current.literal.to_string().into(),
+            operator: Operator::try_from(current.literal.as_ref())?,
             right: Box::new(right),
         };
 

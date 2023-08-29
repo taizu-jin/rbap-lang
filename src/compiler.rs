@@ -1,5 +1,5 @@
 use crate::code::*;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::{ast::Node, code::Instructions, object::Object};
 
 pub struct Bytecode {
@@ -77,14 +77,20 @@ impl Compiler {
                 crate::ast::Expression::Ident(_) => todo!(),
                 crate::ast::Expression::StringTemplate(_) => todo!(),
                 crate::ast::Expression::InfixExpression(ie) => {
-                    self.compile(*ie.left)?;
-                    self.compile(*ie.right)?;
-                    match ie.operator.as_ref() {
-                        "+" => {
-                            self.emit(OP_ADD, &[]);
-                        }
-                        op => return Err(Error::unknown_operator(op.to_string())),
-                    }
+                    let (left, right, operand_op_code) = match ie.operator {
+                        crate::ast::Operator::Add => (*ie.left, *ie.right, OP_ADD),
+                        crate::ast::Operator::Div => (*ie.left, *ie.right, OP_DIV),
+                        crate::ast::Operator::Sub => (*ie.left, *ie.right, OP_SUB),
+                        crate::ast::Operator::Mul => (*ie.left, *ie.right, OP_MUL),
+                        crate::ast::Operator::GreaterThan => (*ie.left, *ie.right, OP_GREATER_THAN),
+                        crate::ast::Operator::LesserThan => (*ie.right, *ie.left, OP_GREATER_THAN),
+                        crate::ast::Operator::Equal => (*ie.left, *ie.right, OP_EQUAL),
+                        crate::ast::Operator::NotEqual => (*ie.left, *ie.right, OP_NOT_EQUAL),
+                    };
+
+                    self.compile(left)?;
+                    self.compile(right)?;
+                    self.emit(operand_op_code, &[]);
                 }
                 crate::ast::Expression::PrefixExpression(_) => todo!(),
             },
