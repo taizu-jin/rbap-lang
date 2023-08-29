@@ -20,7 +20,7 @@ pub enum Precedence {
     _LessGreater,
     Sum,
     Product,
-    _Perfix,
+    Perfix,
     _Call,
 }
 
@@ -564,8 +564,8 @@ mod tests {
     #[test]
     fn test_operator_precedence_parsing() {
         let tests = define_case!(
-            // "-a * b.",
-            // "((-a) * b).",
+            "-a * b.",
+            "((-a) * b).",
             "a + b + c.",
             "((a + b) + c).",
             "a + b - c.",
