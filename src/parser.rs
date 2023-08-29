@@ -27,12 +27,12 @@ pub enum Precedence {
 impl From<&Token<'_>> for Precedence {
     fn from(value: &Token<'_>) -> Self {
         let kind = &value.kind;
-        kind.into()
+        Precedence::from(*kind)
     }
 }
 
-impl From<&TokenKind> for Precedence {
-    fn from(value: &TokenKind) -> Self {
+impl From<TokenKind> for Precedence {
+    fn from(value: TokenKind) -> Self {
         match value {
             TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,

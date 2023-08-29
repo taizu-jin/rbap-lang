@@ -50,7 +50,7 @@ impl Statement {
                     let declaration = Self::parse_data_declaration(carriage)?;
                     declarations.push(declaration);
 
-                    if carriage.is_peek_token(&TokenKind::Comma) {
+                    if carriage.is_peek_token(TokenKind::Comma) {
                         carriage.next_token()?;
                     } else {
                         break;
@@ -134,14 +134,14 @@ impl Statement {
                 carriage.next_token()?;
 
                 loop {
-                    if carriage.is_peek_token(&TokenKind::Slash) {
+                    if carriage.is_peek_token(TokenKind::Slash) {
                         expressions.push(Expression::StringLiteral("\n".to_string()));
                         carriage.next_token()?;
                     }
 
                     expressions.push(Self::expect_and_parse_expression(carriage)?);
 
-                    if carriage.is_peek_token(&TokenKind::Comma) {
+                    if carriage.is_peek_token(TokenKind::Comma) {
                         carriage.next_token()?;
                     } else {
                         break;
@@ -149,7 +149,7 @@ impl Statement {
                 }
             }
             false => {
-                if carriage.is_peek_token(&TokenKind::Slash) {
+                if carriage.is_peek_token(TokenKind::Slash) {
                     expressions.push(Expression::StringLiteral("\n".to_string()));
                     carriage.next_token()?;
                 }

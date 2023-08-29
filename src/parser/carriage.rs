@@ -56,9 +56,9 @@ impl<'t, 's: 't> Carriage<'t, 's> {
         })
     }
 
-    pub fn is_peek_token(&mut self, token: &TokenKind) -> bool {
+    pub fn is_peek_token(&mut self, token: TokenKind) -> bool {
         match self.iter.peek() {
-            Some(peek) => &peek.kind == token,
+            Some(peek) => peek.kind == token,
             None => false,
         }
     }

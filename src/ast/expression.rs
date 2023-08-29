@@ -40,11 +40,11 @@ impl Expression {
     ) -> Result<Self> {
         let mut expression = Self::parse_prefix(carriage, current, peek.clone())?;
 
-        while !carriage.is_peek_token(&TokenKind::Period)
+        while !carriage.is_peek_token(TokenKind::Period)
             && precedence < carriage.peek_token()?.into()
         {
             let peek_kind = carriage.peek_token()?.kind;
-            expression = match Self::parse_infix(carriage, &peek_kind, expression) {
+            expression = match Self::parse_infix(carriage, peek_kind, expression) {
                 Ok(expression) => expression,
                 Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
                     expression,
@@ -88,12 +88,12 @@ impl Expression {
 
     fn parse_infix(
         carriage: &mut Carriage,
-        peek_kind: &TokenKind,
+        peek_kind: TokenKind,
         expression: Expression,
     ) -> Result<Self> {
         if !Self::is_infix_token(peek_kind) {
             return Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
-                token: *peek_kind,
+                token: peek_kind,
                 expression,
             }));
         }
@@ -104,7 +104,7 @@ impl Expression {
         Ok(expression)
     }
 
-    fn is_infix_token(kind: &TokenKind) -> bool {
+    fn is_infix_token(kind: TokenKind) -> bool {
         matches!(
             kind,
             TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk

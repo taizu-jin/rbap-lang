@@ -6,7 +6,7 @@ use std::fmt::Display;
 pub use expression::Expression;
 pub use statement::Statement;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum DataType {
     String,
     Int,
