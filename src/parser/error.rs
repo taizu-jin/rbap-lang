@@ -9,8 +9,136 @@ use crate::{
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum ErrorKind {
+    ParseInt,
+    ExpectToken,
+    ParseDataAssign,
+    ParseStringTemplate,
+    Eof,
+    ParseExpression,
+    ParseInfixLeftExpressionMissing,
+    ParseInfixUnexpectedToken,
+}
+
+impl From<&ErrorRepr> for ErrorKind {
+    fn from(value: &ErrorRepr) -> Self {
+        match value {
+            ErrorRepr::ParseInt(_) => Self::ParseInt,
+            ErrorRepr::ExpectToken { .. } => Self::ExpectToken,
+            ErrorRepr::ParseDataAssign { .. } => Self::ParseDataAssign,
+            ErrorRepr::ParseStringTemplate { .. } => Self::ParseStringTemplate,
+            ErrorRepr::Eof => Self::Eof,
+            ErrorRepr::ParseExpression { .. } => Self::ParseExpression,
+            ErrorRepr::ParseInfixError(e) => e.into(),
+        }
+    }
+}
+
+impl From<&ParseInfixError> for ErrorKind {
+    fn from(value: &ParseInfixError) -> Self {
+        match value {
+            ParseInfixError::LeftExpression => Self::ParseInfixLeftExpressionMissing,
+            ParseInfixError::UnexpectedToken { .. } => Self::ParseInfixUnexpectedToken,
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("{repr}")]
+pub struct Error {
+    kind: ErrorKind,
+    #[source]
+    repr: ErrorRepr,
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
+
+    pub fn expression(self) -> Option<Expression> {
+        match self {
+            Self {
+                repr:
+                    ErrorRepr::ParseInfixError(ParseInfixError::UnexpectedToken { expression, .. }),
+                ..
+            } => Some(expression),
+            _ => None,
+        }
+    }
+
+    pub fn eof() -> Self {
+        Self {
+            kind: ErrorKind::Eof,
+            repr: ErrorRepr::Eof,
+        }
+    }
+
+    pub fn expected_token(got: Option<TokenKind>, expected: TokenKinds) -> Self {
+        Self {
+            kind: ErrorKind::ExpectToken,
+            repr: ErrorRepr::ExpectToken { got, expected },
+        }
+    }
+
+    pub fn parse_data_assign(current: TokenKind, peek: TokenKind) -> Self {
+        Self {
+            kind: ErrorKind::ParseDataAssign,
+            repr: ErrorRepr::ParseDataAssign { current, peek },
+        }
+    }
+
+    pub fn parse_string_template(token: &Token) -> Self {
+        Self {
+            kind: ErrorKind::ParseStringTemplate,
+            repr: ErrorRepr::ParseStringTemplate {
+                kind: token.kind,
+                literal: token.literal.to_string(),
+            },
+        }
+    }
+
+    pub fn parse_expression(token: &Token) -> Self {
+        Self {
+            kind: ErrorKind::ParseExpression,
+            repr: ErrorRepr::ParseExpression {
+                kind: token.kind,
+                literal: token.literal.to_string(),
+            },
+        }
+    }
+}
+
+impl From<ErrorRepr> for Error {
+    fn from(value: ErrorRepr) -> Self {
+        Error {
+            kind: ErrorKind::from(&value),
+            repr: value,
+        }
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(value: ParseIntError) -> Self {
+        Self {
+            kind: ErrorKind::ParseInt,
+            repr: value.into(),
+        }
+    }
+}
+
+impl From<ParseInfixError> for Error {
+    fn from(value: ParseInfixError) -> Self {
+        Self {
+            kind: ErrorKind::from(&value),
+            repr: value.into(),
+        }
+    }
+}
+
 #[derive(Debug, Error)]
-pub enum Error {
+enum ErrorRepr {
     #[error(transparent)]
     ParseInt(#[from] ParseIntError),
     #[error("expected tokens: {expected}. got={got:?}")]
@@ -39,13 +167,4 @@ pub enum ParseInfixError {
         token: TokenKind,
         expression: Expression,
     },
-}
-
-impl From<Token<'_>> for Error {
-    fn from(value: Token<'_>) -> Self {
-        Error::ParseExpression {
-            literal: value.literal.to_string(),
-            kind: value.kind,
-        }
-    }
 }

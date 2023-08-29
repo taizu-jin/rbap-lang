@@ -22,14 +22,14 @@ impl<'t, 's: 't> Carriage<'t, 's> {
     pub fn next_token(&mut self) -> Result<Token<'t>> {
         match self.iter.next() {
             Some(token) => Ok(token),
-            None => Err(Error::Eof),
+            None => Err(Error::eof()),
         }
     }
 
     pub fn peek_token(&mut self) -> Result<&Token<'t>> {
         match self.iter.peek() {
             Some(token) => Ok(token),
-            None => Err(Error::Eof),
+            None => Err(Error::eof()),
         }
     }
 
@@ -40,12 +40,7 @@ impl<'t, 's: 't> Carriage<'t, 's> {
     pub fn expect_tokens(&mut self, tokens: &[TokenKind]) -> Result<Token<'t>> {
         let peek = match self.iter.peek() {
             Some(peek) => peek,
-            None => {
-                return Err(Error::ExpectToken {
-                    got: None,
-                    expected: tokens.into(),
-                })
-            }
+            None => return Err(Error::expected_token(None, tokens.into())),
         };
 
         for token in tokens {
@@ -54,10 +49,7 @@ impl<'t, 's: 't> Carriage<'t, 's> {
             }
         }
 
-        Err(Error::ExpectToken {
-            got: Some(peek.kind.to_owned()),
-            expected: tokens.into(),
-        })
+        Err(Error::expected_token(Some(peek.kind), tokens.into()))
     }
 
     pub fn is_peek_token(&mut self, token: TokenKind) -> bool {

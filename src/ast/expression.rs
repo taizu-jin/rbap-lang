@@ -3,8 +3,10 @@ use std::{borrow::Cow, fmt::Display};
 use crate::{
     lexer::{Token, TokenKind},
     parser::{
-        context::CurrentToken, context::PeekToken, error::ParseInfixError, parse, Carriage,
-        Context, Error, Precedence, Result,
+        context::CurrentToken,
+        context::PeekToken,
+        error::{ErrorKind, ParseInfixError},
+        parse, Carriage, Context, Error, Precedence, Result,
     },
 };
 
@@ -46,10 +48,11 @@ impl Expression {
             let peek_kind = carriage.peek_token()?.kind;
             expression = match Self::parse_infix(carriage, peek_kind, expression) {
                 Ok(expression) => expression,
-                Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
-                    expression,
-                    ..
-                })) => return Ok(expression),
+                Err(e) if e.kind() == ErrorKind::ParseInfixUnexpectedToken => {
+                    return Ok(e
+                        .expression()
+                        .expect("ParseInfixUnexpectedToken always carries an expression"))
+                }
                 Err(e) => return Err(e),
             };
         }
@@ -68,7 +71,7 @@ impl Expression {
             TokenKind::Ident => Self::parse_ident_expression(current),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
             TokenKind::Minus => Self::parse_prefix_expression(carriage, current),
-            _ => Err(Error::from(current)),
+            _ => Err(Error::parse_expression(&current)),
         }
     }
 
@@ -92,7 +95,7 @@ impl Expression {
         expression: Expression,
     ) -> Result<Self> {
         if !Self::is_infix_token(peek_kind) {
-            return Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
+            return Err(Error::from(ParseInfixError::UnexpectedToken {
                 token: peek_kind,
                 expression,
             }));
@@ -119,7 +122,7 @@ impl Expression {
         let left = if let Some(left) = left {
             left
         } else {
-            return Err(Error::ParseInfixError(ParseInfixError::LeftExpression));
+            return Err(Error::from(ParseInfixError::LeftExpression));
         };
 
         let mut context = Context::from_carriage(carriage)?;
@@ -137,7 +140,7 @@ impl Expression {
     }
 
     fn parse_int_literal_expression(token: Token) -> Result<Self> {
-        let literal = token.literal.parse::<i64>().map_err(Error::ParseInt)?;
+        let literal = token.literal.parse::<i64>().map_err(Error::from)?;
         Ok(Expression::IntLiteral(literal))
     }
 
@@ -157,10 +160,7 @@ impl Expression {
         ];
 
         if !tokens.contains(&peek.kind) {
-            return Err(Error::ExpectToken {
-                got: None,
-                expected: tokens.as_slice().into(),
-            });
+            return Err(Error::expected_token(None, tokens.as_slice().into()));
         }
 
         let mut expressions = Vec::new();
@@ -211,10 +211,7 @@ impl Expression {
                 Some(Ok(expression))
             }
             TokenKind::VSlash => None,
-            _ => Some(Err(Error::ParseStringTemplate {
-                kind: context.current_token.kind,
-                literal: context.current_token.literal.to_string(),
-            })),
+            _ => Some(Err(Error::parse_string_template(&context.current_token))),
         }
     }
 }

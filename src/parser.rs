@@ -13,6 +13,8 @@ pub use error::{Error, Result};
 
 pub use context::Handler;
 
+use error::ErrorKind;
+
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedence {
     Lowest,
@@ -69,7 +71,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
         loop {
             match Statement::parse(&mut self.carriage) {
                 Ok(statement) => program.statements.push(statement),
-                Err(Error::Eof) => break,
+                Err(e) if e.kind() == ErrorKind::Eof => break,
                 Err(e) => self.carriage.errors.push(e.to_string()),
             }
         }
