@@ -74,6 +74,8 @@ impl Compiler {
                 }
                 crate::ast::Expression::Ident(_) => todo!(),
                 crate::ast::Expression::StringTemplate(_) => todo!(),
+                crate::ast::Expression::InfixExpression(_) => todo!(),
+                crate::ast::Expression::PrefixExpression(_) => todo!(),
             },
         }
 

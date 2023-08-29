@@ -101,7 +101,7 @@ impl<'a> Opcode {
         let defitions = Opcode::get_definitions();
         match defitions.get(&op) {
             Some(opcode) => Ok(*opcode),
-            None => Err(Error::UndefinedOpcode(op)),
+            None => Err(Error::undefined_opcode(op)),
         }
     }
 

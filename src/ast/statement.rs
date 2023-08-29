@@ -1,7 +1,9 @@
+use std::fmt::Display;
+
 use crate::{
     error::{Error, Result},
     lexer::{Token, TokenKind},
-    parser::{context::Current, context::Peek, parse, Carriage, Context},
+    parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
 use super::{Data, DataDeclaration, DataType, Expression};
@@ -37,7 +39,7 @@ impl Statement {
 
     fn parse_data_declaration_statement(
         carriage: &mut Carriage,
-        Peek(peek_token): Peek,
+        PeekToken(peek_token): PeekToken,
     ) -> Result<Statement> {
         let mut declarations = Vec::new();
 
@@ -49,7 +51,7 @@ impl Statement {
                     let declaration = Self::parse_data_declaration(carriage)?;
                     declarations.push(declaration);
 
-                    if carriage.is_peek_token(&TokenKind::Comma) {
+                    if carriage.is_peek_token(TokenKind::Comma) {
                         carriage.next_token()?;
                     } else {
                         break;
@@ -88,8 +90,8 @@ impl Statement {
 
     fn parse_data_assignment_statement(
         carriage: &mut Carriage,
-        Current(current): Current,
-        Peek(peek): Peek,
+        CurrentToken(current): CurrentToken,
+        PeekToken(peek): PeekToken,
     ) -> Result<Statement> {
         let ident = match (current, peek) {
             (
@@ -112,10 +114,10 @@ impl Statement {
             ) => literal.to_string(),
 
             (current, _) => {
-                return Err(Error::ParseDataAssign {
-                    current: current.kind.to_owned(),
-                    peek: carriage.peek_token()?.kind.to_owned(),
-                })
+                return Err(Error::parse_data_assign(
+                    current.kind,
+                    carriage.peek_token()?.kind,
+                ))
             }
         };
 
@@ -125,7 +127,10 @@ impl Statement {
         Ok(Statement::Data(Data { ident, value }))
     }
 
-    fn parse_write_statement(carriage: &mut Carriage, Peek(peek_token): Peek) -> Result<Statement> {
+    fn parse_write_statement(
+        carriage: &mut Carriage,
+        PeekToken(peek_token): PeekToken,
+    ) -> Result<Statement> {
         let mut expressions = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -133,14 +138,14 @@ impl Statement {
                 carriage.next_token()?;
 
                 loop {
-                    if carriage.is_peek_token(&TokenKind::Slash) {
+                    if carriage.is_peek_token(TokenKind::Slash) {
                         expressions.push(Expression::StringLiteral("\n".to_string()));
                         carriage.next_token()?;
                     }
 
                     expressions.push(Self::expect_and_parse_expression(carriage)?);
 
-                    if carriage.is_peek_token(&TokenKind::Comma) {
+                    if carriage.is_peek_token(TokenKind::Comma) {
                         carriage.next_token()?;
                     } else {
                         break;
@@ -148,7 +153,7 @@ impl Statement {
                 }
             }
             false => {
-                if carriage.is_peek_token(&TokenKind::Slash) {
+                if carriage.is_peek_token(TokenKind::Slash) {
                     expressions.push(Expression::StringLiteral("\n".to_string()));
                     carriage.next_token()?;
                 }
@@ -170,5 +175,35 @@ impl Statement {
         let context = Context::new(token, carriage.peek_token()?.clone());
 
         parse(carriage, &context, Expression::parse)
+    }
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::Expression(e) => write!(f, "{}.", e),
+            Statement::Data(d) => write!(f, "{}.", d),
+            Statement::DataDeclaration(dd) => {
+                write!(f, "DATA:")?;
+                if dd.len() == 1 {
+                    write!(f, "{}", dd[0])?;
+                } else {
+                    for d in dd {
+                        writeln!(f, "{}", d)?;
+                    }
+                }
+                write!(f, ".")
+            }
+            Statement::Write(strings) => {
+                write!(f, "WRITE:")?;
+                for s in strings {
+                    match s {
+                        Expression::StringLiteral(s) if s == "\n" => write!(f, " /")?,
+                        e => write!(f, " {}", e)?,
+                    }
+                }
+                write!(f, ".")
+            }
+        }
     }
 }

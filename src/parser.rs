@@ -3,7 +3,8 @@ pub mod context;
 
 use crate::{
     ast::{Program, Statement},
-    lexer::LexerIter,
+    error::ErrorKind,
+    lexer::{LexerIter, Token, TokenKind},
 };
 
 use crate::error::{Error, Result};
@@ -12,13 +13,41 @@ pub use context::Context;
 
 pub use context::Handler;
 
-pub fn parse<'t, T, R, H>(
-    carriage: &'t mut Carriage,
-    context: &'t Context<'t>,
+#[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
+pub enum Precedence {
+    Lowest,
+    _Equals,
+    _LessGreater,
+    Sum,
+    Product,
+    Perfix,
+    _Call,
+}
+
+impl From<&Token<'_>> for Precedence {
+    fn from(value: &Token<'_>) -> Self {
+        let kind = &value.kind;
+        Precedence::from(*kind)
+    }
+}
+
+impl From<TokenKind> for Precedence {
+    fn from(value: TokenKind) -> Self {
+        match value {
+            TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
+            TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
+            _ => Precedence::Lowest,
+        }
+    }
+}
+
+pub fn parse<'t, 's: 't, 'e, T, R, H>(
+    carriage: &mut Carriage<'t, 's>,
+    context: &Context<'t>,
     handler: H,
 ) -> Result<R>
 where
-    H: Handler<'t, T, R>,
+    H: Handler<'t, 's, T, R>,
 {
     handler.call(carriage, context)
 }
@@ -40,7 +69,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
         loop {
             match Statement::parse(&mut self.carriage) {
                 Ok(statement) => program.statements.push(statement),
-                Err(Error::Eof) => break,
+                Err(e) if e.kind() == ErrorKind::Eof => break,
                 Err(e) => self.carriage.errors.push(e.to_string()),
             }
         }
@@ -55,14 +84,13 @@ impl<'t, 's: 't> Parser<'t, 's> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
-        ast::{Data, DataDeclaration, DataType, Expression},
+        ast::{Data, DataDeclaration, DataType, Expression::*},
         lexer::Lexer,
     };
 
-    use super::*;
-
-    use std::fmt::Write;
+    use std::{borrow::Cow, fmt::Write};
 
     #[test]
     fn test_integer_literal_expression() {
@@ -78,7 +106,7 @@ mod tests {
 
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
-                Expression::IntLiteral(value) => {
+                IntLiteral(value) => {
                     assert_eq!(5, *value, "value is not {}, got={}", 5, *value);
                 }
                 _ => panic!("expression is not IntLiteral. got={:?}", expression),
@@ -134,7 +162,7 @@ mod tests {
 
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
-                Expression::StringLiteral(value) => {
+                StringLiteral(value) => {
                     assert_eq!("5", value, "value is not {}, got={}", "5", value);
                 }
                 _ => panic!("expression is not StringLiteral. got={:?}", expression),
@@ -161,7 +189,7 @@ mod tests {
 
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
-                Expression::Ident(ident) => {
+                Ident(ident) => {
                     assert_eq!("lv_string", ident, "value is not {}, got={}", "5", ident);
                 }
                 _ => panic!("expression is not StringLiteral. got={:?}", expression),
@@ -174,59 +202,39 @@ mod tests {
         }
     }
 
+    struct TestCaseDataDeclaration {
+        input: &'static str,
+        expected: Vec<DataDeclaration>,
+    }
+
+    macro_rules! def_case_ddecl {
+        ($input:expr, $($kind:ident:$literal:literal),*) => {
+            TestCaseDataDeclaration {
+                input: $input,
+                expected: vec![$(
+                    DataDeclaration{
+                        ident: $literal.into(),
+                        ty: DataType::$kind,
+                    }
+                    ),*]
+            }
+        };
+    }
+
     #[test]
     fn test_data_declaration_statement() {
-        struct TestCase {
-            input: &'static str,
-            expected: Vec<DataDeclaration>,
-        }
-
         let tests = vec![
-            TestCase {
-                input: "DATA lv_string TYPE string.",
-                expected: vec![DataDeclaration {
-                    ident: "lv_string".into(),
-                    ty: DataType::String,
-                }],
-            },
-            TestCase {
-                input: "DATA lv_int type i.",
-                expected: vec![DataDeclaration {
-                    ident: "lv_int".into(),
-                    ty: DataType::Int,
-                }],
-            },
-            TestCase {
-                input: "DATA: lv_int type i.",
-                expected: vec![DataDeclaration {
-                    ident: "lv_int".into(),
-                    ty: DataType::Int,
-                }],
-            },
-            TestCase {
-                input: "DATA: lv_int type i,
-lv_int2 TYPE i,
-lv_string TYPE string,
-lv_string2 TYPE string.",
-                expected: vec![
-                    DataDeclaration {
-                        ident: "lv_int".into(),
-                        ty: DataType::Int,
-                    },
-                    DataDeclaration {
-                        ident: "lv_int2".into(),
-                        ty: DataType::Int,
-                    },
-                    DataDeclaration {
-                        ident: "lv_string".into(),
-                        ty: DataType::String,
-                    },
-                    DataDeclaration {
-                        ident: "lv_string2".into(),
-                        ty: DataType::String,
-                    },
-                ],
-            },
+            def_case_ddecl!("DATA lv_string TYPE string.",String:"lv_string"),
+            def_case_ddecl!("DATA lv_int TYPE i.",Int:"lv_int"),
+            def_case_ddecl!("DATA: lv_int TYPE i.",Int:"lv_int"),
+            def_case_ddecl!("DATA: lv_int type i,
+                                   lv_int2 TYPE i,
+                                   lv_string TYPE string,
+                                   lv_string2 TYPE string.",
+                            Int:"lv_int",
+                            Int:"lv_int2",
+                            String:"lv_string",
+                            String:"lv_string2"),
         ];
 
         for test in tests {
@@ -263,46 +271,42 @@ lv_string2 TYPE string.",
         }
     }
 
+    struct TestCaseData {
+        input: &'static str,
+        expected: Data,
+    }
+
+    macro_rules! def_case_data {
+        ($input:expr,$ident:literal,$expected:expr) => {
+            TestCaseData {
+                input: $input,
+                expected: Data {
+                    ident: $ident.into(),
+                    value: $expected,
+                },
+            }
+        };
+    }
+
     #[test]
     fn test_data_statement() {
-        struct TestCase {
-            input: &'static str,
-            expected: Data,
-        }
-
         let tests = vec![
-            TestCase {
-                input: "DATA(lv_string) = '5'.",
-                expected: Data {
-                    ident: "lv_string".into(),
-                    value: Expression::StringLiteral("5".into()),
-                },
-            },
-            TestCase {
-                input: "DATA(lv_int) = 1.",
-                expected: Data {
-                    ident: "lv_int".into(),
-                    value: Expression::IntLiteral(1),
-                },
-            },
-            TestCase {
-                input: "lv_int = 1.",
-                expected: Data {
-                    ident: "lv_int".into(),
-                    value: Expression::IntLiteral(1),
-                },
-            },
-            TestCase {
-                input: "lv_int = |some { lv_string } literal|.",
-                expected: Data {
-                    ident: "lv_int".into(),
-                    value: Expression::StringTemplate(vec![
-                        Expression::StringLiteral("some ".into()),
-                        Expression::Ident("lv_string".into()),
-                        Expression::StringLiteral(" literal".into()),
-                    ]),
-                },
-            },
+            def_case_data!(
+                "DATA(lv_string) = '5'.",
+                "lv_string",
+                StringLiteral("5".into())
+            ),
+            def_case_data!("DATA(lv_int) = 1.", "lv_int", IntLiteral(1)),
+            def_case_data!("lv_int = 1.", "lv_int", IntLiteral(1)),
+            def_case_data!(
+                "lv_int = |some { lv_string } literal|.",
+                "lv_int",
+                StringTemplate(vec![
+                    StringLiteral("some ".into()),
+                    Ident("lv_string".into()),
+                    StringLiteral(" literal".into()),
+                ])
+            ),
         ];
 
         for test in tests {
@@ -335,63 +339,51 @@ lv_string2 TYPE string.",
         }
     }
 
+    struct TestCaseExpression {
+        input: &'static str,
+        expected: Vec<crate::ast::Expression>,
+    }
+
+    macro_rules! def_case_expr {
+        ($input:expr, $($expected:expr),*) => {
+            TestCaseExpression {
+                input: $input,
+                expected: vec![$($expected),*]
+            }
+        };
+    }
+
     #[test]
     fn test_write_statement() {
-        struct TestCase {
-            input: &'static str,
-            expected: Vec<Expression>,
-        }
-
         let tests = vec![
-            TestCase {
-                input: "WRITE '5'.",
-                expected: vec![Expression::StringLiteral("5".to_string())],
-            },
-            TestCase {
-                input: "WRITE 1.",
-                expected: vec![Expression::IntLiteral(1)],
-            },
-            TestCase {
-                input: "WRITE lv_string.",
-                expected: vec![Expression::Ident("lv_string".to_string())],
-            },
-            TestCase {
-                input: "WRITE: lv_string.",
-                expected: vec![Expression::Ident("lv_string".to_string())],
-            },
-            TestCase {
-                input: "WRITE: lv_string, 5, '5'.",
-                expected: vec![
-                    Expression::Ident("lv_string".to_string()),
-                    Expression::IntLiteral(5),
-                    Expression::StringLiteral("5".to_string()),
-                ],
-            },
-            TestCase {
-                input: "WRITE: / lv_string, / 5, / '5'.",
-                expected: vec![
-                    Expression::StringLiteral("\n".to_string()),
-                    Expression::Ident("lv_string".to_string()),
-                    Expression::StringLiteral("\n".to_string()),
-                    Expression::IntLiteral(5),
-                    Expression::StringLiteral("\n".to_string()),
-                    Expression::StringLiteral("5".to_string()),
-                ],
-            },
-            TestCase {
-                input: "WRITE: / lv_string.",
-                expected: vec![
-                    Expression::StringLiteral("\n".to_string()),
-                    Expression::Ident("lv_string".to_string()),
-                ],
-            },
-            TestCase {
-                input: "WRITE/ lv_string.",
-                expected: vec![
-                    Expression::StringLiteral("\n".to_string()),
-                    Expression::Ident("lv_string".to_string()),
-                ],
-            },
+            def_case_expr!("WRITE '5'.", StringLiteral("5".into())),
+            def_case_expr!("WRITE 1.", IntLiteral(1)),
+            def_case_expr!("WRITE lv_string.", Ident("lv_string".into())),
+            def_case_expr!(
+                "WRITE: lv_string, 5, '5'.",
+                Ident("lv_string".into()),
+                IntLiteral(5),
+                StringLiteral("5".into())
+            ),
+            def_case_expr!(
+                "WRITE: / lv_string, / 5, / '5'.",
+                StringLiteral("\n".into()),
+                Ident("lv_string".into()),
+                StringLiteral("\n".into()),
+                IntLiteral(5),
+                StringLiteral("\n".into()),
+                StringLiteral("5".into())
+            ),
+            def_case_expr!(
+                "WRITE: / lv_string.",
+                StringLiteral("\n".into()),
+                Ident("lv_string".into())
+            ),
+            def_case_expr!(
+                "WRITE/ lv_string.",
+                StringLiteral("\n".into()),
+                Ident("lv_string".into())
+            ),
         ];
 
         for test in tests {
@@ -421,37 +413,25 @@ lv_string2 TYPE string.",
 
     #[test]
     fn test_string_template_statement() {
-        struct TestCase {
-            input: &'static str,
-            expected: Vec<Expression>,
-        }
-
         let tests = vec![
-            TestCase {
-                input: "|this { lv_that } those|.",
-                expected: vec![
-                    Expression::StringLiteral("this ".to_string()),
-                    Expression::Ident("lv_that".to_string()),
-                    Expression::StringLiteral(" those".to_string()),
-                ],
-            },
-            TestCase {
-                input: "||.",
-                expected: vec![],
-            },
-            TestCase {
-                input: "|this{ | is | }{ |a { nested } string| } template|.",
-                expected: vec![
-                    Expression::StringLiteral("this".to_string()),
-                    Expression::StringTemplate(vec![Expression::StringLiteral(" is ".to_string())]),
-                    Expression::StringTemplate(vec![
-                        Expression::StringLiteral("a ".to_string()),
-                        Expression::Ident("nested".to_string()),
-                        Expression::StringLiteral(" string".to_string()),
-                    ]),
-                    Expression::StringLiteral(" template".to_string()),
-                ],
-            },
+            def_case_expr!(
+                "|this { lv_that } those|.",
+                StringLiteral("this ".into()),
+                Ident("lv_that".into()),
+                StringLiteral(" those".into())
+            ),
+            def_case_expr!("||.",),
+            def_case_expr!(
+                "|this{ | is | }{ |a { nested } string| } template|.",
+                StringLiteral("this".into()),
+                StringTemplate(vec![StringLiteral(" is ".into())]),
+                StringTemplate(vec![
+                    StringLiteral("a ".into()),
+                    Ident("nested".into()),
+                    StringLiteral(" string".into()),
+                ]),
+                StringLiteral(" template".into())
+            ),
         ];
 
         for test in tests {
@@ -464,9 +444,7 @@ lv_string2 TYPE string.",
                 program.statements.len()
             );
 
-            if let Statement::Expression(Expression::StringTemplate(expressions)) =
-                &program.statements[0]
-            {
+            if let Statement::Expression(StringTemplate(expressions)) = &program.statements[0] {
                 assert_eq!(
                     &test.expected, expressions,
                     "expression is not '{:?}'. got={:?}",
@@ -478,6 +456,201 @@ lv_string2 TYPE string.",
                     program.statements[0]
                 )
             }
+        }
+    }
+
+    struct TestCasePrefix {
+        input: &'static str,
+        operator: Cow<'static, str>,
+        right_value: crate::ast::Expression,
+    }
+
+    macro_rules! def_case_prefix {
+        ($input:expr,$operator:literal,$right:expr) => {
+            TestCasePrefix {
+                input: $input,
+                operator: $operator.into(),
+                right_value: $right,
+            }
+        };
+    }
+
+    #[test]
+    fn test_prefix_expression() {
+        let tests = vec![
+            def_case_prefix!("-15.", "-", IntLiteral(15)),
+            def_case_prefix!("-foobar.", "-", Ident("foobar".into())),
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(PrefixExpression(infix)) = &program.statements[0] {
+                assert_eq!(
+                    &test.operator, &infix.operator,
+                    "operator does not match. want={}, got={}",
+                    test.operator, &infix.operator,
+                );
+
+                assert_eq!(
+                    test.right_value, *infix.right,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.right_value, *infix.right,
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::PrefixExpression. got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
+
+    struct TestCaseInfix {
+        input: &'static str,
+        operator: Cow<'static, str>,
+        left_value: crate::ast::Expression,
+        right_value: crate::ast::Expression,
+    }
+
+    macro_rules! def_case_infix {
+        ($input:expr,$operator:literal,$left:expr,$right:expr) => {
+            TestCaseInfix {
+                input: $input,
+                operator: $operator.into(),
+                left_value: $left,
+                right_value: $right,
+            }
+        };
+    }
+
+    #[test]
+    fn test_infix_expression() {
+        let tests = vec![
+            def_case_infix!("5 + 5.", "+", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 - 5.", "-", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 * 5.", "*", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 / 5.", "/", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!(
+                "foobar + barfoo.",
+                "+",
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar - barfoo.",
+                "-",
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar * barfoo.",
+                "*",
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar / barfoo.",
+                "/",
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(InfixExpression(infix)) = &program.statements[0] {
+                assert_eq!(
+                    &test.operator, &infix.operator,
+                    "operator does not match. want={}, got={}",
+                    test.operator, &infix.operator,
+                );
+
+                assert_eq!(
+                    test.left_value, *infix.left,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.left_value, *infix.left,
+                );
+
+                assert_eq!(
+                    test.right_value, *infix.right,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.right_value, *infix.right,
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::InfixExpression. got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
+
+    struct TestCasePrecedence {
+        input: &'static str,
+        expected: &'static str,
+    }
+
+    macro_rules! define_case {
+            ($($input:expr,$expected:expr),+) => {
+                vec![$(TestCasePrecedence{
+                    input: $input,
+                    expected: $expected,
+                }),+]
+            };
+        }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
+        let tests = define_case!(
+            "-a * b.",
+            "((-a) * b).",
+            "a + b + c.",
+            "((a + b) + c).",
+            "a + b - c.",
+            "((a + b) - c).",
+            "a * b * c.",
+            "((a * b) * c).",
+            "a * b / c.",
+            "((a * b) / c).",
+            "a + b / c.",
+            "(a + (b / c)).",
+            "a + b * c + d / e - f.",
+            "(((a + (b * c)) + (d / e)) - f).",
+            "3 + 4. -5 * 5.",
+            "(3 + 4).((-5) * 5)."
+        );
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            let got = program
+                .statements
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+                .concat();
+
+            assert_eq!(
+                test.expected, got,
+                "\nexpected={}\ngot={}",
+                test.expected, got
+            )
         }
     }
 }
