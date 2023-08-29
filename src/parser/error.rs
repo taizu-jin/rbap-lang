@@ -2,7 +2,10 @@ use std::num::ParseIntError;
 
 use thiserror::Error;
 
-use crate::lexer::{Token, TokenKind, TokenKinds};
+use crate::{
+    ast::Expression,
+    lexer::{Token, TokenKind, TokenKinds},
+};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -23,8 +26,19 @@ pub enum Error {
     Eof,
     #[error("can't parse expression '{literal}({kind})")]
     ParseExpression { literal: String, kind: TokenKind },
-    #[error("Context doesn't carry an expression to parse infix expression")]
-    ParseInfix,
+    #[error(transparent)]
+    ParseInfixError(#[from] ParseInfixError),
+}
+
+#[derive(Debug, Error)]
+pub enum ParseInfixError {
+    #[error("Context doesn't carry a left expression to parse infix expression")]
+    LeftExpression,
+    #[error("Can't parse infix expression for token '{token}'")]
+    UnexpectedToken {
+        token: TokenKind,
+        expression: Expression,
+    },
 }
 
 impl From<Token<'_>> for Error {

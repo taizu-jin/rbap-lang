@@ -3,7 +3,8 @@ use std::{borrow::Cow, fmt::Display};
 use crate::{
     lexer::{Token, TokenKind},
     parser::{
-        context::Current, context::Peek, parse, Carriage, Context, Error, Precedence, Result,
+        context::Current, context::Peek, error::ParseInfixError, parse, Carriage, Context, Error,
+        Precedence, Result,
     },
 };
 
@@ -42,8 +43,16 @@ impl Expression {
         while !carriage.is_peek_token(&TokenKind::Period)
             && precedence < carriage.peek_token()?.into()
         {
-            (expression, precedence) =
-                Self::parse_infix(carriage, expression).map(|(e, k)| (e, Precedence::from(&k)))?;
+            (expression, precedence) = match Self::parse_infix(carriage, expression)
+                .map(|(e, k)| (e, Precedence::from(&k)))
+            {
+                Ok(result) => result,
+                Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
+                    expression,
+                    ..
+                })) => return Ok(expression),
+                Err(e) => return Err(e),
+            };
         }
 
         Ok(expression)
@@ -65,14 +74,18 @@ impl Expression {
 
     fn parse_infix(carriage: &mut Carriage, expression: Expression) -> Result<(Self, TokenKind)> {
         let mut context = Context::from_carriage(carriage)?;
-        context.set_expression(expression);
 
         match &context.current_token.kind {
             TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk => {
+                context.set_expression(expression);
                 let expression = parse(carriage, &context, Self::parse_infix_expression)?;
+
                 Ok((expression, context.current_token.kind))
             }
-            _ => Err(Error::from(context.current_token)),
+            _ => Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
+                token: context.current_token.kind,
+                expression,
+            })),
         }
     }
 
@@ -84,10 +97,11 @@ impl Expression {
         let left = if let Some(left) = left {
             left
         } else {
-            return Err(Error::ParseInfix);
+            return Err(Error::ParseInfixError(ParseInfixError::LeftExpression));
         };
 
-        let context = Context::from_carriage(carriage)?;
+        let mut context = Context::from_carriage(carriage)?;
+        context.precedence = Precedence::from(&current);
 
         let right = parse(carriage, &context, Expression::parse)?;
 
