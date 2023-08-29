@@ -41,7 +41,7 @@ impl Expression {
         let mut expression = Self::parse_prefix(carriage, current, peek.clone())?;
 
         while !carriage.is_peek_token(TokenKind::Period)
-            && precedence < carriage.peek_token()?.into()
+            && precedence < carriage.peek_precedence()?
         {
             let peek_kind = carriage.peek_token()?.kind;
             expression = match Self::parse_infix(carriage, peek_kind, expression) {

@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::lexer::{LexerIter, Token, TokenKind};
 
-use super::{Error, Result};
+use super::{Error, Precedence, Result};
 
 pub struct Carriage<'t, 's: 't> {
     iter: Peekable<LexerIter<'t, 's>>,
@@ -31,6 +31,10 @@ impl<'t, 's: 't> Carriage<'t, 's> {
             Some(token) => Ok(token),
             None => Err(Error::Eof),
         }
+    }
+
+    pub fn peek_precedence(&mut self) -> Result<Precedence> {
+        Ok(Precedence::from(self.peek_token()?))
     }
 
     pub fn expect_tokens(&mut self, tokens: &[TokenKind]) -> Result<Token<'t>> {
