@@ -113,10 +113,10 @@ impl Statement {
             ) => literal.to_string(),
 
             (current, _) => {
-                return Err(Error::ParseDataAssign {
-                    current: current.kind.to_owned(),
-                    peek: carriage.peek_token()?.kind.to_owned(),
-                })
+                return Err(Error::parse_data_assign(
+                    current.kind,
+                    carriage.peek_token()?.kind,
+                ))
             }
         };
 
