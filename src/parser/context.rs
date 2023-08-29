@@ -48,6 +48,7 @@ trait FromContext<'t> {
     fn from_context(context: &Context<'t>) -> Self;
 }
 
+#[derive(Clone)]
 pub struct Peek<'t>(pub Token<'t>);
 
 impl<'t> FromContext<'t> for Peek<'t> {
@@ -56,6 +57,7 @@ impl<'t> FromContext<'t> for Peek<'t> {
     }
 }
 
+#[derive(Clone)]
 pub struct Current<'t>(pub Token<'t>);
 
 impl<'t> FromContext<'t> for Current<'t> {

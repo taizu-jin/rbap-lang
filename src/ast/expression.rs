@@ -36,17 +36,16 @@ impl Expression {
         carriage: &mut Carriage,
         current: Current,
         peek: Peek,
-        mut precedence: Precedence,
+        precedence: Precedence,
     ) -> Result<Self> {
-        let mut expression = Self::parse_prefix(carriage, current, peek)?;
+        let mut expression = Self::parse_prefix(carriage, current, peek.clone())?;
 
         while !carriage.is_peek_token(&TokenKind::Period)
             && precedence < carriage.peek_token()?.into()
         {
-            (expression, precedence) = match Self::parse_infix(carriage, expression)
-                .map(|(e, k)| (e, Precedence::from(&k)))
-            {
-                Ok(result) => result,
+            let peek_kind = carriage.peek_token()?.kind;
+            expression = match Self::parse_infix(carriage, &peek_kind, expression) {
+                Ok(expression) => expression,
                 Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
                     expression,
                     ..
@@ -72,21 +71,29 @@ impl Expression {
         }
     }
 
-    fn parse_infix(carriage: &mut Carriage, expression: Expression) -> Result<(Self, TokenKind)> {
-        let mut context = Context::from_carriage(carriage)?;
-
-        match &context.current_token.kind {
-            TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk => {
-                context.set_expression(expression);
-                let expression = parse(carriage, &context, Self::parse_infix_expression)?;
-
-                Ok((expression, context.current_token.kind))
-            }
-            _ => Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
-                token: context.current_token.kind,
+    fn parse_infix(
+        carriage: &mut Carriage,
+        peek_kind: &TokenKind,
+        expression: Expression,
+    ) -> Result<Self> {
+        if !Self::is_infix_token(peek_kind) {
+            return Err(Error::ParseInfixError(ParseInfixError::UnexpectedToken {
+                token: *peek_kind,
                 expression,
-            })),
+            }));
         }
+
+        let mut context = Context::from_carriage(carriage)?;
+        context.set_expression(expression);
+        let expression = parse(carriage, &context, Self::parse_infix_expression)?;
+        Ok(expression)
+    }
+
+    fn is_infix_token(kind: &TokenKind) -> bool {
+        matches!(
+            kind,
+            TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk
+        )
     }
 
     fn parse_infix_expression(
