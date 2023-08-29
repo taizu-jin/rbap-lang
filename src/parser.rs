@@ -1,6 +1,6 @@
 mod carriage;
 pub mod context;
-mod error;
+pub mod error;
 
 use crate::{
     ast::{Program, Statement},
@@ -563,6 +563,8 @@ mod tests {
             };
         }
         let tests = define_case!(
+            // "-a * b.",
+            // "((-a) * b).",
             "a + b + c.",
             "((a + b) + c).",
             "a + b - c.",
@@ -574,7 +576,8 @@ mod tests {
             "a + b / c.",
             "(a + (b / c)).",
             "a + b * c + d / e - f.",
-            "(((a + (b * c)) + (d / e)) - f)."
+            "(((a + (b * c)) + (d / e)) - f)." // "3 + 4. -5 * 5.",
+                                               // "(3 + 4)((-5) * 5)."
         );
 
         for test in tests {
