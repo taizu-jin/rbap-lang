@@ -233,12 +233,22 @@ mod tests {
 
     #[test]
     fn test_integer_arithmetic() -> Result<()> {
-        let tests = vec![define_case!("1. 2.";
+        let tests = vec![
+            define_case!("1. 2.";
                          Object::Int(1), Object::Int(2);
                          [make(&OP_CONSTANT, &[0]),
                           make(&OP_POP, &[]),
                           make(&OP_CONSTANT, &[1]),
-                          make(&OP_POP, &[])].concat().into())];
+                          make(&OP_POP, &[])].concat().into()),
+            define_case!("1 + 2.";
+                     Object::Int(1), Object::Int(2);
+                     [
+                     make(&OP_CONSTANT, &[0]),
+                     make(&OP_CONSTANT, &[1]),
+                     make(&OP_ADD, &[]),
+                     make(&OP_POP, &[]),
+                     ].concat().into()),
+        ];
 
         run_compiler_tests(tests)
     }
