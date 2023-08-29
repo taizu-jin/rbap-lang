@@ -459,6 +459,60 @@ mod tests {
         }
     }
 
+    struct TestCasePrefix {
+        input: &'static str,
+        operator: Cow<'static, str>,
+        right_value: crate::ast::Expression,
+    }
+
+    macro_rules! def_case_prefix {
+        ($input:expr,$operator:literal,$right:expr) => {
+            TestCasePrefix {
+                input: $input,
+                operator: $operator.into(),
+                right_value: $right,
+            }
+        };
+    }
+
+    #[test]
+    fn test_prefix_expression() {
+        let tests = vec![
+            def_case_prefix!("-15.", "-", IntLiteral(15)),
+            def_case_prefix!("-foobar.", "-", Ident("foobar".into())),
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(PrefixExpression(infix)) = &program.statements[0] {
+                assert_eq!(
+                    &test.operator, &infix.operator,
+                    "operator does not match. want={}, got={}",
+                    test.operator, &infix.operator,
+                );
+
+                assert_eq!(
+                    test.right_value, *infix.right,
+                    "operator does not match. want={:?}, got={:?}",
+                    test.right_value, *infix.right,
+                );
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::PrefixExpression. got={:?}",
+                    program.statements[0]
+                )
+            }
+        }
+    }
+
     struct TestCaseInfix {
         input: &'static str,
         operator: Cow<'static, str>,
