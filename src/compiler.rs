@@ -1,5 +1,5 @@
-use crate::code::{make, Opcode, OP_CONSTANT, OP_POP};
-use crate::error::Result;
+use crate::code::*;
+use crate::error::{Error, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
 pub struct Bytecode {
@@ -45,16 +45,18 @@ impl Compiler {
         }
     }
 
-    pub fn compile(&mut self, node: Node) -> Result<()> {
+    pub fn compile(&mut self, node: impl Into<Node>) -> Result<()> {
+        let node = node.into();
+
         match node {
             Node::Program(p) => {
                 for s in p.statements {
-                    self.compile(s.into())?;
+                    self.compile(s)?;
                 }
             }
             Node::Statement(s) => match s {
                 crate::ast::Statement::Expression(e) => {
-                    self.compile(e.into())?;
+                    self.compile(e)?;
                     self.emit(OP_POP, &[]);
                 }
                 crate::ast::Statement::DataDeclaration(_) => todo!(),
@@ -74,7 +76,16 @@ impl Compiler {
                 }
                 crate::ast::Expression::Ident(_) => todo!(),
                 crate::ast::Expression::StringTemplate(_) => todo!(),
-                crate::ast::Expression::InfixExpression(_) => todo!(),
+                crate::ast::Expression::InfixExpression(ie) => {
+                    self.compile(*ie.left)?;
+                    self.compile(*ie.right)?;
+                    match ie.operator.as_ref() {
+                        "+" => {
+                            self.emit(OP_ADD, &[]);
+                        }
+                        op => return Err(Error::unknown_operator(op.to_string())),
+                    }
+                }
                 crate::ast::Expression::PrefixExpression(_) => todo!(),
             },
         }
@@ -167,7 +178,7 @@ mod tests {
             let program = parse(test.input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program.into())?;
+            compiler.compile(program)?;
 
             let bytecode = compiler.bytecode();
 

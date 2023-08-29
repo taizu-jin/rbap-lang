@@ -20,6 +20,7 @@ pub enum ErrorKind {
     ParseInfixLeftExpressionMissing,
     ParseInfixUnexpectedToken,
     UndefinedOpcode,
+    UnknownOperator,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -29,10 +30,11 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ExpectToken { .. } => Self::ExpectToken,
             ErrorRepr::ParseDataAssign { .. } => Self::ParseDataAssign,
             ErrorRepr::ParseStringTemplate { .. } => Self::ParseStringTemplate,
-            ErrorRepr::UndefinedOpcode(e) => Self::UndefinedOpcode,
+            ErrorRepr::UndefinedOpcode(_) => Self::UndefinedOpcode,
             ErrorRepr::ParseExpression { .. } => Self::ParseExpression,
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
+            ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
         }
     }
 }
@@ -117,6 +119,13 @@ impl Error {
             repr: ErrorRepr::UndefinedOpcode(opcode),
         }
     }
+
+    pub fn unknown_operator(operator: String) -> Self {
+        Self {
+            kind: ErrorKind::UnknownOperator,
+            repr: ErrorRepr::UnknownOperator(operator),
+        }
+    }
 }
 
 impl From<ErrorRepr> for Error {
@@ -167,6 +176,8 @@ enum ErrorRepr {
     ParseExpression { literal: String, kind: TokenKind },
     #[error(transparent)]
     ParseInfixError(#[from] ParseInfixError),
+    #[error("unknown operator {0}")]
+    UnknownOperator(String),
 }
 
 #[derive(Debug, Error)]
