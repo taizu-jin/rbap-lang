@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt::Display};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenKind {
     Illegal,
 
