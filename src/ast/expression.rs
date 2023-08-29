@@ -3,8 +3,8 @@ use std::{borrow::Cow, fmt::Display};
 use crate::{
     lexer::{Token, TokenKind},
     parser::{
-        context::Current, context::Peek, error::ParseInfixError, parse, Carriage, Context, Error,
-        Precedence, Result,
+        context::CurrentToken, context::PeekToken, error::ParseInfixError, parse, Carriage,
+        Context, Error, Precedence, Result,
     },
 };
 
@@ -34,8 +34,8 @@ pub enum Expression {
 impl Expression {
     pub fn parse(
         carriage: &mut Carriage,
-        current: Current,
-        peek: Peek,
+        current: CurrentToken,
+        peek: PeekToken,
         precedence: Precedence,
     ) -> Result<Self> {
         let mut expression = Self::parse_prefix(carriage, current, peek.clone())?;
@@ -59,8 +59,8 @@ impl Expression {
 
     fn parse_prefix(
         carriage: &mut Carriage,
-        Current(current): Current,
-        Peek(peek): Peek,
+        CurrentToken(current): CurrentToken,
+        PeekToken(peek): PeekToken,
     ) -> Result<Self> {
         match current.kind {
             TokenKind::IntLiteral => Self::parse_int_literal_expression(current),
@@ -113,7 +113,7 @@ impl Expression {
 
     fn parse_infix_expression(
         carriage: &mut Carriage,
-        Current(current): Current,
+        CurrentToken(current): CurrentToken,
         left: Option<Expression>,
     ) -> Result<Expression> {
         let left = if let Some(left) = left {

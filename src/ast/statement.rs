@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     lexer::{Token, TokenKind},
-    parser::{context::Current, context::Peek, parse, Carriage, Context, Error, Result},
+    parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context, Error, Result},
 };
 
 use super::{Data, DataDeclaration, DataType, Expression};
@@ -38,7 +38,7 @@ impl Statement {
 
     fn parse_data_declaration_statement(
         carriage: &mut Carriage,
-        Peek(peek_token): Peek,
+        PeekToken(peek_token): PeekToken,
     ) -> Result<Statement> {
         let mut declarations = Vec::new();
 
@@ -89,8 +89,8 @@ impl Statement {
 
     fn parse_data_assignment_statement(
         carriage: &mut Carriage,
-        Current(current): Current,
-        Peek(peek): Peek,
+        CurrentToken(current): CurrentToken,
+        PeekToken(peek): PeekToken,
     ) -> Result<Statement> {
         let ident = match (current, peek) {
             (
@@ -126,7 +126,10 @@ impl Statement {
         Ok(Statement::Data(Data { ident, value }))
     }
 
-    fn parse_write_statement(carriage: &mut Carriage, Peek(peek_token): Peek) -> Result<Statement> {
+    fn parse_write_statement(
+        carriage: &mut Carriage,
+        PeekToken(peek_token): PeekToken,
+    ) -> Result<Statement> {
         let mut expressions = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {

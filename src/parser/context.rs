@@ -49,20 +49,20 @@ trait FromContext<'t> {
 }
 
 #[derive(Clone)]
-pub struct Peek<'t>(pub Token<'t>);
+pub struct PeekToken<'t>(pub Token<'t>);
 
-impl<'t> FromContext<'t> for Peek<'t> {
+impl<'t> FromContext<'t> for PeekToken<'t> {
     fn from_context(context: &Context<'t>) -> Self {
-        Peek(context.peek_token.clone())
+        PeekToken(context.peek_token.clone())
     }
 }
 
 #[derive(Clone)]
-pub struct Current<'t>(pub Token<'t>);
+pub struct CurrentToken<'t>(pub Token<'t>);
 
-impl<'t> FromContext<'t> for Current<'t> {
+impl<'t> FromContext<'t> for CurrentToken<'t> {
     fn from_context(context: &Context<'t>) -> Self {
-        Current(context.current_token.clone())
+        CurrentToken(context.current_token.clone())
     }
 }
 
