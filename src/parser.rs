@@ -633,21 +633,20 @@ mod tests {
             "a + b / c.",
             "(a + (b / c)).",
             "a + b * c + d / e - f.",
-            "(((a + (b * c)) + (d / e)) - f)." // "3 + 4. -5 * 5.",
-                                               // "(3 + 4)((-5) * 5)."
+            "(((a + (b * c)) + (d / e)) - f).",
+            "3 + 4. -5 * 5.",
+            "(3 + 4).((-5) * 5)."
         );
 
         for test in tests {
             let program = parse_program(test.input.to_string());
 
-            assert_eq!(
-                1,
-                program.statements.len(),
-                "program has not enough statements. got={}",
-                program.statements.len()
-            );
-
-            let got = program.statements[0].to_string();
+            let got = program
+                .statements
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+                .concat();
 
             assert_eq!(
                 test.expected, got,
