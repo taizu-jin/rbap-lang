@@ -36,6 +36,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParseInfixError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
             ErrorRepr::UndefinedOpcode(_) => Self::UndefinedOpcode,
+            ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
         }
     }
 }
@@ -180,6 +181,8 @@ enum ErrorRepr {
     UnknownOperator(String),
     #[error("opcode {0} is undefined")]
     UndefinedOpcode(u8),
+    #[error("unknown operator {0}")]
+    UnknownOperator(String),
 }
 
 #[derive(Debug, Error)]
