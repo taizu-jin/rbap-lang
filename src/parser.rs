@@ -547,21 +547,22 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_operator_precedence_parsing() {
-        struct TestCase {
-            input: &'static str,
-            expected: &'static str,
-        }
+    struct TestCasePrecedence {
+        input: &'static str,
+        expected: &'static str,
+    }
 
-        macro_rules! define_case {
+    macro_rules! define_case {
             ($($input:expr,$expected:expr),+) => {
-                vec![$(TestCase{
+                vec![$(TestCasePrecedence{
                     input: $input,
                     expected: $expected,
                 }),+]
             };
         }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
         let tests = define_case!(
             // "-a * b.",
             // "((-a) * b).",
