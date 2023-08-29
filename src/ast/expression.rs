@@ -67,8 +67,23 @@ impl Expression {
             TokenKind::StringLiteral => Self::parse_string_expression(current),
             TokenKind::Ident => Self::parse_ident_expression(current),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
+            TokenKind::Minus => Self::parse_prefix_expression(carriage, current),
             _ => Err(Error::from(current)),
         }
+    }
+
+    fn parse_prefix_expression(carriage: &mut Carriage, current: Token) -> Result<Self> {
+        let mut context = Context::from_carriage(carriage)?;
+        context.precedence = Precedence::Perfix;
+
+        let expression = parse(carriage, &context, Self::parse)?;
+
+        let expression = PrefixExpression {
+            operator: current.literal.to_string().into(),
+            right: Box::new(expression),
+        };
+
+        Ok(Expression::PrefixExpression(expression))
     }
 
     fn parse_infix(
