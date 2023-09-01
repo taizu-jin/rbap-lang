@@ -179,10 +179,6 @@ enum ErrorRepr {
     ParseInfixError(#[from] ParseInfixError),
     #[error("unknown operator {0}")]
     UnknownOperator(String),
-    #[error("opcode {0} is undefined")]
-    UndefinedOpcode(u8),
-    #[error("unknown operator {0}")]
-    UnknownOperator(String),
 }
 
 #[derive(Debug, Error)]
