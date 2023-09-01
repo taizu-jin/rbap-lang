@@ -1,5 +1,5 @@
 use crate::code::*;
-use crate::error::Result;
+use crate::error::{ParseInfixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
 pub struct Bytecode {
@@ -86,6 +86,7 @@ impl Compiler {
                         crate::ast::Operator::LesserThan => (*ie.right, *ie.left, OP_GREATER_THAN),
                         crate::ast::Operator::Equal => (*ie.left, *ie.right, OP_EQUAL),
                         crate::ast::Operator::NotEqual => (*ie.left, *ie.right, OP_NOT_EQUAL),
+                        o => return Err(ParseInfixError::UnsupportedOperator(o).into()),
                     };
 
                     self.compile(left)?;

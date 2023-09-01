@@ -3,7 +3,7 @@ use std::num::ParseIntError;
 use thiserror::Error;
 
 use crate::{
-    ast::Expression,
+    ast::{Expression, Operator},
     lexer::{Token, TokenKind, TokenKinds},
 };
 
@@ -19,6 +19,7 @@ pub enum ErrorKind {
     ParseExpression,
     ParseInfixLeftExpressionMissing,
     ParseInfixUnexpectedToken,
+    ParseInfixUnusupportedOperator,
     UndefinedOpcode,
     UnknownOperator,
 }
@@ -35,8 +36,6 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
-            ErrorRepr::UndefinedOpcode(_) => Self::UndefinedOpcode,
-            ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
         }
     }
 }
@@ -45,6 +44,7 @@ impl From<&ParseInfixError> for ErrorKind {
     fn from(value: &ParseInfixError) -> Self {
         match value {
             ParseInfixError::LeftExpression => Self::ParseInfixLeftExpressionMissing,
+            ParseInfixError::UnsupportedOperator(_) => Self::ParseInfixUnusupportedOperator,
             ParseInfixError::UnexpectedToken { .. } => Self::ParseInfixUnexpectedToken,
         }
     }
@@ -185,6 +185,8 @@ enum ErrorRepr {
 pub enum ParseInfixError {
     #[error("Context doesn't carry a left expression to parse infix expression")]
     LeftExpression,
+    #[error("Unsupported operator `{0}` for an infix expression")]
+    UnsupportedOperator(Operator),
     #[error("Can't parse infix expression for token '{token}'")]
     UnexpectedToken {
         token: TokenKind,

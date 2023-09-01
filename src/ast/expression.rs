@@ -26,6 +26,7 @@ pub enum Operator {
     LesserThan,
     Equal,
     NotEqual,
+    Not,
 }
 
 impl Display for Operator {
@@ -46,6 +47,7 @@ impl From<Operator> for &'static str {
             Operator::LesserThan => "<",
             Operator::Equal => "=",
             Operator::NotEqual => "<>",
+            Operator::Not => "NOT",
         }
     }
 }
