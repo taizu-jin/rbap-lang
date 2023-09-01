@@ -39,6 +39,7 @@ pub enum TokenKind {
     EndIf,
     And,
     Or,
+    Not,
 }
 
 impl Display for TokenKind {
@@ -76,6 +77,7 @@ impl Display for TokenKind {
             TokenKind::LesserThan => write!(f, "LesserThan"),
             TokenKind::And => write!(f, "And"),
             TokenKind::Or => write!(f, "Or"),
+            TokenKind::Not => write!(f, "Not"),
         }
     }
 }
@@ -119,6 +121,7 @@ impl TokenKind {
             "if" => TokenKind::If,
             "and" => TokenKind::And,
             "or" => TokenKind::Or,
+            "not" => TokenKind::Not,
             _ => return None,
         };
 
@@ -254,6 +257,10 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "or" => Token {
                 literal,
                 kind: TokenKind::Or,
+            },
+            "not" => Token {
+                literal,
+                kind: TokenKind::Not,
             },
             value if value.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') => Token {
                 literal,
