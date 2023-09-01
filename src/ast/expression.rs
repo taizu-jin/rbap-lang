@@ -83,6 +83,7 @@ pub enum Expression {
     IntLiteral(i64),
     StringLiteral(String),
     Ident(String),
+    BoolLiteral(bool),
     StringTemplate(Vec<Expression>),
     InfixExpression(InfixExpression),
     PrefixExpression(PrefixExpression),
