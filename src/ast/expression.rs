@@ -52,20 +52,21 @@ impl From<Operator> for &'static str {
     }
 }
 
-impl TryFrom<&str> for Operator {
+impl TryFrom<TokenKind> for Operator {
     type Error = Error;
 
-    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: TokenKind) -> std::result::Result<Self, Self::Error> {
         let operator = match value {
-            "+" => Operator::Add,
-            "-" => Operator::Sub,
-            "*" => Operator::Mul,
-            "/" => Operator::Div,
-            ">" => Operator::GreaterThan,
-            "<" => Operator::LesserThan,
-            "=" => Operator::Equal,
-            "<>" => Operator::NotEqual,
-            _ => return Err(Error::unknown_operator(value.to_string())),
+            TokenKind::Plus => Operator::Add,
+            TokenKind::Minus => Operator::Sub,
+            TokenKind::Asterisk => Operator::Mul,
+            TokenKind::Slash => Operator::Div,
+            TokenKind::GreaterThan => Operator::GreaterThan,
+            TokenKind::LesserThan => Operator::LesserThan,
+            TokenKind::Assign => Operator::Equal,
+            TokenKind::NotEquals => Operator::NotEqual,
+            TokenKind::Not => Operator::Not,
+            _ => return Err(Error::unknown_operator(value)),
         };
 
         Ok(operator)
@@ -138,7 +139,7 @@ impl Expression {
         let expression = parse(carriage, &context, Self::parse)?;
 
         let expression = PrefixExpression {
-            operator: Operator::try_from(current.literal.as_ref())?,
+            operator: Operator::try_from(current.kind)?,
             right: Box::new(expression),
         };
 
@@ -188,7 +189,7 @@ impl Expression {
 
         let expression = InfixExpression {
             left: Box::new(left),
-            operator: Operator::try_from(current.literal.as_ref())?,
+            operator: Operator::try_from(current.kind)?,
             right: Box::new(right),
         };
 
