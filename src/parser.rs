@@ -89,7 +89,7 @@ mod tests {
         lexer::Lexer,
     };
 
-    use std::{borrow::Cow, fmt::Write};
+    use std::fmt::Write;
 
     #[test]
     fn test_integer_literal_expression() {
@@ -481,6 +481,7 @@ mod tests {
             def_case_prefix!("-foobar.", Minus, Ident("foobar".into())),
             def_case_prefix!("NOT rbap_true.", Not, BoolLiteral(true)),
             def_case_prefix!("NOT rbap_false.", Not, BoolLiteral(false)),
+            def_case_prefix!("NOT foobar.", Not, Ident("foobar".into())),
         ];
 
         for test in tests {
@@ -629,6 +630,10 @@ mod tests {
         let tests = define_case!(
             "-a * b.",
             "((-a) * b).",
+            "NOT rbap_true.",
+            "(NOT rbap_true).",
+            "NOT NOT rbap_true.",
+            "(NOT (NOT rbap_true)).",
             "a + b + c.",
             "((a + b) + c).",
             "a + b - c.",
@@ -642,7 +647,11 @@ mod tests {
             "a + b * c + d / e - f.",
             "(((a + (b * c)) + (d / e)) - f).",
             "3 + 4. -5 * 5.",
-            "(3 + 4).((-5) * 5)."
+            "(3 + 4).((-5) * 5).",
+            "rbap_true.",
+            "rbap_true.",
+            "rbap_false.",
+            "rbap_false."
         );
 
         for test in tests {
