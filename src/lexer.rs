@@ -34,6 +34,7 @@ pub(super) enum Strategy<'a> {
     Int,
     StrTemplate,
     Token,
+    LesserThan,
     Single(Token<'a>),
 }
 
@@ -53,6 +54,7 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
             Strategy::Int => Some(self.get_int()),
             Strategy::StrTemplate => Some(self.get_string_template()),
             Strategy::Token => self.get_token(),
+            Strategy::LesserThan => Some(self.get_lesser_than()),
             Strategy::Single(ref token) => Some(self.get_single_token(token.clone())),
         }
     }
@@ -92,6 +94,19 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
         Token::new(literal, TokenKind::StringLiteral)
     }
 
+    fn get_lesser_than(&mut self) -> Token<'t> {
+        self.read_char();
+
+        self.switch_strategy(Strategy::Token);
+
+        if self.ch != b'>' {
+            Token::new("<".into(), TokenKind::LesserThan)
+        } else {
+            self.read_char();
+            Token::new("<>".into(), TokenKind::NotEquals)
+        }
+    }
+
     fn get_token(&mut self) -> Option<Token<'t>> {
         self.skip_whitespace();
 
@@ -106,6 +121,11 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
             b'.' => self.tokenize_char(TokenKind::Period),
             b':' => self.tokenize_char(TokenKind::Colon),
             b',' => self.tokenize_char(TokenKind::Comma),
+            b'>' => self.tokenize_char(TokenKind::GreaterThan),
+            b'<' => {
+                self.switch_strategy(Strategy::LesserThan);
+                return self.next_token();
+            }
             b'|' => {
                 self.switch_strategy(Strategy::StrTemplate);
                 self.tokenize_char(TokenKind::VSlash)

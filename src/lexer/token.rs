@@ -4,20 +4,23 @@ use std::{borrow::Cow, fmt::Display};
 pub enum TokenKind {
     Illegal,
 
-    Assign,
     Plus,
     Minus,
     Asterisk,
     Slash,
-    VSlash,
 
     Ident,
     IntLiteral,
     StringLiteral,
 
+    VSlash,
     Comma,
     Colon,
     Period,
+    Assign,
+    NotEquals,
+    GreaterThan,
+    LesserThan,
 
     LParen,
     RParen,
@@ -32,6 +35,10 @@ pub enum TokenKind {
     Int,
     True,
     False,
+    If,
+    EndIf,
+    And,
+    Or,
 }
 
 impl Display for TokenKind {
@@ -62,6 +69,13 @@ impl Display for TokenKind {
             TokenKind::Int => write!(f, "Int"),
             TokenKind::True => write!(f, "True"),
             TokenKind::False => write!(f, "False"),
+            TokenKind::If => write!(f, "If"),
+            TokenKind::EndIf => write!(f, "Endif"),
+            TokenKind::NotEquals => write!(f, "NotEquals"),
+            TokenKind::GreaterThan => write!(f, "GreaterThan"),
+            TokenKind::LesserThan => write!(f, "LesserThan"),
+            TokenKind::And => write!(f, "And"),
+            TokenKind::Or => write!(f, "Or"),
         }
     }
 }
@@ -101,6 +115,10 @@ impl TokenKind {
             "i" => TokenKind::Int,
             "rbap_true" => TokenKind::True,
             "rbap_false" => TokenKind::False,
+            "endif" => TokenKind::EndIf,
+            "if" => TokenKind::If,
+            "and" => TokenKind::And,
+            "or" => TokenKind::Or,
             _ => return None,
         };
 
@@ -208,6 +226,34 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "rbap_false" => Token {
                 literal,
                 kind: TokenKind::False,
+            },
+            "if" => Token {
+                literal,
+                kind: TokenKind::If,
+            },
+            "endif" => Token {
+                literal,
+                kind: TokenKind::EndIf,
+            },
+            "<>" => Token {
+                literal,
+                kind: TokenKind::NotEquals,
+            },
+            ">" => Token {
+                literal,
+                kind: TokenKind::GreaterThan,
+            },
+            "<" => Token {
+                literal,
+                kind: TokenKind::LesserThan,
+            },
+            "and" => Token {
+                literal,
+                kind: TokenKind::And,
+            },
+            "or" => Token {
+                literal,
+                kind: TokenKind::Or,
             },
             value if value.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') => Token {
                 literal,
