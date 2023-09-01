@@ -133,7 +133,7 @@ impl Expression {
 
     fn parse_prefix_expression(carriage: &mut Carriage, current: Token) -> Result<Self> {
         let mut context = Context::from_carriage(carriage)?;
-        context.precedence = Precedence::Perfix;
+        context.precedence = Precedence::Prefix;
 
         let expression = parse(carriage, &context, Self::parse)?;
 
