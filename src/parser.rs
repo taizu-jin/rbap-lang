@@ -19,7 +19,7 @@ pub enum Precedence {
     _LessGreater,
     Sum,
     Product,
-    Perfix,
+    Prefix,
     _Call,
 }
 
