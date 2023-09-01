@@ -479,6 +479,8 @@ mod tests {
         let tests = vec![
             def_case_prefix!("-15.", "-", IntLiteral(15)),
             def_case_prefix!("-foobar.", "-", Ident("foobar".into())),
+            def_case_prefix!("NOT rbap_true.", "NOT", BoolLiteral(true)),
+            def_case_prefix!("NOT rbap_false.", "NOT", BoolLiteral(false)),
         ];
 
         for test in tests {
