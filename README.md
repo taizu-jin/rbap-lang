@@ -19,4 +19,8 @@ WRITE: / lv_int.
 lv_int = 5 + 10.
 WRITE: / lv_int.
 WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2.
+
+IF lv_int = 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10.
+    WRITE: 'TRUE'.
+ENDIF.
 ```
