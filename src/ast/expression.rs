@@ -125,9 +125,10 @@ impl Expression {
         match current.kind {
             TokenKind::IntLiteral => Self::parse_int_literal_expression(current),
             TokenKind::StringLiteral => Self::parse_string_expression(current),
+            TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
             TokenKind::Ident => Self::parse_ident_expression(current),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
-            TokenKind::Minus => Self::parse_prefix_expression(carriage, current),
+            TokenKind::Minus | TokenKind::Not => Self::parse_prefix_expression(carriage, current),
             _ => Err(Error::parse_expression(&current)),
         }
     }
@@ -199,6 +200,19 @@ impl Expression {
     fn parse_int_literal_expression(token: Token) -> Result<Self> {
         let literal = token.literal.parse::<i64>().map_err(Error::from)?;
         Ok(Expression::IntLiteral(literal))
+    }
+
+    fn parse_bool_literal_expression(token: Token) -> Result<Self> {
+        match token.kind {
+            TokenKind::True => Ok(Expression::BoolLiteral(true)),
+            TokenKind::False => Ok(Expression::BoolLiteral(false)),
+            k => {
+                return Err(Error::expected_token(
+                    Some(k),
+                    [TokenKind::True, TokenKind::False].as_slice().into(),
+                ))
+            }
+        }
     }
 
     fn parse_string_expression(token: Token) -> Result<Self> {
@@ -285,6 +299,13 @@ impl Display for Expression {
                     write!(f, "{}", s)?;
                 }
                 write!(f, "|")
+            }
+            Expression::BoolLiteral(b) => {
+                if *b {
+                    write!(f, "rbap_true")
+                } else {
+                    write!(f, "rbap_false")
+                }
             }
             Expression::InfixExpression(ie) => {
                 write!(f, "({} {} {})", ie.left, ie.operator, ie.right)
