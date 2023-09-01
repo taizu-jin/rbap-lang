@@ -460,15 +460,15 @@ mod tests {
 
     struct TestCasePrefix {
         input: &'static str,
-        operator: Cow<'static, str>,
+        operator: TokenKind,
         right_value: crate::ast::Expression,
     }
 
     macro_rules! def_case_prefix {
-        ($input:expr,$operator:literal,$right:expr) => {
+        ($input:expr,$operator:ident,$right:expr) => {
             TestCasePrefix {
                 input: $input,
-                operator: $operator.into(),
+                operator: TokenKind::$operator,
                 right_value: $right,
             }
         };
@@ -477,10 +477,10 @@ mod tests {
     #[test]
     fn test_prefix_expression() -> Result<()> {
         let tests = vec![
-            def_case_prefix!("-15.", "-", IntLiteral(15)),
-            def_case_prefix!("-foobar.", "-", Ident("foobar".into())),
-            def_case_prefix!("NOT rbap_true.", "NOT", BoolLiteral(true)),
-            def_case_prefix!("NOT rbap_false.", "NOT", BoolLiteral(false)),
+            def_case_prefix!("-15.", Minus, IntLiteral(15)),
+            def_case_prefix!("-foobar.", Minus, Ident("foobar".into())),
+            def_case_prefix!("NOT rbap_true.", Not, BoolLiteral(true)),
+            def_case_prefix!("NOT rbap_false.", Not, BoolLiteral(false)),
         ];
 
         for test in tests {
@@ -495,7 +495,7 @@ mod tests {
 
             if let Statement::Expression(PrefixExpression(infix)) = &program.statements[0] {
                 assert_eq!(
-                    Operator::try_from(test.operator.as_ref())?,
+                    Operator::try_from(test.operator)?,
                     infix.operator,
                     "operator does not match. want={}, got={}",
                     test.operator,
@@ -520,16 +520,16 @@ mod tests {
 
     struct TestCaseInfix {
         input: &'static str,
-        operator: Cow<'static, str>,
+        operator: TokenKind,
         left_value: crate::ast::Expression,
         right_value: crate::ast::Expression,
     }
 
     macro_rules! def_case_infix {
-        ($input:expr,$operator:literal,$left:expr,$right:expr) => {
+        ($input:expr,$operator:ident,$left:expr,$right:expr) => {
             TestCaseInfix {
                 input: $input,
-                operator: $operator.into(),
+                operator: TokenKind::$operator,
                 left_value: $left,
                 right_value: $right,
             }
@@ -539,31 +539,31 @@ mod tests {
     #[test]
     fn test_infix_expression() -> Result<()> {
         let tests = vec![
-            def_case_infix!("5 + 5.", "+", IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 - 5.", "-", IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 * 5.", "*", IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 / 5.", "/", IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 + 5.", Plus, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 - 5.", Minus, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 * 5.", Asterisk, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 / 5.", Slash, IntLiteral(5), IntLiteral(5)),
             def_case_infix!(
                 "foobar + barfoo.",
-                "+",
+                Plus,
                 Ident("foobar".into()),
                 Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar - barfoo.",
-                "-",
+                Minus,
                 Ident("foobar".into()),
                 Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar * barfoo.",
-                "*",
+                Asterisk,
                 Ident("foobar".into()),
                 Ident("barfoo".into())
             ),
             def_case_infix!(
                 "foobar / barfoo.",
-                "/",
+                Slash,
                 Ident("foobar".into()),
                 Ident("barfoo".into())
             ),
@@ -581,7 +581,7 @@ mod tests {
 
             if let Statement::Expression(InfixExpression(infix)) = &program.statements[0] {
                 assert_eq!(
-                    Operator::try_from(test.operator.as_ref())?,
+                    Operator::try_from(test.operator)?,
                     infix.operator,
                     "operator does not match. want={}, got={}",
                     test.operator,

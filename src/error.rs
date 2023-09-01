@@ -121,10 +121,10 @@ impl Error {
             repr: ErrorRepr::UndefinedOpcode(opcode),
         }
     }
-    pub fn unknown_operator(operator: String) -> Self {
+    pub fn unknown_operator(kind: TokenKind) -> Self {
         Self {
             kind: ErrorKind::UnknownOperator,
-            repr: ErrorRepr::UnknownOperator(operator),
+            repr: ErrorRepr::UnknownOperator(kind),
         }
     }
 }
@@ -178,7 +178,7 @@ enum ErrorRepr {
     #[error(transparent)]
     ParseInfixError(#[from] ParseInfixError),
     #[error("unknown operator {0}")]
-    UnknownOperator(String),
+    UnknownOperator(TokenKind),
 }
 
 #[derive(Debug, Error)]
