@@ -88,7 +88,6 @@ impl Display for Instructions {
     }
 }
 
-static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 pub struct Opcode {
     pub code: u8,
     pub label: &'static str,
