@@ -316,7 +316,7 @@ WRITE: |nested { | { 'string' } | } templates|.
 DATA lv_string2 TYPE string.
 DATA( lv_test) = '5'.
 
-IF lv_int = 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5.
+IF lv_int = 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
 ENDIF."#;
         let tokens = define_cases!(
@@ -493,6 +493,11 @@ ENDIF."#;
             "5":IntLiteral,
             "<>":NotEquals,
             "5":IntLiteral,
+            "or": Or,
+            "not": Not,
+            "rbap_false": False,
+            "and": And,
+            "rbap_true": True,
             ".":Period,
             "write":Write,
             ":":Colon,
