@@ -6,7 +6,7 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-use super::{Data, DataDeclaration, DataType, Expression};
+use super::{Block, Data, DataDeclaration, DataType, Expression};
 
 #[derive(Debug)]
 pub enum Statement {
@@ -14,6 +14,7 @@ pub enum Statement {
     DataDeclaration(Vec<DataDeclaration>),
     Write(Vec<Expression>),
     Data(Data),
+    Block(Block),
 }
 
 impl Statement {
@@ -181,6 +182,7 @@ impl Statement {
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Statement::Block(b) => write!(f, "{}", b),
             Statement::Expression(e) => write!(f, "{}.", e),
             Statement::Data(d) => write!(f, "{}.", d),
             Statement::DataDeclaration(dd) => {
