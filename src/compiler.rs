@@ -62,6 +62,7 @@ impl Compiler {
                 crate::ast::Statement::DataDeclaration(_) => todo!(),
                 crate::ast::Statement::Write(_) => todo!(),
                 crate::ast::Statement::Data(_) => todo!(),
+                crate::ast::Statement::Block(_) => todo!(),
             },
             Node::Expression(e) => match e {
                 crate::ast::Expression::IntLiteral(i) => {
@@ -75,6 +76,7 @@ impl Compiler {
                     self.emit(OP_CONSTANT, &[constant]);
                 }
                 crate::ast::Expression::Ident(_) => todo!(),
+                crate::ast::Expression::BoolLiteral(_) => todo!(),
                 crate::ast::Expression::StringTemplate(_) => todo!(),
                 crate::ast::Expression::InfixExpression(ie) => {
                     let (left, right, operand_op_code) = match ie.operator {

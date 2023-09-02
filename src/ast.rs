@@ -21,6 +21,40 @@ impl Display for DataType {
     }
 }
 
+#[derive(Debug)]
+pub struct IfStatement {
+    condition: Expression,
+    consequence: Block,
+    alternative: Option<Block>,
+}
+
+impl Display for IfStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "IF {}.", self.condition)?;
+        writeln!(f, "{}", self.consequence)?;
+        if let Some(alternative) = &self.alternative {
+            writeln!(f, "ELSE.")?;
+            writeln!(f, "{}", alternative)?;
+        }
+        write!(f, "ENDIF.")
+    }
+}
+
+#[derive(Debug)]
+pub struct Block {
+    statements: Vec<Statement>,
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for s in &self.statements {
+            write!(f, "{}", s)?;
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Data {
     pub ident: String,
