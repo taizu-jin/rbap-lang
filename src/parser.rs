@@ -107,8 +107,33 @@ ENDIF.";
             program.statements.len()
         );
 
-        if let Statement::If(_statement) = &program.statements[0] {
-            todo!()
+        if let Statement::If(statement) = &program.statements[0] {
+            match &statement.condition {
+                InfixExpression(ie) => {
+                    assert_eq!(*ie.left, Ident("x".into()));
+                    assert_eq!(ie.operator, Operator::LesserThan);
+                    assert_eq!(*ie.right, Ident("y".into()));
+                }
+                cond => panic!(
+                    "condition is not an Expression::InfixExpression. got={:?}",
+                    cond
+                ),
+            };
+
+            for (a, e) in statement
+                .consequence
+                .statements
+                .iter()
+                .zip(vec![Statement::Expression(Ident("x".into()))])
+            {
+                assert_eq!(
+                    a, &e,
+                    "statement within a block is not as expected.\n\tgot={}\n\twant={}",
+                    a, e
+                );
+            }
+
+            assert_eq!(statement.alternative, None);
         } else {
             panic!(
                 "program.statements[0] is not an Statement::IfStatement. got={:?}",
