@@ -20,7 +20,7 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub fn parse(carriage: &mut Carriage) -> Result<Statement> {
+    pub fn parse(carriage: &mut Carriage) -> Result<Self> {
         let context = Context::from_carriage(carriage)?;
 
         let statement = match context.current_token.kind {
@@ -44,7 +44,7 @@ impl Statement {
     fn parse_data_declaration_statement(
         carriage: &mut Carriage,
         PeekToken(peek_token): PeekToken,
-    ) -> Result<Statement> {
+    ) -> Result<Self> {
         let mut declarations = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
@@ -96,7 +96,7 @@ impl Statement {
         carriage: &mut Carriage,
         CurrentToken(current): CurrentToken,
         PeekToken(peek): PeekToken,
-    ) -> Result<Statement> {
+    ) -> Result<Self> {
         let ident = match (current, peek) {
             (
                 Token {
@@ -134,7 +134,7 @@ impl Statement {
     fn parse_write_statement(
         carriage: &mut Carriage,
         PeekToken(peek_token): PeekToken,
-    ) -> Result<Statement> {
+    ) -> Result<Self> {
         let mut expressions = Vec::new();
 
         match peek_token.kind == TokenKind::Colon {
