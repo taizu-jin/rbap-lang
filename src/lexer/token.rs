@@ -42,6 +42,11 @@ pub enum TokenKind {
     And,
     Or,
     Not,
+
+    Method,
+    EndMethod,
+    Importing,
+    Returning,
 }
 
 impl Display for TokenKind {
@@ -82,6 +87,10 @@ impl Display for TokenKind {
             TokenKind::And => write!(f, "And"),
             TokenKind::Or => write!(f, "Or"),
             TokenKind::Not => write!(f, "Not"),
+            TokenKind::Method => write!(f, "Method"),
+            TokenKind::EndMethod => write!(f, "EndMethod"),
+            TokenKind::Importing => write!(f, "Importing"),
+            TokenKind::Returning => write!(f, "Returning"),
         }
     }
 }
@@ -127,6 +136,10 @@ impl TokenKind {
             "and" => TokenKind::And,
             "or" => TokenKind::Or,
             "not" => TokenKind::Not,
+            "method" => TokenKind::Method,
+            "endmethod" => TokenKind::EndMethod,
+            "importing" => TokenKind::Importing,
+            "returning" => TokenKind::Returning,
             _ => return None,
         };
 
@@ -274,6 +287,22 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "not" => Token {
                 literal,
                 kind: TokenKind::Not,
+            },
+            "method" => Token {
+                literal,
+                kind: TokenKind::Method,
+            },
+            "endmethod" => Token {
+                literal,
+                kind: TokenKind::EndMethod,
+            },
+            "importing" => Token {
+                literal,
+                kind: TokenKind::Importing,
+            },
+            "returning" => Token {
+                literal,
+                kind: TokenKind::Returning,
             },
             value if value.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') => Token {
                 literal,
