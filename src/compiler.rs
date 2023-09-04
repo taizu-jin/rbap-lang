@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::code::*;
 use crate::error::{ParseInfixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};

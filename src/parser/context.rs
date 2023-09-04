@@ -7,6 +7,7 @@ use super::Carriage;
 use super::Precedence;
 use super::Result;
 
+#[derive(Debug)]
 pub struct Context<'t> {
     pub current_token: Token<'t>,
     pub peek_token: Token<'t>,

@@ -8,7 +8,7 @@ use crate::{
 
 use super::Expression;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Expression(Expression),
     DataDeclaration(Vec<DataDeclaration>),
@@ -31,6 +31,7 @@ impl Statement {
                 parse(carriage, &context, Self::parse_data_assignment_statement)?
             }
             TokenKind::Write => parse(carriage, &context, Self::parse_write_statement)?,
+            TokenKind::If => parse(carriage, &context, Self::parse_if_statement)?,
             _ => Statement::Expression(parse(carriage, &context, Expression::parse)?),
         };
 
@@ -166,6 +167,40 @@ impl Statement {
         Ok(Statement::Write(expressions))
     }
 
+    fn parse_if_statement(carriage: &mut Carriage) -> Result<Self> {
+        let context = Context::from_carriage(carriage)?;
+
+        let condition = parse(carriage, &context, Expression::parse)?;
+
+        carriage.expect_tokens(&[TokenKind::Period])?;
+
+        let consequence = Self::parse_block_statement(carriage)?;
+        carriage.expect_tokens(&[TokenKind::EndIf])?;
+
+        let statement = IfStatement {
+            condition,
+            consequence,
+            alternative: None,
+        };
+
+        Ok(Statement::If(statement))
+    }
+
+    fn parse_block_statement(carriage: &mut Carriage) -> Result<Block> {
+        let mut statements = Vec::new();
+
+        while !carriage.is_peek_token(TokenKind::EndIf) {
+            println!("test");
+            let statement = Self::parse(carriage)?;
+            println!("{}", &statement);
+            statements.push(statement);
+        }
+
+        let block = Block { statements };
+
+        Ok(block)
+    }
+
     fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
         let token = carriage.expect_tokens(&[
             TokenKind::Ident,
@@ -227,11 +262,11 @@ impl Display for DataType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct IfStatement {
-    condition: Expression,
-    consequence: Block,
-    alternative: Option<Block>,
+    pub condition: Expression,
+    pub consequence: Block,
+    pub alternative: Option<Block>,
 }
 
 impl Display for IfStatement {
@@ -246,9 +281,9 @@ impl Display for IfStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Block {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 impl Display for Block {
