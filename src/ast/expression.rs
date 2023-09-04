@@ -168,7 +168,14 @@ impl Expression {
     fn is_infix_token(kind: TokenKind) -> bool {
         matches!(
             kind,
-            TokenKind::Plus | TokenKind::Minus | TokenKind::Slash | TokenKind::Asterisk
+            TokenKind::Plus
+                | TokenKind::Minus
+                | TokenKind::Slash
+                | TokenKind::Asterisk
+                | TokenKind::GreaterThan
+                | TokenKind::LesserThan
+                | TokenKind::Assign
+                | TokenKind::NotEquals
         )
     }
 
