@@ -125,12 +125,23 @@ impl Expression {
         match current.kind {
             TokenKind::IntLiteral => Self::parse_int_literal_expression(current),
             TokenKind::StringLiteral => Self::parse_string_expression(current),
+            TokenKind::LParen => Self::parse_grouped_expression(carriage),
             TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
             TokenKind::Ident => Self::parse_ident_expression(current),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
             TokenKind::Minus | TokenKind::Not => Self::parse_prefix_expression(carriage, current),
             _ => Err(Error::parse_expression(&current)),
         }
+    }
+
+    fn parse_grouped_expression(carriage: &mut Carriage) -> Result<Self> {
+        let context = Context::from_carriage(carriage)?;
+
+        let expression = parse(carriage, &context, Self::parse)?;
+
+        carriage.expect_tokens(&[TokenKind::RParen])?;
+
+        Ok(expression)
     }
 
     fn parse_prefix_expression(carriage: &mut Carriage, current: Token) -> Result<Self> {
