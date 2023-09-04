@@ -546,6 +546,10 @@ mod tests {
             def_case_infix!("5 - 5.", Minus, IntLiteral(5), IntLiteral(5)),
             def_case_infix!("5 * 5.", Asterisk, IntLiteral(5), IntLiteral(5)),
             def_case_infix!("5 / 5.", Slash, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 > 5.", GreaterThan, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 < 5.", LesserThan, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 == 5.", Equals, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 <> 5.", NotEquals, IntLiteral(5), IntLiteral(5)),
             def_case_infix!(
                 "foobar + barfoo.",
                 Plus,
@@ -569,6 +573,48 @@ mod tests {
                 Slash,
                 Ident("foobar".into()),
                 Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar > barfoo.",
+                GreaterThan,
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar < barfoo.",
+                LesserThan,
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar == barfoo.",
+                Equals,
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "foobar <> barfoo.",
+                NotEquals,
+                Ident("foobar".into()),
+                Ident("barfoo".into())
+            ),
+            def_case_infix!(
+                "rbap_true == rbap_true.",
+                Equals,
+                BoolLiteral(true),
+                BoolLiteral(true)
+            ),
+            def_case_infix!(
+                "rbap_true <> rbap_false.",
+                NotEquals,
+                BoolLiteral(true),
+                BoolLiteral(false)
+            ),
+            def_case_infix!(
+                "rbap_false == rbap_false.",
+                Equals,
+                BoolLiteral(false),
+                BoolLiteral(false)
             ),
         ];
 
