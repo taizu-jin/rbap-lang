@@ -35,7 +35,7 @@ impl From<TokenKind> for Precedence {
         match value {
             TokenKind::Plus | TokenKind::Minus => Precedence::Sum,
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
-            TokenKind::Assign | TokenKind::NotEquals => Precedence::Equals,
+            TokenKind::Equals | TokenKind::NotEquals => Precedence::Equals,
             TokenKind::LesserThan | TokenKind::GreaterThan => Precedence::LessGreater,
             _ => Precedence::Lowest,
         }
