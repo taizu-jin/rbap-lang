@@ -699,7 +699,15 @@ mod tests {
             "rbap_true.",
             "rbap_true.",
             "rbap_false.",
-            "rbap_false."
+            "rbap_false.",
+            "5 > 4 == 3 < 4.",
+            "((5 > 4) == (3 < 4)).",
+            "5 < 4 <> 3 > 4.",
+            "((5 < 4) <> (3 > 4)).",
+            "3 > 5 == rbap_false.",
+            "((3 > 5) == rbap_false).",
+            "3 < 5 == rbap_true.",
+            "((3 < 5) == rbap_true)."
         );
 
         for test in tests {
