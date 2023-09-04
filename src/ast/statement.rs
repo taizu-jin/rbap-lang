@@ -6,7 +6,7 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-use super::{Block, Data, DataDeclaration, DataType, Expression, IfStatement};
+use super::Expression;
 
 #[derive(Debug)]
 pub enum Statement {
@@ -209,5 +209,78 @@ impl Display for Statement {
             }
             Statement::If(s) => write!(f, "{}.", s),
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum DataType {
+    String,
+    Int,
+}
+
+impl Display for DataType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DataType::String => write!(f, "string"),
+            DataType::Int => write!(f, "i"),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct IfStatement {
+    condition: Expression,
+    consequence: Block,
+    alternative: Option<Block>,
+}
+
+impl Display for IfStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "IF {}.", self.condition)?;
+        writeln!(f, "{}", self.consequence)?;
+        if let Some(alternative) = &self.alternative {
+            writeln!(f, "ELSE.")?;
+            writeln!(f, "{}", alternative)?;
+        }
+        write!(f, "ENDIF.")
+    }
+}
+
+#[derive(Debug)]
+pub struct Block {
+    statements: Vec<Statement>,
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for s in &self.statements {
+            write!(f, "{}", s)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Data {
+    pub ident: String,
+    pub value: Expression,
+}
+
+impl Display for Data {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} = {}", self.ident, self.value)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DataDeclaration {
+    pub ident: String,
+    pub ty: DataType,
+}
+
+impl Display for DataDeclaration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} TYPE {}", self.ident, self.ty)
     }
 }

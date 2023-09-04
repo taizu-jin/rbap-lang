@@ -105,7 +105,7 @@ ENDIF.";
             program.statements.len()
         );
 
-        if let Statement::If(statement) = &program.statements[0] {
+        if let Statement::If(_statement) = &program.statements[0] {
             todo!()
         } else {
             panic!(
