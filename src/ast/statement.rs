@@ -190,9 +190,7 @@ impl Statement {
         let mut statements = Vec::new();
 
         while !carriage.is_peek_token(TokenKind::EndIf) {
-            println!("test");
             let statement = Self::parse(carriage)?;
-            println!("{}", &statement);
             statements.push(statement);
         }
 
