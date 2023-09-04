@@ -6,7 +6,7 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-use super::{Block, Data, DataDeclaration, DataType, Expression};
+use super::{Block, Data, DataDeclaration, DataType, Expression, IfStatement};
 
 #[derive(Debug)]
 pub enum Statement {
@@ -15,6 +15,7 @@ pub enum Statement {
     Write(Vec<Expression>),
     Data(Data),
     Block(Block),
+    If(IfStatement),
 }
 
 impl Statement {
@@ -206,6 +207,7 @@ impl Display for Statement {
                 }
                 write!(f, ".")
             }
+            Statement::If(s) => write!(f, "{}.", s),
         }
     }
 }

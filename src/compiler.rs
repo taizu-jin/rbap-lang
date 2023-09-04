@@ -63,6 +63,7 @@ impl Compiler {
                 crate::ast::Statement::Write(_) => todo!(),
                 crate::ast::Statement::Data(_) => todo!(),
                 crate::ast::Statement::Block(_) => todo!(),
+                crate::ast::Statement::If(_) => todo!(),
             },
             Node::Expression(e) => match e {
                 crate::ast::Expression::IntLiteral(i) => {
