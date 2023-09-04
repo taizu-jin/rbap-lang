@@ -175,12 +175,22 @@ impl Statement {
         carriage.expect_tokens(&[TokenKind::Period])?;
 
         let consequence = Self::parse_block_statement(carriage)?;
+
+        let alternative = if carriage.is_peek_token(TokenKind::Else) {
+            carriage.expect_tokens(&[TokenKind::Else])?;
+            carriage.expect_tokens(&[TokenKind::Period])?;
+
+            Some(Self::parse_block_statement(carriage)?)
+        } else {
+            None
+        };
+
         carriage.expect_tokens(&[TokenKind::EndIf])?;
 
         let statement = IfStatement {
             condition,
             consequence,
-            alternative: None,
+            alternative,
         };
 
         Ok(Statement::If(statement))
@@ -189,7 +199,8 @@ impl Statement {
     fn parse_block_statement(carriage: &mut Carriage) -> Result<Block> {
         let mut statements = Vec::new();
 
-        while !carriage.is_peek_token(TokenKind::EndIf) {
+        while !carriage.is_peek_token(TokenKind::EndIf) && !carriage.is_peek_token(TokenKind::Else)
+        {
             let statement = Self::parse(carriage)?;
             statements.push(statement);
         }
