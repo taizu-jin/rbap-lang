@@ -36,6 +36,7 @@ pub enum TokenKind {
     True,
     False,
     If,
+    Else,
     EndIf,
     And,
     Or,
@@ -71,6 +72,7 @@ impl Display for TokenKind {
             TokenKind::True => write!(f, "True"),
             TokenKind::False => write!(f, "False"),
             TokenKind::If => write!(f, "If"),
+            TokenKind::Else => write!(f, "Else"),
             TokenKind::EndIf => write!(f, "Endif"),
             TokenKind::NotEquals => write!(f, "NotEquals"),
             TokenKind::GreaterThan => write!(f, "GreaterThan"),
@@ -119,6 +121,7 @@ impl TokenKind {
             "rbap_false" => TokenKind::False,
             "endif" => TokenKind::EndIf,
             "if" => TokenKind::If,
+            "else" => TokenKind::Else,
             "and" => TokenKind::And,
             "or" => TokenKind::Or,
             "not" => TokenKind::Not,
@@ -233,6 +236,10 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "if" => Token {
                 literal,
                 kind: TokenKind::If,
+            },
+            "else" => Token {
+                literal,
+                kind: TokenKind::Else,
             },
             "endif" => Token {
                 literal,
