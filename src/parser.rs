@@ -94,55 +94,6 @@ mod tests {
     use std::fmt::Write;
 
     #[test]
-    fn test_if_expression() {
-        let input = "IF x < y.
-x.
-ENDIF.";
-        let program = parse_program(input.into());
-
-        assert_eq!(
-            1,
-            program.statements.len(),
-            "program has not enough statements. got={}",
-            program.statements.len()
-        );
-
-        if let Statement::If(statement) = &program.statements[0] {
-            match &statement.condition {
-                InfixExpression(ie) => {
-                    assert_eq!(*ie.left, Ident("x".into()));
-                    assert_eq!(ie.operator, Operator::LesserThan);
-                    assert_eq!(*ie.right, Ident("y".into()));
-                }
-                cond => panic!(
-                    "condition is not an Expression::InfixExpression. got={:?}",
-                    cond
-                ),
-            };
-
-            for (a, e) in statement
-                .consequence
-                .statements
-                .iter()
-                .zip(vec![Statement::Expression(Ident("x".into()))])
-            {
-                assert_eq!(
-                    a, &e,
-                    "statement within a block is not as expected.\n\tgot={}\n\twant={}",
-                    a, e
-                );
-            }
-
-            assert_eq!(statement.alternative, None);
-        } else {
-            panic!(
-                "program.statements[0] is not an Statement::IfStatement. got={:?}",
-                program.statements[0]
-            )
-        }
-    }
-
-    #[test]
     fn test_integer_literal_expression() {
         let input = String::from("5.");
         let program = parse_program(input);
@@ -719,6 +670,55 @@ ENDIF.";
                 test.expected, got,
                 "\nexpected={}\ngot={}",
                 test.expected, got
+            )
+        }
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let input = "IF x < y.
+x.
+ENDIF.";
+        let program = parse_program(input.into());
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+
+        if let Statement::If(statement) = &program.statements[0] {
+            match &statement.condition {
+                InfixExpression(ie) => {
+                    assert_eq!(*ie.left, Ident("x".into()));
+                    assert_eq!(ie.operator, Operator::LesserThan);
+                    assert_eq!(*ie.right, Ident("y".into()));
+                }
+                cond => panic!(
+                    "condition is not an Expression::InfixExpression. got={:?}",
+                    cond
+                ),
+            };
+
+            for (a, e) in statement
+                .consequence
+                .statements
+                .iter()
+                .zip(vec![Statement::Expression(Ident("x".into()))])
+            {
+                assert_eq!(
+                    a, &e,
+                    "statement within a block is not as expected.\n\tgot={}\n\twant={}",
+                    a, e
+                );
+            }
+
+            assert_eq!(statement.alternative, None);
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::IfStatement. got={:?}",
+                program.statements[0]
             )
         }
     }
