@@ -45,7 +45,7 @@ impl From<Operator> for &'static str {
             Operator::Sub => "-",
             Operator::GreaterThan => ">",
             Operator::LesserThan => "<",
-            Operator::Equal => "=",
+            Operator::Equal => "==",
             Operator::NotEqual => "<>",
             Operator::Not => "NOT ",
         }
@@ -63,7 +63,7 @@ impl TryFrom<TokenKind> for Operator {
             TokenKind::Slash => Operator::Div,
             TokenKind::GreaterThan => Operator::GreaterThan,
             TokenKind::LesserThan => Operator::LesserThan,
-            TokenKind::Assign => Operator::Equal,
+            TokenKind::Equals => Operator::Equal,
             TokenKind::NotEquals => Operator::NotEqual,
             TokenKind::Not => Operator::Not,
             _ => return Err(Error::unknown_operator(value)),
@@ -174,7 +174,7 @@ impl Expression {
                 | TokenKind::Asterisk
                 | TokenKind::GreaterThan
                 | TokenKind::LesserThan
-                | TokenKind::Assign
+                | TokenKind::Equals
                 | TokenKind::NotEquals
         )
     }

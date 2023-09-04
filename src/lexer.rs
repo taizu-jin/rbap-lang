@@ -35,6 +35,7 @@ pub(super) enum Strategy<'a> {
     StrTemplate,
     Token,
     LesserThan,
+    Equals,
     Single(Token<'a>),
 }
 
@@ -55,6 +56,7 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
             Strategy::StrTemplate => Some(self.get_string_template()),
             Strategy::Token => self.get_token(),
             Strategy::LesserThan => Some(self.get_lesser_than()),
+            Strategy::Equals => Some(self.get_equals()),
             Strategy::Single(ref token) => Some(self.get_single_token(token.clone())),
         }
     }
@@ -94,6 +96,19 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
         Token::new(literal, TokenKind::StringLiteral)
     }
 
+    fn get_equals(&mut self) -> Token<'t> {
+        self.read_char();
+
+        self.switch_strategy(Strategy::Token);
+
+        if self.ch != b'=' {
+            Token::new("=".into(), TokenKind::Assign)
+        } else {
+            self.read_char();
+            Token::new("==".into(), TokenKind::Equals)
+        }
+    }
+
     fn get_lesser_than(&mut self) -> Token<'t> {
         self.read_char();
 
@@ -111,7 +126,10 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
         self.skip_whitespace();
 
         let token = match self.ch {
-            b'=' => self.tokenize_char(TokenKind::Assign),
+            b'=' => {
+                self.switch_strategy(Strategy::Equals);
+                return self.next_token();
+            }
             b'+' => self.tokenize_char(TokenKind::Plus),
             b'-' => self.tokenize_char(TokenKind::Minus),
             b'/' => self.tokenize_char(TokenKind::Slash),
@@ -316,7 +334,7 @@ WRITE: |nested { | { 'string' } | } templates|.
 DATA lv_string2 TYPE string.
 DATA( lv_test) = '5'.
 
-IF lv_int = 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
+IF lv_int == 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
 ENDIF.";
         let tokens = define_cases!(
@@ -474,7 +492,7 @@ ENDIF.";
             ".":Period,
             "if":If,
             "lv_int":Ident,
-            "=":Assign,
+            "==":Equals,
             "15":IntLiteral,
             "and":And,
             "5":IntLiteral,

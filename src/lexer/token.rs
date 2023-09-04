@@ -18,6 +18,7 @@ pub enum TokenKind {
     Colon,
     Period,
     Assign,
+    Equals,
     NotEquals,
     GreaterThan,
     LesserThan,
@@ -74,6 +75,7 @@ impl Display for TokenKind {
             TokenKind::If => write!(f, "If"),
             TokenKind::Else => write!(f, "Else"),
             TokenKind::EndIf => write!(f, "Endif"),
+            TokenKind::Equals => write!(f, "Equals"),
             TokenKind::NotEquals => write!(f, "NotEquals"),
             TokenKind::GreaterThan => write!(f, "GreaterThan"),
             TokenKind::LesserThan => write!(f, "LesserThan"),
@@ -244,6 +246,10 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "endif" => Token {
                 literal,
                 kind: TokenKind::EndIf,
+            },
+            "==" => Token {
+                literal,
+                kind: TokenKind::NotEquals,
             },
             "<>" => Token {
                 literal,
