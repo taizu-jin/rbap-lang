@@ -23,4 +23,19 @@ WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2.
 IF lv_int == 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
 ENDIF.
+
+METHOD sum IMPORTING iv_x TYPE i
+                     iv_y TYPE i 
+           RETURNING rv_sum TYPE i.
+  rv_sum = iv_x + iv_y.
+ENDMETHOD.
+
+METHOD sub IMPORTING iv_x TYPE i
+                     iv_y TYPE i 
+           RETURNING rv_sub TYPE i.
+  rv_sub = iv_x - iv_y.
+ENDMETHOD.
+
+DATA(lv_sum) = sum(2, 1).
+DATA(lv_sub) = sub(lv_sum, 2).
 ```
