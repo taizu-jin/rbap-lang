@@ -92,6 +92,30 @@ mod tests {
     use std::fmt::Write;
 
     #[test]
+    fn test_if_expression() {
+        let input = "IF x < y.
+x.
+ENDIF.";
+        let program = parse_program(input.into());
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+
+        if let Statement::If(statement) = &program.statements[0] {
+            todo!()
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::IfStatement. got={:?}",
+                program.statements[0]
+            )
+        }
+    }
+
+    #[test]
     fn test_integer_literal_expression() {
         let input = String::from("5.");
         let program = parse_program(input);
