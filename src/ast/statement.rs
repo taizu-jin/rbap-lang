@@ -16,6 +16,7 @@ pub enum Statement {
     Data(Data),
     Block(Block),
     If(IfStatement),
+    Function(Function),
 }
 
 impl Statement {
@@ -227,6 +228,7 @@ impl Statement {
 impl Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Statement::Function(func) => write!(f, "{}", func),
             Statement::Block(b) => write!(f, "{}", b),
             Statement::Expression(e) => write!(f, "{}.", e),
             Statement::Data(d) => write!(f, "{}.", d),
@@ -326,5 +328,32 @@ pub struct DataDeclaration {
 impl Display for DataDeclaration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} TYPE {}", self.ident, self.ty)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Function {
+    pub name: String,
+    pub parameters: Vec<DataDeclaration>,
+    pub body: Block,
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "METHOD {}", self.name)?;
+        if !self.parameters.is_empty() {
+            write!(f, " IMPORTING ")?;
+            let mut iter = self.parameters.iter().peekable();
+            while let Some(dd) = iter.next() {
+                write!(f, "{} TYPE {}", dd.ident, dd.ty)?;
+                if iter.peek().is_some() {
+                    writeln!(f)?;
+                }
+            }
+        }
+        write!(f, ".")?;
+
+        writeln!(f, "{}", self.body)?;
+        writeln!(f, "ENDMETHOD.")
     }
 }
