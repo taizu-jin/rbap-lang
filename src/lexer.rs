@@ -336,7 +336,13 @@ DATA( lv_test) = '5'.
 
 IF lv_int == 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
-ENDIF.";
+ENDIF.
+
+METHOD sum IMPORTING iv_x TYPE i
+                     iv_y TYPE i 
+           RETURNING rv_sum TYPE i.
+  rv_sum = iv_x + iv_y.
+ENDMETHOD.";
         let tokens = define_cases!(
             "data":Data,
             ":":Colon,
@@ -522,6 +528,28 @@ ENDIF.";
             "true":StringLiteral,
             ".":Period,
             "endif":EndIf,
+            ".":Period,
+            "method":Method,
+            "sum":Ident,
+            "importing":Importing,
+            "iv_x":Ident,
+            "type":Type,
+            "i":Int,
+            "iv_y":Ident,
+            "type":Type,
+            "i":Int,
+            "returning":Returning,
+            "rv_sum":Ident,
+            "type":Type,
+            "i":Int,
+            ".":Period,
+            "rv_sum":Ident,
+            "=":Assign,
+            "iv_x":Ident,
+            "+":Plus,
+            "iv_y":Ident,
+            ".":Period,
+            "endmethod":EndMethod,
             ".":Period
         );
 
