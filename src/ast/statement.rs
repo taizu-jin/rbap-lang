@@ -33,12 +33,55 @@ impl Statement {
             }
             TokenKind::Write => parse(carriage, &context, Self::parse_write_statement)?,
             TokenKind::If => parse(carriage, &context, Self::parse_if_statement)?,
+            TokenKind::Method => parse(carriage, &context, Self::parse_function_statement)?,
             _ => Statement::Expression(parse(carriage, &context, Expression::parse)?),
         };
 
         carriage.expect_tokens(&[TokenKind::Period])?;
 
         Ok(statement)
+    }
+
+    fn parse_function_statement(carriage: &mut Carriage) -> Result<Self> {
+        let ident = carriage.expect_tokens(&[TokenKind::Ident])?;
+
+        let name = ident.literal.to_string();
+
+        let mut parameters = Vec::new();
+        let mut returns = Vec::new();
+
+        if carriage.is_peek_token(TokenKind::Importing) {
+            carriage.next_token()?;
+
+            while !carriage.is_peek_token(TokenKind::Period)
+                && !carriage.is_peek_token(TokenKind::Returning)
+            {
+                let ddecl = Self::parse_data_declaration(carriage)?;
+                parameters.push(ddecl);
+            }
+        }
+
+        if carriage.is_peek_token(TokenKind::Returning) {
+            carriage.next_token()?;
+
+            while !carriage.is_peek_token(TokenKind::Period) {
+                let ddecl = Self::parse_data_declaration(carriage)?;
+                returns.push(ddecl);
+            }
+        }
+
+        carriage.expect_tokens(&[TokenKind::Period])?;
+        let body = Self::parse_block_statement(carriage)?;
+        carriage.expect_tokens(&[TokenKind::EndMethod])?;
+
+        let function = Function {
+            name,
+            parameters,
+            returns,
+            body,
+        };
+
+        Ok(Statement::Function(function))
     }
 
     fn parse_data_declaration_statement(
@@ -200,7 +243,9 @@ impl Statement {
     fn parse_block_statement(carriage: &mut Carriage) -> Result<Block> {
         let mut statements = Vec::new();
 
-        while !carriage.is_peek_token(TokenKind::EndIf) && !carriage.is_peek_token(TokenKind::Else)
+        while !(carriage.is_peek_token(TokenKind::EndIf)
+            || carriage.is_peek_token(TokenKind::Else)
+            || carriage.is_peek_token(TokenKind::EndMethod))
         {
             let statement = Self::parse(carriage)?;
             statements.push(statement);
@@ -335,6 +380,7 @@ impl Display for DataDeclaration {
 pub struct Function {
     pub name: String,
     pub parameters: Vec<DataDeclaration>,
+    pub returns: Vec<DataDeclaration>,
     pub body: Block,
 }
 
