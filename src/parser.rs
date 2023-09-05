@@ -861,14 +861,16 @@ ENDIF.";
         input: &'static str,
         name: &'static str,
         parameters: Vec<DataDeclaration>,
+        returns: Vec<DataDeclaration>,
     }
 
     macro_rules! def_case_function {
-            ($input:expr,$name:expr, $($ident:literal,$ty:ident),+) => {
+            ($input:expr;$name:expr;$($par_ident:literal,$par_ty:ident),+;$($ret_ident:literal,$ret_ty:ident),+) => {
                 TestCaseFunction{
                     input: $input,
                     name: $name.into(),
-                    parameters: vec![$(def_ddecl!($ty, $ident)),+],
+                    parameters: vec![$(def_ddecl!($par_ty, $par_ident)),+],
+                    returns: vec![$(def_ddecl!($ret_ty, $ret_ident)),+],
                 }
             };
         }
@@ -878,12 +880,10 @@ ENDIF.";
         let tests = vec![def_case_function!(
             "METHOD sum IMPORTING iv_x TYPE i iv_y TYPE i RETURNING rv_sum TYPE i.
 rv_sum = iv_x + iv_y.
-ENDMETHOD.",
-            "sum",
-            "iv_x",
-            Int,
-            "iv_y",
-            Int
+ENDMETHOD.";
+            "sum";
+            "iv_x", Int, "iv_y", Int;
+            "rv_sum", Int
         )];
 
         for test in tests {
@@ -912,6 +912,18 @@ ENDMETHOD.",
                 );
 
                 for (g, w) in statement.parameters.iter().zip(test.parameters.iter()) {
+                    assert_eq!(g, w, "parameters do not match.\n\tgot={}\n\twant={}", g, w);
+                }
+
+                assert_eq!(
+                    statement.returns.len(),
+                    test.returns.len(),
+                    "return parameter count does not match.\n\tgot={}\n\twant={}",
+                    statement.returns.len(),
+                    test.returns.len()
+                );
+
+                for (g, w) in statement.returns.iter().zip(test.returns.iter()) {
                     assert_eq!(g, w, "parameters do not match.\n\tgot={}\n\twant={}", g, w);
                 }
             } else {
