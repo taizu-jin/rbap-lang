@@ -87,7 +87,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
 mod tests {
     use super::*;
     use crate::{
-        ast::{Data, DataDeclaration, DataType, Expression::*, Operator},
+        ast::{Block, Data, DataDeclaration, DataType, Expression::*, Operator},
         lexer::Lexer,
     };
 
@@ -208,16 +208,20 @@ mod tests {
         expected: Vec<DataDeclaration>,
     }
 
+    macro_rules! def_ddecl {
+        ($kind:ident,$literal:literal) => {
+            DataDeclaration {
+                ident: $literal.into(),
+                ty: DataType::$kind,
+            }
+        };
+    }
+
     macro_rules! def_case_ddecl {
         ($input:expr, $($kind:ident:$literal:literal),*) => {
             TestCaseDataDeclaration {
                 input: $input,
-                expected: vec![$(
-                    DataDeclaration{
-                        ident: $literal.into(),
-                        ty: DataType::$kind,
-                    }
-                    ),*]
+                expected: vec![$(def_ddecl!($kind, $literal)),*]
             }
         };
     }
@@ -850,6 +854,72 @@ ENDIF.";
                 "program.statements[0] is not an Statement::IfStatement. got={:?}",
                 program.statements[0]
             )
+        }
+    }
+
+    struct TestCaseFunction {
+        input: &'static str,
+        name: &'static str,
+        parameters: Vec<DataDeclaration>,
+    }
+
+    macro_rules! def_case_function {
+            ($input:expr,$name:expr, $($ident:literal,$ty:ident),+) => {
+                TestCaseFunction{
+                    input: $input,
+                    name: $name.into(),
+                    parameters: vec![$(def_ddecl!($ty, $ident)),+],
+                }
+            };
+        }
+
+    #[test]
+    fn test_function_statement() {
+        let tests = vec![def_case_function!(
+            "METHOD sum IMPORTING iv_x TYPE i iv_y TYPE i RETURNING rv_sum TYPE i.
+rv_sum = iv_x + iv_y.
+ENDMETHOD.",
+            "sum",
+            "iv_x",
+            Int,
+            "iv_y",
+            Int
+        )];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Function(statement) = &program.statements[0] {
+                assert_eq!(
+                    statement.name, test.name,
+                    "function names do not match.\n\tgot={}\n\twant={}",
+                    statement.name, test.name
+                );
+
+                assert_eq!(
+                    statement.parameters.len(),
+                    test.parameters.len(),
+                    "parameter count does not match.\n\tgot={}\n\twant={}",
+                    statement.parameters.len(),
+                    test.parameters.len()
+                );
+
+                for (g, w) in statement.parameters.iter().zip(test.parameters.iter()) {
+                    assert_eq!(g, w, "parameters do not match.\n\tgot={}\n\twant={}", g, w);
+                }
+            } else {
+                panic!(
+                    "program.statements[0] is not an Statement::Function. got={:?}",
+                    program.statements[0]
+                )
+            }
         }
     }
 }
