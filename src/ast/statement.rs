@@ -278,7 +278,7 @@ impl Display for Statement {
             Statement::Expression(e) => write!(f, "{}.", e),
             Statement::Data(d) => write!(f, "{}.", d),
             Statement::DataDeclaration(dd) => {
-                write!(f, "DATA:")?;
+                write!(f, "DATA: ")?;
                 if dd.len() == 1 {
                     write!(f, "{}", dd[0])?;
                 } else {
