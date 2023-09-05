@@ -2,7 +2,7 @@ mod expression;
 mod statement;
 
 pub use expression::{Expression, Operator};
-pub use statement::{Data, DataDeclaration, DataType, Statement};
+pub use statement::{Block, Data, DataDeclaration, DataType, Statement};
 
 #[derive(Debug)]
 pub struct Program {
