@@ -87,7 +87,7 @@ impl<'t, 's: 't> Parser<'t, 's> {
 mod tests {
     use super::*;
     use crate::{
-        ast::{Block, Data, DataDeclaration, DataType, Expression::*, Operator},
+        ast::{Data, DataDeclaration, DataType, Expression::*, Operator},
         lexer::Lexer,
     };
 
@@ -876,7 +876,7 @@ ENDIF.";
         }
 
     #[test]
-    fn test_function_statement() {
+    fn test_function_statement_name_and_parameter_parsing() {
         let tests = vec![def_case_function!(
             "METHOD sum IMPORTING iv_x TYPE i iv_y TYPE i RETURNING rv_sum TYPE i.
 rv_sum = iv_x + iv_y.
@@ -932,6 +932,49 @@ ENDMETHOD.";
                     program.statements[0]
                 )
             }
+        }
+    }
+
+    #[test]
+    fn test_function_statement_body_parsing() {
+        let input = "METHOD sum IMPORTING iv_x TYPE i iv_y TYPE i RETURNING rv_sum TYPE i.
+DATA: lv_sum TYPE i.
+
+lv_sum = iv_x + iv_y.
+rv_sum = lv_sum.
+ENDMETHOD.";
+
+        let program = parse_program(input.to_string());
+
+        assert_eq!(
+            1,
+            program.statements.len(),
+            "program has not enough statements. got={}",
+            program.statements.len()
+        );
+        if let Statement::Function(statement) = &program.statements[0] {
+            for (a, e) in statement
+                .body
+                .statements
+                .iter()
+                .map(|s| s.to_string())
+                .zip(vec![
+                    "DATA: lv_sum TYPE i.",
+                    "lv_sum = (iv_x + iv_y).",
+                    "rv_sum = lv_sum.",
+                ])
+            {
+                assert_eq!(
+                    a, e,
+                    "statement within a block is not as expected.\n\tgot={}\n\twant={}",
+                    a, e
+                );
+            }
+        } else {
+            panic!(
+                "program.statements[0] is not an Statement::Function. got={:?}",
+                program.statements[0]
+            )
         }
     }
 }
