@@ -21,7 +21,7 @@ pub use self::{call::Call, infix::Infix, operator::Operator, prefix::Prefix};
 pub enum Expression {
     IntLiteral(primitive::Int),
     StringLiteral(primitive::String),
-    Ident(String),
+    Ident(primitive::Identifier),
     BoolLiteral(bool),
     StringTemplate(Vec<Expression>),
     InfixExpression(Infix),
@@ -66,7 +66,7 @@ impl Expression {
             TokenKind::StringLiteral => Ok(primitive::String::parse(current)?.into()),
             TokenKind::LParen => Self::parse_grouped_expression(carriage),
             TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
-            TokenKind::Ident => Self::parse_ident_expression(current),
+            TokenKind::Ident => Ok(primitive::Identifier::parse(current)?.into()),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
             TokenKind::Minus | TokenKind::Not => Ok(Prefix::parse(carriage, current)?.into()),
             _ => Err(Error::parse_expression(&current)),
@@ -155,10 +155,6 @@ impl Expression {
                 ))
             }
         }
-    }
-
-    fn parse_ident_expression(token: Token) -> Result<Self> {
-        Ok(Expression::Ident(token.literal.to_string()))
     }
 
     fn parse_string_template_expression(carriage: &mut Carriage, peek: Token) -> Result<Self> {
