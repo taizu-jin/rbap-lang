@@ -113,7 +113,7 @@ mod tests {
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
                 IntLiteral(value) => {
-                    assert_eq!(5, *value, "value is not {}, got={}", 5, *value);
+                    assert_eq!(5i64, (*value).into(), "value is not {}, got={}", 5, *value);
                 }
                 _ => panic!("expression is not IntLiteral. got={:?}", expression),
             }
@@ -302,7 +302,7 @@ mod tests {
     fn test_data_statement() {
         let tests = vec![
             def_case_data!("lv_string = '5'.", "lv_string", StringLiteral("5".into())),
-            def_case_data!("lv_int = 1.", "lv_int", IntLiteral(1)),
+            def_case_data!("lv_int = 1.", "lv_int", 1.into()),
             def_case_data!(
                 "lv_int = |some { lv_string } literal|.",
                 "lv_int",
@@ -362,12 +362,12 @@ mod tests {
     fn test_write_statement() {
         let tests = vec![
             def_case_expr!("WRITE '5'.", StringLiteral("5".into())),
-            def_case_expr!("WRITE 1.", IntLiteral(1)),
+            def_case_expr!("WRITE 1.", 1.into()),
             def_case_expr!("WRITE lv_string.", Ident("lv_string".into())),
             def_case_expr!(
                 "WRITE: lv_string, 5, '5'.",
                 Ident("lv_string".into()),
-                IntLiteral(5),
+                5.into(),
                 StringLiteral("5".into())
             ),
             def_case_expr!(
@@ -375,7 +375,7 @@ mod tests {
                 StringLiteral("\n".into()),
                 Ident("lv_string".into()),
                 StringLiteral("\n".into()),
-                IntLiteral(5),
+                5.into(),
                 StringLiteral("\n".into()),
                 StringLiteral("5".into())
             ),
@@ -483,7 +483,7 @@ mod tests {
     #[test]
     fn test_prefix_expression() -> Result<()> {
         let tests = vec![
-            def_case_prefix!("-15.", Minus, IntLiteral(15)),
+            def_case_prefix!("-15.", Minus, 15.into()),
             def_case_prefix!("-foobar.", Minus, Ident("foobar".into())),
             def_case_prefix!("NOT rbap_true.", Not, BoolLiteral(true)),
             def_case_prefix!("NOT rbap_false.", Not, BoolLiteral(false)),
@@ -546,14 +546,14 @@ mod tests {
     #[test]
     fn test_infix_expression() -> Result<()> {
         let tests = vec![
-            def_case_infix!("5 + 5.", Plus, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 - 5.", Minus, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 * 5.", Asterisk, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 / 5.", Slash, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 > 5.", GreaterThan, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 < 5.", LesserThan, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 == 5.", Equals, IntLiteral(5), IntLiteral(5)),
-            def_case_infix!("5 <> 5.", NotEquals, IntLiteral(5), IntLiteral(5)),
+            def_case_infix!("5 + 5.", Plus, 5.into(), 5.into()),
+            def_case_infix!("5 - 5.", Minus, 5.into(), 5.into()),
+            def_case_infix!("5 * 5.", Asterisk, 5.into(), 5.into()),
+            def_case_infix!("5 / 5.", Slash, 5.into(), 5.into()),
+            def_case_infix!("5 > 5.", GreaterThan, 5.into(), 5.into()),
+            def_case_infix!("5 < 5.", LesserThan, 5.into(), 5.into()),
+            def_case_infix!("5 == 5.", Equals, 5.into(), 5.into()),
+            def_case_infix!("5 <> 5.", NotEquals, 5.into(), 5.into()),
             def_case_infix!(
                 "foobar + barfoo.",
                 Plus,
@@ -999,16 +999,16 @@ ENDMETHOD.";
         let tests = vec![def_case_call!(
             "add(1, 2 * 3, 4 + 5).",
             "add",
-            IntLiteral(1),
+            1.into(),
             InfixExpression(Infix {
-                left: IntLiteral(2).into(),
+                left: Expression::from(2).into(),
                 operator: Operator::Mul,
-                right: IntLiteral(3).into(),
+                right: Expression::from(3).into(),
             }),
             InfixExpression(Infix {
-                left: IntLiteral(4).into(),
+                left: Expression::from(4).into(),
                 operator: Operator::Add,
-                right: IntLiteral(5).into(),
+                right: Expression::from(5).into(),
             })
         )];
 

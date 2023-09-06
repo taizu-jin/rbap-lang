@@ -70,7 +70,7 @@ impl Compiler {
             },
             Node::Expression(e) => match e {
                 crate::ast::Expression::IntLiteral(i) => {
-                    let int = Object::Int(i);
+                    let int = Object::Int(i.into());
                     let constant = self.add_constant(int);
                     self.emit(OP_CONSTANT, &[constant]);
                 }
