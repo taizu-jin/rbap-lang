@@ -82,6 +82,7 @@ impl Compiler {
                 crate::ast::Expression::Ident(_) => todo!(),
                 crate::ast::Expression::BoolLiteral(_) => todo!(),
                 crate::ast::Expression::StringTemplate(_) => todo!(),
+                crate::ast::Expression::CallExpression(_) => todo!(),
                 crate::ast::Expression::InfixExpression(ie) => {
                     let (left, right, operand_op_code) = match ie.operator {
                         crate::ast::Operator::Add => (*ie.left, *ie.right, OP_ADD),

@@ -88,6 +88,7 @@ pub enum Expression {
     StringTemplate(Vec<Expression>),
     InfixExpression(InfixExpression),
     PrefixExpression(PrefixExpression),
+    CallExpression(CallExpression),
 }
 
 impl Expression {
@@ -172,7 +173,11 @@ impl Expression {
 
         let mut context = Context::from_carriage(carriage)?;
         context.set_expression(expression);
-        let expression = parse(carriage, &context, Self::parse_infix_expression)?;
+        let expression = match &context.current_token.kind {
+            TokenKind::LParen => parse(carriage, &context, Self::parse_call_expression)?,
+            _ => parse(carriage, &context, Self::parse_infix_expression)?,
+        };
+
         Ok(expression)
     }
 
@@ -187,6 +192,7 @@ impl Expression {
                 | TokenKind::LesserThan
                 | TokenKind::Equals
                 | TokenKind::NotEquals
+                | TokenKind::LParen
         )
     }
 
@@ -303,6 +309,13 @@ impl Expression {
             _ => Some(Err(Error::parse_string_template(&context.current_token))),
         }
     }
+
+    fn parse_call_expression(
+        _carriage: &mut Carriage,
+        function: Option<Expression>,
+    ) -> Result<Self> {
+        todo!("call expression")
+    }
 }
 
 impl Display for Expression {
@@ -329,6 +342,30 @@ impl Display for Expression {
                 write!(f, "({} {} {})", ie.left, ie.operator, ie.right)
             }
             Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
+            Expression::CallExpression(ce) => write!(f, "{}", ce),
         }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CallExpression {
+    function: String,
+    arguments: Vec<Expression>,
+}
+
+impl Display for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.function)?;
+
+        let mut iter = self.arguments.iter().peekable();
+
+        while let Some(exp) = iter.next() {
+            if iter.peek().is_some() {
+                write!(f, "{}, ", exp)?;
+            } else {
+                write!(f, "{}", exp)?;
+            }
+        }
+        write!(f, ")")
     }
 }
