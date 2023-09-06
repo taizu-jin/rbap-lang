@@ -227,6 +227,7 @@ impl Display for Expression {
             Expression::IntLiteral(il) => write!(f, "{}", il),
             Expression::StringLiteral(sl) => write!(f, "{}", sl),
             Expression::Ident(ident) => write!(f, "{}", ident),
+            Expression::InfixExpression(ie) => write!(f, "{}", ie),
             Expression::StringTemplate(st) => {
                 write!(f, "|")?;
                 for s in st {
@@ -240,9 +241,6 @@ impl Display for Expression {
                 } else {
                     write!(f, "rbap_false")
                 }
-            }
-            Expression::InfixExpression(ie) => {
-                write!(f, "({} {} {})", ie.left, ie.operator, ie.right)
             }
             Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
