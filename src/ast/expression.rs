@@ -242,7 +242,7 @@ impl Display for Expression {
                     write!(f, "rbap_false")
                 }
             }
-            Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
+            Expression::PrefixExpression(pe) => write!(f, "{}", pe),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
         }
     }
