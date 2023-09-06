@@ -20,7 +20,7 @@ pub enum Precedence {
     Sum,
     Product,
     Prefix,
-    _Call,
+    Call,
 }
 
 impl From<&Token<'_>> for Precedence {
@@ -37,6 +37,7 @@ impl From<TokenKind> for Precedence {
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
             TokenKind::Equals | TokenKind::NotEquals => Precedence::Equals,
             TokenKind::LesserThan | TokenKind::GreaterThan => Precedence::LessGreater,
+            TokenKind::LParen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
