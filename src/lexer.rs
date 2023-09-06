@@ -203,18 +203,12 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
     fn get_ident(&mut self) -> Token<'t> {
         let literal = self.read_ident();
 
-        let token = if literal == "data" && self.ch == b'(' {
-            let token = Token::new(literal, TokenKind::Data);
-
-            self.get_data_inline(token)
-        } else {
-            let kind = match TokenKind::from(&literal) {
-                Some(kind) => kind,
-                None => TokenKind::Ident,
-            };
-
-            Token::new(literal, kind)
+        let kind = match TokenKind::from(&literal) {
+            Some(kind) => kind,
+            None => TokenKind::Ident,
         };
+
+        let token = Token::new(literal, kind);
 
         self.switch_strategy(Strategy::Token);
         token
@@ -266,27 +260,6 @@ impl<'t, 's: 't> LexerIter<'t, 's> {
 
         String::from_utf8_lossy(&self.input[pos..self.position])
     }
-
-    fn get_data_inline(&mut self, token: Token<'t>) -> Token<'t> {
-        let position = self.position;
-        let read_position = self.read_position;
-        let ch = self.ch;
-
-        self.read_char();
-
-        let literal = self.read_ident();
-        if self.ch != b')' {
-            self.position = position;
-            self.read_position = read_position;
-            self.ch = ch;
-
-            return token;
-        }
-
-        self.read_char();
-
-        Token::new(literal, TokenKind::DataInline)
-    }
 }
 
 impl<'t, 's: 't> Iterator for LexerIter<'t, 's> {
@@ -318,7 +291,7 @@ mod tests {
 lv_string = '(ツ)'.
 WRITE lv_string.
 
-DATA(lv_template_string) = |\_{ lv_string }_/|.
+lv_template_string = |\_{ lv_string }_/|.
 WRITE: / ' ', lv_template_string, ' '.
 
 WRITE: / lv_int.
@@ -361,7 +334,7 @@ ENDMETHOD.";
             "write":Write,
             "lv_string":Ident,
             ".":Period,
-            "lv_template_string":DataInline,
+            "lv_template_string":Ident,
             "=":Assign,
             "|":VSlash,
             "\\_":StringLiteral,
