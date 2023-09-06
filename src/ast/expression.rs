@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq)]
-pub struct InfixExpression {
+pub struct Infix {
     pub left: Box<Expression>,
     pub operator: Operator,
     pub right: Box<Expression>,
@@ -74,7 +74,7 @@ impl TryFrom<TokenKind> for Operator {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct PrefixExpression {
+pub struct Prefix {
     pub operator: Operator,
     pub right: Box<Expression>,
 }
@@ -86,9 +86,9 @@ pub enum Expression {
     Ident(String),
     BoolLiteral(bool),
     StringTemplate(Vec<Expression>),
-    InfixExpression(InfixExpression),
-    PrefixExpression(PrefixExpression),
-    CallExpression(CallExpression),
+    InfixExpression(Infix),
+    PrefixExpression(Prefix),
+    CallExpression(Call),
 }
 
 impl Expression {
@@ -151,7 +151,7 @@ impl Expression {
 
         let expression = parse(carriage, &context, Self::parse)?;
 
-        let expression = PrefixExpression {
+        let expression = Prefix {
             operator: Operator::try_from(current.kind)?,
             right: Box::new(expression),
         };
@@ -206,13 +206,17 @@ impl Expression {
 
         let right = parse(carriage, &context, Expression::parse)?;
 
-        let expression = InfixExpression {
+        let expression = Infix {
             left: Box::new(left),
             operator: Operator::try_from(current.kind)?,
             right: Box::new(right),
         };
 
         Ok(Expression::InfixExpression(expression))
+    }
+
+    fn parse_call_expression(_carriage: &mut Carriage, _function: Expression) -> Result<Self> {
+        todo!("call expression")
     }
 
     fn parse_int_literal_expression(token: Token) -> Result<Self> {
@@ -303,10 +307,6 @@ impl Expression {
             _ => Some(Err(Error::parse_string_template(&context.current_token))),
         }
     }
-
-    fn parse_call_expression(_carriage: &mut Carriage, _function: Expression) -> Result<Self> {
-        todo!("call expression")
-    }
 }
 
 impl Display for Expression {
@@ -339,12 +339,12 @@ impl Display for Expression {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct CallExpression {
-    function: String,
-    arguments: Vec<Expression>,
+pub struct Call {
+    pub function: String,
+    pub arguments: Vec<Expression>,
 }
 
-impl Display for CallExpression {
+impl Display for Call {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.function)?;
 

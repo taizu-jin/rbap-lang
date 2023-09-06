@@ -1,7 +1,7 @@
 mod expression;
 mod statement;
 
-pub use expression::{Expression, Operator};
+pub use expression::{Expression, Infix, Operator};
 pub use statement::{Block, Data, DataDeclaration, DataType, Statement};
 
 #[derive(Debug)]
