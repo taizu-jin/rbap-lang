@@ -113,53 +113,20 @@ where
     }
 }
 
-impl<'t, 's: 't, T1, T2, R, F> Handler<'t, 's, (T1, T2), R> for F
-where
-    F: Fn(&mut Carriage, T1, T2) -> Result<R>,
-    T1: FromContext<'t>,
-    T2: FromContext<'t>,
-{
-    fn call(self, carriage: &mut Carriage<'t, 's>, context: &Context<'t>) -> Result<R> {
-        (self)(
-            carriage,
-            T1::from_context(context),
-            T2::from_context(context),
-        )
-    }
+macro_rules! impl_for_tuple {
+    ($($t:ident),+) => {
+        impl<'t, 's: 't, $($t),+, R, F> Handler<'t, 's, ($($t),+), R> for F
+        where
+            F: Fn(&mut Carriage, $($t),+) -> Result<R>,
+            $($t: FromContext<'t>),+
+        {
+            fn call(self, carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
+                (self)(carriage, $($t::from_context(context)),+)
+            }
+        }
+    };
 }
 
-impl<'t, 's: 't, T1, T2, T3, R, F> Handler<'t, 's, (T1, T2, T3), R> for F
-where
-    F: Fn(&mut Carriage, T1, T2, T3) -> Result<R>,
-    T1: FromContext<'t>,
-    T2: FromContext<'t>,
-    T3: FromContext<'t>,
-{
-    fn call(self, carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
-        (self)(
-            carriage,
-            T1::from_context(context),
-            T2::from_context(context),
-            T3::from_context(context),
-        )
-    }
-}
-
-impl<'t, 's: 't, T1, T2, T3, T4, R, F> Handler<'t, 's, (T1, T2, T3, T4), R> for F
-where
-    F: Fn(&mut Carriage, T1, T2, T3, T4) -> Result<R>,
-    T1: FromContext<'t>,
-    T2: FromContext<'t>,
-    T3: FromContext<'t>,
-    T4: FromContext<'t>,
-{
-    fn call(self, carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
-        (self)(
-            carriage,
-            T1::from_context(context),
-            T2::from_context(context),
-            T3::from_context(context),
-            T4::from_context(context),
-        )
-    }
-}
+impl_for_tuple!(T1, T2);
+impl_for_tuple!(T1, T2, T3);
+impl_for_tuple!(T1, T2, T3, T4);
