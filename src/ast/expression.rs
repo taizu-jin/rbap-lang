@@ -73,7 +73,7 @@ impl Expression {
         }
     }
 
-    pub fn parse_infix(
+    fn parse_infix(
         carriage: &mut Carriage,
         peek_kind: TokenKind,
         expression: Expression,
