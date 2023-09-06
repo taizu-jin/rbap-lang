@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     error::Result,
     parser::{context::CurrentToken, parse, Carriage, Context, Precedence},
@@ -36,5 +38,11 @@ impl Infix {
 impl From<Infix> for Expression {
     fn from(value: Infix) -> Self {
         Expression::InfixExpression(value)
+    }
+}
+
+impl Display for Infix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} {} {})", self.left, self.operator, self.right)
     }
 }
