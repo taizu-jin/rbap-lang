@@ -85,3 +85,48 @@ impl Display for String {
         write!(f, "{}", self.0)
     }
 }
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Identifier(std::string::String);
+
+impl Identifier {
+    pub fn parse(token: Token) -> Result<Self> {
+        Ok(Self(token.literal.to_string()))
+    }
+}
+
+impl AsRef<str> for Identifier {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<std::string::String> for Identifier {
+    fn from(value: std::string::String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for Identifier {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
+impl From<Identifier> for std::string::String {
+    fn from(value: Identifier) -> Self {
+        value.0
+    }
+}
+
+impl From<Identifier> for Expression {
+    fn from(value: Identifier) -> Self {
+        Expression::Ident(value)
+    }
+}
+
+impl Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}

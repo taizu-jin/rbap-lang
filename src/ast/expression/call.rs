@@ -5,11 +5,11 @@ use crate::{
     parser::Carriage,
 };
 
-use super::Expression;
+use super::{primitive::Identifier, Expression};
 
 #[derive(Debug, PartialEq)]
 pub struct Call {
-    pub function: String,
+    pub function: Identifier,
     pub arguments: Vec<Expression>,
 }
 

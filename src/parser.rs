@@ -196,7 +196,13 @@ mod tests {
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
                 Ident(ident) => {
-                    assert_eq!("lv_string", ident, "value is not {}, got={}", "5", ident);
+                    assert_eq!(
+                        "lv_string",
+                        ident.as_ref(),
+                        "value is not {}, got={}",
+                        "5",
+                        ident
+                    );
                 }
                 _ => panic!("expression is not StringLiteral. got={:?}", expression),
             }
@@ -1023,7 +1029,7 @@ ENDMETHOD.";
             );
 
             if let Statement::Expression(CallExpression(ce)) = &program.statements[0] {
-                assert_eq!(ce.function, test.function);
+                assert_eq!(ce.function.as_ref(), test.function);
 
                 assert_eq!(
                     ce.arguments.len(),
@@ -1080,7 +1086,7 @@ ENDMETHOD.";
             );
 
             if let Statement::Expression(CallExpression(ce)) = &program.statements[0] {
-                assert_eq!(ce.function, test.function);
+                assert_eq!(ce.function.as_ref(), test.function);
 
                 assert_eq!(
                     ce.arguments.len(),
