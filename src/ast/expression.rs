@@ -2,6 +2,7 @@ mod call;
 mod infix;
 mod operator;
 mod prefix;
+pub mod primitive;
 
 use std::fmt::Display;
 
@@ -18,7 +19,7 @@ pub use self::{call::Call, infix::Infix, operator::Operator, prefix::Prefix};
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
-    IntLiteral(i64),
+    IntLiteral(primitive::Int),
     StringLiteral(String),
     Ident(String),
     BoolLiteral(bool),
@@ -61,7 +62,7 @@ impl Expression {
         PeekToken(peek): PeekToken,
     ) -> Result<Self> {
         match current.kind {
-            TokenKind::IntLiteral => Self::parse_int_literal_expression(current),
+            TokenKind::IntLiteral => Ok(primitive::Int::parse(current)?.into()),
             TokenKind::StringLiteral => Self::parse_string_expression(current),
             TokenKind::LParen => Self::parse_grouped_expression(carriage),
             TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
@@ -254,5 +255,11 @@ impl Display for Expression {
             Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
         }
+    }
+}
+
+impl From<i64> for Expression {
+    fn from(value: i64) -> Self {
+        Expression::IntLiteral(value.into())
     }
 }
