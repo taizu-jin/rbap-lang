@@ -238,8 +238,45 @@ impl Expression {
         Ok(Expression::InfixExpression(expression))
     }
 
-    fn parse_call_expression(_carriage: &mut Carriage, _function: Expression) -> Result<Self> {
-        todo!("call expression")
+    fn parse_call_expression(carriage: &mut Carriage, function: Expression) -> Result<Self> {
+        let function = if let Expression::Ident(function) = function {
+            function
+        } else {
+            return Err(Error::unexpected_expression(function));
+        };
+
+        let arguments = Self::parse_expression_list(carriage)?;
+
+        let call = Call {
+            function,
+            arguments,
+        };
+
+        Ok(Expression::CallExpression(call))
+    }
+
+    fn parse_expression_list(carriage: &mut Carriage) -> Result<Vec<Expression>> {
+        let mut list = Vec::new();
+
+        if carriage.is_peek_token(TokenKind::RParen) {
+            carriage.next_token()?;
+            return Ok(list);
+        }
+
+        let context = Context::from_carriage(carriage)?;
+        let expression = parse(carriage, &context, Self::parse)?;
+        list.push(expression);
+
+        while carriage.is_peek_token(TokenKind::Comma) {
+            carriage.next_token()?;
+            let context = Context::from_carriage(carriage)?;
+            let expression = parse(carriage, &context, Self::parse)?;
+            list.push(expression);
+        }
+
+        carriage.expect_tokens(&[TokenKind::RParen])?;
+
+        Ok(list)
     }
 
     fn parse_int_literal_expression(token: Token) -> Result<Self> {
