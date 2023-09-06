@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     error::Result,
     lexer::Token,
@@ -31,5 +33,11 @@ impl Prefix {
 impl From<Prefix> for Expression {
     fn from(value: Prefix) -> Self {
         Expression::PrefixExpression(value)
+    }
+}
+
+impl Display for Prefix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}{})", self.operator, self.right)
     }
 }
