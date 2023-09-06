@@ -6,7 +6,7 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-use super::Expression;
+use super::{primitive, Expression};
 
 #[derive(Debug, PartialEq)]
 pub enum Statement {
@@ -175,7 +175,7 @@ impl Statement {
 
                 loop {
                     if carriage.is_peek_token(TokenKind::Slash) {
-                        expressions.push(Expression::StringLiteral("\n".to_string()));
+                        expressions.push(primitive::String::from("\n").into());
                         carriage.next_token()?;
                     }
 
@@ -190,7 +190,7 @@ impl Statement {
             }
             false => {
                 if carriage.is_peek_token(TokenKind::Slash) {
-                    expressions.push(Expression::StringLiteral("\n".to_string()));
+                    expressions.push(primitive::String::from("\n").into());
                     carriage.next_token()?;
                 }
                 expressions.push(Self::expect_and_parse_expression(carriage)?)
@@ -281,7 +281,7 @@ impl Display for Statement {
                 write!(f, "WRITE:")?;
                 for s in strings {
                     match s {
-                        Expression::StringLiteral(s) if s == "\n" => write!(f, " /")?,
+                        Expression::StringLiteral(s) if s.as_ref() == "\n" => write!(f, " /")?,
                         e => write!(f, " {}", e)?,
                     }
                 }

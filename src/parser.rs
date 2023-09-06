@@ -169,7 +169,7 @@ mod tests {
         if let Statement::Expression(expression) = &program.statements[0] {
             match expression {
                 StringLiteral(value) => {
-                    assert_eq!("5", value, "value is not {}, got={}", "5", value);
+                    assert_eq!("5", value.as_ref(), "value is not {}, got={}", "5", value);
                 }
                 _ => panic!("expression is not StringLiteral. got={:?}", expression),
             }

@@ -20,7 +20,7 @@ pub use self::{call::Call, infix::Infix, operator::Operator, prefix::Prefix};
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     IntLiteral(primitive::Int),
-    StringLiteral(String),
+    StringLiteral(primitive::String),
     Ident(String),
     BoolLiteral(bool),
     StringTemplate(Vec<Expression>),
@@ -63,7 +63,7 @@ impl Expression {
     ) -> Result<Self> {
         match current.kind {
             TokenKind::IntLiteral => Ok(primitive::Int::parse(current)?.into()),
-            TokenKind::StringLiteral => Self::parse_string_expression(current),
+            TokenKind::StringLiteral => Ok(primitive::String::parse(current)?.into()),
             TokenKind::LParen => Self::parse_grouped_expression(carriage),
             TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
             TokenKind::Ident => Self::parse_ident_expression(current),
@@ -157,10 +157,6 @@ impl Expression {
         }
     }
 
-    fn parse_string_expression(token: Token) -> Result<Self> {
-        Ok(Expression::StringLiteral(token.literal.to_string()))
-    }
-
     fn parse_ident_expression(token: Token) -> Result<Self> {
         Ok(Expression::Ident(token.literal.to_string()))
     }
@@ -182,7 +178,7 @@ impl Expression {
             let expression = expression?;
 
             match expression {
-                Expression::StringLiteral(literal) if literal.is_empty() => continue,
+                Expression::StringLiteral(literal) if literal.as_ref().is_empty() => continue,
                 expression => expressions.push(expression),
             }
         }
