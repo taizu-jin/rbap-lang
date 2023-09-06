@@ -88,7 +88,11 @@ impl<'t, 's: 't> Parser<'t, 's> {
 mod tests {
     use super::*;
     use crate::{
-        ast::{Data, DataDeclaration, DataType, Expression::*, Operator},
+        ast::{
+            Data, DataDeclaration, DataType,
+            Expression::{self, *},
+            Infix, Operator,
+        },
         lexer::Lexer,
     };
 
@@ -976,6 +980,73 @@ ENDMETHOD.";
                 "program.statements[0] is not an Statement::Function. got={:?}",
                 program.statements[0]
             )
+        }
+    }
+
+    struct TestCaseCall {
+        input: &'static str,
+        function: &'static str,
+        arguments: Vec<Expression>,
+    }
+
+    macro_rules! def_case_call{
+        ($input:literal, $function:literal, $($argument:expr),+) => {
+            TestCaseCall{
+                input: $input.into(),
+                function: $function.into(),
+                arguments: vec![$($argument),+],
+            }
+        }
+    }
+
+    #[test]
+    fn test_call_expression() {
+        let tests = vec![def_case_call!(
+            "add(1, 2 * 3, 4 + 5).",
+            "add",
+            IntLiteral(1),
+            InfixExpression(Infix {
+                left: IntLiteral(2).into(),
+                operator: Operator::Mul,
+                right: IntLiteral(2).into(),
+            }),
+            InfixExpression(Infix {
+                left: IntLiteral(4).into(),
+                operator: Operator::Add,
+                right: IntLiteral(5).into(),
+            })
+        )];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(CallExpression(ce)) = &program.statements[0] {
+                assert_eq!(ce.function, test.function);
+
+                assert_eq!(
+                    ce.arguments.len(),
+                    test.arguments.len(),
+                    "argument count does not match.\n\tgot={}\n\twant={}",
+                    ce.arguments.len(),
+                    test.arguments.len(),
+                );
+
+                for (g, w) in ce.arguments.iter().zip(test.arguments.iter()) {
+                    assert_eq!(g, w, "expression do not match.\n\tgot={}\n\twant={}", g, w);
+                }
+            } else {
+                panic!(
+                "program.statements[0] is not an Statement::Expression(Expression::CallExpression). got={:?}",
+                program.statements[0]
+            )
+            }
         }
     }
 }
