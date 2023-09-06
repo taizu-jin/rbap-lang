@@ -1008,7 +1008,7 @@ ENDMETHOD.";
             InfixExpression(Infix {
                 left: IntLiteral(2).into(),
                 operator: Operator::Mul,
-                right: IntLiteral(2).into(),
+                right: IntLiteral(3).into(),
             }),
             InfixExpression(Infix {
                 left: IntLiteral(4).into(),
