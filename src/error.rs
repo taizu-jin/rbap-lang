@@ -17,6 +17,7 @@ pub enum ErrorKind {
     ParseStringTemplate,
     Eof,
     ParseExpression,
+    UnexpectedExpression,
     ContextExpression,
     ParseInfixUnexpectedToken,
     ParseInfixUnusupportedOperator,
@@ -37,6 +38,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParseInfixError(e) => e.into(),
             ErrorRepr::ContextError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
+            ErrorRepr::UnexpectedExpression(_) => Self::UnexpectedExpression,
         }
     }
 }
@@ -129,10 +131,18 @@ impl Error {
             repr: ErrorRepr::UndefinedOpcode(opcode),
         }
     }
+
     pub fn unknown_operator(kind: TokenKind) -> Self {
         Self {
             kind: ErrorKind::UnknownOperator,
             repr: ErrorRepr::UnknownOperator(kind),
+        }
+    }
+
+    pub fn unexpected_expression(expression: Expression) -> Self {
+        Self {
+            kind: ErrorKind::UnexpectedExpression,
+            repr: ErrorRepr::UnexpectedExpression(expression),
         }
     }
 }
@@ -194,6 +204,8 @@ enum ErrorRepr {
     ParseExpression { literal: String, kind: TokenKind },
     #[error(transparent)]
     ParseInfixError(#[from] ParseInfixError),
+    #[error("Unexpected expression {0}")]
+    UnexpectedExpression(Expression),
     #[error("unknown operator {0}")]
     UnknownOperator(TokenKind),
     #[error(transparent)]
