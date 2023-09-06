@@ -1,6 +1,8 @@
 use std::cell::RefCell;
 
 use crate::ast::Expression;
+use crate::error::ContextError;
+use crate::error::Error;
 use crate::lexer::Token;
 
 use super::Carriage;
@@ -46,15 +48,17 @@ impl<'t> Context<'t> {
 }
 
 trait FromContext<'t> {
-    fn from_context(context: &Context<'t>) -> Self;
+    fn from_context(context: &Context<'t>) -> Result<Self>
+    where
+        Self: Sized;
 }
 
 #[derive(Clone)]
 pub struct PeekToken<'t>(pub Token<'t>);
 
 impl<'t> FromContext<'t> for PeekToken<'t> {
-    fn from_context(context: &Context<'t>) -> Self {
-        PeekToken(context.peek_token.clone())
+    fn from_context(context: &Context<'t>) -> Result<Self> {
+        Ok(PeekToken(context.peek_token.clone()))
     }
 }
 
@@ -62,21 +66,22 @@ impl<'t> FromContext<'t> for PeekToken<'t> {
 pub struct CurrentToken<'t>(pub Token<'t>);
 
 impl<'t> FromContext<'t> for CurrentToken<'t> {
-    fn from_context(context: &Context<'t>) -> Self {
-        CurrentToken(context.current_token.clone())
+    fn from_context(context: &Context<'t>) -> Result<Self> {
+        Ok(CurrentToken(context.current_token.clone()))
     }
 }
 
-impl<'t> FromContext<'t> for Option<Expression> {
-    fn from_context(context: &Context<'t>) -> Self {
+impl<'t> FromContext<'t> for Expression {
+    fn from_context(context: &Context<'t>) -> Result<Self> {
         let mut expr = context.expression.borrow_mut();
         expr.take()
+            .map_or_else(|| Err(Error::from(ContextError::Expression)), Ok)
     }
 }
 
 impl<'t> FromContext<'t> for Precedence {
-    fn from_context(context: &Context<'t>) -> Self {
-        context.precedence
+    fn from_context(context: &Context<'t>) -> Result<Self> {
+        Ok(context.precedence)
     }
 }
 
@@ -99,7 +104,7 @@ where
     T: FromContext<'t>,
 {
     fn call(self, _carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
-        (self)(T::from_context(context))
+        (self)(T::from_context(context)?)
     }
 }
 
@@ -109,7 +114,7 @@ where
     T: FromContext<'t>,
 {
     fn call(self, carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
-        (self)(carriage, T::from_context(context))
+        (self)(carriage, T::from_context(context)?)
     }
 }
 
@@ -121,7 +126,7 @@ macro_rules! impl_for_tuple {
             $($t: FromContext<'t>),+
         {
             fn call(self, carriage: &mut Carriage, context: &Context<'t>) -> Result<R> {
-                (self)(carriage, $($t::from_context(context)),+)
+                (self)(carriage, $($t::from_context(context)?),+)
             }
         }
     };
