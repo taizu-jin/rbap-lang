@@ -17,7 +17,7 @@ pub enum ErrorKind {
     ParseStringTemplate,
     Eof,
     ParseExpression,
-    ParseInfixLeftExpressionMissing,
+    ContextExpression,
     ParseInfixUnexpectedToken,
     ParseInfixUnusupportedOperator,
     UndefinedOpcode,
@@ -35,6 +35,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParseExpression { .. } => Self::ParseExpression,
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
+            ErrorRepr::ContextError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
         }
     }
@@ -43,9 +44,16 @@ impl From<&ErrorRepr> for ErrorKind {
 impl From<&ParseInfixError> for ErrorKind {
     fn from(value: &ParseInfixError) -> Self {
         match value {
-            ParseInfixError::LeftExpression => Self::ParseInfixLeftExpressionMissing,
             ParseInfixError::UnsupportedOperator(_) => Self::ParseInfixUnusupportedOperator,
             ParseInfixError::UnexpectedToken { .. } => Self::ParseInfixUnexpectedToken,
+        }
+    }
+}
+
+impl From<&ContextError> for ErrorKind {
+    fn from(value: &ContextError) -> Self {
+        match value {
+            ContextError::Expression => Self::ContextExpression,
         }
     }
 }
@@ -156,6 +164,15 @@ impl From<ParseInfixError> for Error {
     }
 }
 
+impl From<ContextError> for Error {
+    fn from(value: ContextError) -> Self {
+        Self {
+            kind: ErrorKind::from(&value),
+            repr: value.into(),
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 enum ErrorRepr {
     #[error(transparent)]
@@ -179,12 +196,18 @@ enum ErrorRepr {
     ParseInfixError(#[from] ParseInfixError),
     #[error("unknown operator {0}")]
     UnknownOperator(TokenKind),
+    #[error(transparent)]
+    ContextError(#[from] ContextError),
+}
+
+#[derive(Debug, Error)]
+pub enum ContextError {
+    #[error("Context has expression missing")]
+    Expression,
 }
 
 #[derive(Debug, Error)]
 pub enum ParseInfixError {
-    #[error("Context doesn't carry a left expression to parse infix expression")]
-    LeftExpression,
     #[error("Unsupported operator `{0}` for an infix expression")]
     UnsupportedOperator(Operator),
     #[error("Can't parse infix expression for token '{token}'")]
