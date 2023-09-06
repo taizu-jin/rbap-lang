@@ -29,7 +29,6 @@ pub enum TokenKind {
     RSquirly,
 
     Data,
-    DataInline,
     Type,
     Write,
     String,
@@ -70,7 +69,6 @@ impl Display for TokenKind {
             TokenKind::LSquirly => write!(f, "LSquirly"),
             TokenKind::RSquirly => write!(f, "RSquirly"),
             TokenKind::Data => write!(f, "Data"),
-            TokenKind::DataInline => write!(f, "DataInline"),
             TokenKind::Type => write!(f, "Type"),
             TokenKind::Write => write!(f, "Write"),
             TokenKind::String => write!(f, "String"),

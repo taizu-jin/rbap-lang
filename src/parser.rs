@@ -301,12 +301,7 @@ mod tests {
     #[test]
     fn test_data_statement() {
         let tests = vec![
-            def_case_data!(
-                "DATA(lv_string) = '5'.",
-                "lv_string",
-                StringLiteral("5".into())
-            ),
-            def_case_data!("DATA(lv_int) = 1.", "lv_int", IntLiteral(1)),
+            def_case_data!("lv_string = '5'.", "lv_string", StringLiteral("5".into())),
             def_case_data!("lv_int = 1.", "lv_int", IntLiteral(1)),
             def_case_data!(
                 "lv_int = |some { lv_string } literal|.",

@@ -25,9 +25,6 @@ impl Statement {
 
         let statement = match context.current_token.kind {
             TokenKind::Data => parse(carriage, &context, Self::parse_data_declaration_statement)?,
-            TokenKind::DataInline => {
-                parse(carriage, &context, Self::parse_data_assignment_statement)?
-            }
             TokenKind::Ident if context.peek_token.kind == TokenKind::Assign => {
                 parse(carriage, &context, Self::parse_data_assignment_statement)?
             }
@@ -141,14 +138,6 @@ impl Statement {
         PeekToken(peek): PeekToken,
     ) -> Result<Self> {
         let ident = match (current, peek) {
-            (
-                Token {
-                    literal,
-                    kind: TokenKind::DataInline,
-                },
-                _,
-            ) => literal.to_string(),
-
             (
                 Token {
                     literal,
