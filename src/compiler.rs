@@ -75,7 +75,7 @@ impl Compiler {
                     self.emit(OP_CONSTANT, &[constant]);
                 }
                 crate::ast::Expression::StringLiteral(s) => {
-                    let str = Object::String(s);
+                    let str = Object::String(s.into());
                     let constant = self.add_constant(str);
                     self.emit(OP_CONSTANT, &[constant]);
                 }
