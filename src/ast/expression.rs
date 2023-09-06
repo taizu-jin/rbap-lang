@@ -1,3 +1,8 @@
+mod call;
+mod infix;
+mod operator;
+mod prefix;
+
 use std::fmt::Display;
 
 use crate::{
@@ -9,98 +14,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, PartialEq)]
-pub struct Call {
-    pub function: String,
-    pub arguments: Vec<Expression>,
-}
-
-impl Display for Call {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.function)?;
-
-        let mut iter = self.arguments.iter().peekable();
-
-        while let Some(exp) = iter.next() {
-            if iter.peek().is_some() {
-                write!(f, "{}, ", exp)?;
-            } else {
-                write!(f, "{}", exp)?;
-            }
-        }
-        write!(f, ")")
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Infix {
-    pub left: Box<Expression>,
-    pub operator: Operator,
-    pub right: Box<Expression>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Operator {
-    Add,
-    Div,
-    Mul,
-    Sub,
-    GreaterThan,
-    LesserThan,
-    Equal,
-    NotEqual,
-    Not,
-}
-
-impl Display for Operator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let literal: &'static str = Into::<&'static str>::into(*self);
-        write!(f, "{}", literal)
-    }
-}
-
-impl From<Operator> for &'static str {
-    fn from(value: Operator) -> Self {
-        match value {
-            Operator::Add => "+",
-            Operator::Div => "/",
-            Operator::Mul => "*",
-            Operator::Sub => "-",
-            Operator::GreaterThan => ">",
-            Operator::LesserThan => "<",
-            Operator::Equal => "==",
-            Operator::NotEqual => "<>",
-            Operator::Not => "NOT ",
-        }
-    }
-}
-
-impl TryFrom<TokenKind> for Operator {
-    type Error = Error;
-
-    fn try_from(value: TokenKind) -> std::result::Result<Self, Self::Error> {
-        let operator = match value {
-            TokenKind::Plus => Operator::Add,
-            TokenKind::Minus => Operator::Sub,
-            TokenKind::Asterisk => Operator::Mul,
-            TokenKind::Slash => Operator::Div,
-            TokenKind::GreaterThan => Operator::GreaterThan,
-            TokenKind::LesserThan => Operator::LesserThan,
-            TokenKind::Equals => Operator::Equal,
-            TokenKind::NotEquals => Operator::NotEqual,
-            TokenKind::Not => Operator::Not,
-            _ => return Err(Error::unknown_operator(value)),
-        };
-
-        Ok(operator)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Prefix {
-    pub operator: Operator,
-    pub right: Box<Expression>,
-}
+pub use self::{call::Call, infix::Infix, operator::Operator, prefix::Prefix};
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -153,36 +67,12 @@ impl Expression {
             TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
             TokenKind::Ident => Self::parse_ident_expression(current),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
-            TokenKind::Minus | TokenKind::Not => Self::parse_prefix_expression(carriage, current),
+            TokenKind::Minus | TokenKind::Not => Ok(Prefix::parse(carriage, current)?.into()),
             _ => Err(Error::parse_expression(&current)),
         }
     }
 
-    fn parse_grouped_expression(carriage: &mut Carriage) -> Result<Self> {
-        let context = Context::from_carriage(carriage)?;
-
-        let expression = parse(carriage, &context, Self::parse)?;
-
-        carriage.expect_tokens(&[TokenKind::RParen])?;
-
-        Ok(expression)
-    }
-
-    fn parse_prefix_expression(carriage: &mut Carriage, current: Token) -> Result<Self> {
-        let mut context = Context::from_carriage(carriage)?;
-        context.precedence = Precedence::Prefix;
-
-        let expression = parse(carriage, &context, Self::parse)?;
-
-        let expression = Prefix {
-            operator: Operator::try_from(current.kind)?,
-            right: Box::new(expression),
-        };
-
-        Ok(Expression::PrefixExpression(expression))
-    }
-
-    fn parse_infix(
+    pub fn parse_infix(
         carriage: &mut Carriage,
         peek_kind: TokenKind,
         expression: Expression,
@@ -197,8 +87,8 @@ impl Expression {
         let mut context = Context::from_carriage(carriage)?;
         context.set_expression(expression);
         let expression = match &context.current_token.kind {
-            TokenKind::LParen => parse(carriage, &context, Self::parse_call_expression)?,
-            _ => parse(carriage, &context, Self::parse_infix_expression)?,
+            TokenKind::LParen => parse(carriage, &context, Call::parse)?.into(),
+            _ => parse(carriage, &context, Infix::parse)?.into(),
         };
 
         Ok(expression)
@@ -219,40 +109,14 @@ impl Expression {
         )
     }
 
-    fn parse_infix_expression(
-        carriage: &mut Carriage,
-        CurrentToken(current): CurrentToken,
-        left: Expression,
-    ) -> Result<Expression> {
-        let mut context = Context::from_carriage(carriage)?;
-        context.precedence = Precedence::from(&current);
+    fn parse_grouped_expression(carriage: &mut Carriage) -> Result<Self> {
+        let context = Context::from_carriage(carriage)?;
 
-        let right = parse(carriage, &context, Expression::parse)?;
+        let expression = parse(carriage, &context, Self::parse)?;
 
-        let expression = Infix {
-            left: Box::new(left),
-            operator: Operator::try_from(current.kind)?,
-            right: Box::new(right),
-        };
+        carriage.expect_tokens(&[TokenKind::RParen])?;
 
-        Ok(Expression::InfixExpression(expression))
-    }
-
-    fn parse_call_expression(carriage: &mut Carriage, function: Expression) -> Result<Self> {
-        let function = if let Expression::Ident(function) = function {
-            function
-        } else {
-            return Err(Error::unexpected_expression(function));
-        };
-
-        let arguments = Self::parse_expression_list(carriage)?;
-
-        let call = Call {
-            function,
-            arguments,
-        };
-
-        Ok(Expression::CallExpression(call))
+        Ok(expression)
     }
 
     fn parse_expression_list(carriage: &mut Carriage) -> Result<Vec<Expression>> {
@@ -277,11 +141,6 @@ impl Expression {
         carriage.expect_tokens(&[TokenKind::RParen])?;
 
         Ok(list)
-    }
-
-    fn parse_int_literal_expression(token: Token) -> Result<Self> {
-        let literal = token.literal.parse::<i64>().map_err(Error::from)?;
-        Ok(Expression::IntLiteral(literal))
     }
 
     fn parse_bool_literal_expression(token: Token) -> Result<Self> {
