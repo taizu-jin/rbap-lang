@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     error::{Error, Result},
-    lexer::Token,
+    lexer::{Token, TokenKind},
 };
 
 use super::Expression;
@@ -128,5 +128,51 @@ impl From<Identifier> for Expression {
 impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Bool(bool);
+
+impl Bool {
+    pub fn parse(token: Token) -> Result<Self> {
+        match token.kind {
+            TokenKind::True => Ok(Self(true)),
+            TokenKind::False => Ok(Self(false)),
+            k => {
+                return Err(Error::expected_token(
+                    Some(k),
+                    [TokenKind::True, TokenKind::False].as_slice().into(),
+                ))
+            }
+        }
+    }
+}
+
+impl From<bool> for Bool {
+    fn from(value: bool) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Bool> for bool {
+    fn from(value: Bool) -> Self {
+        value.0
+    }
+}
+
+impl From<Bool> for Expression {
+    fn from(value: Bool) -> Self {
+        Expression::BoolLiteral(value)
+    }
+}
+
+impl Display for Bool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0 {
+            write!(f, "rbap_true")
+        } else {
+            write!(f, "rbap_false")
+        }
     }
 }

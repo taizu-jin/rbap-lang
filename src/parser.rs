@@ -491,8 +491,8 @@ mod tests {
         let tests = vec![
             def_case_prefix!("-15.", Minus, 15.into()),
             def_case_prefix!("-foobar.", Minus, Ident("foobar".into())),
-            def_case_prefix!("NOT rbap_true.", Not, BoolLiteral(true)),
-            def_case_prefix!("NOT rbap_false.", Not, BoolLiteral(false)),
+            def_case_prefix!("NOT rbap_true.", Not, BoolLiteral(true.into())),
+            def_case_prefix!("NOT rbap_false.", Not, BoolLiteral(false.into())),
             def_case_prefix!("NOT foobar.", Not, Ident("foobar".into())),
         ];
 
@@ -611,20 +611,20 @@ mod tests {
             def_case_infix!(
                 "rbap_true == rbap_true.",
                 Equals,
-                BoolLiteral(true),
-                BoolLiteral(true)
+                BoolLiteral(true.into()),
+                BoolLiteral(true.into())
             ),
             def_case_infix!(
                 "rbap_true <> rbap_false.",
                 NotEquals,
-                BoolLiteral(true),
-                BoolLiteral(false)
+                BoolLiteral(true.into()),
+                BoolLiteral(false.into())
             ),
             def_case_infix!(
                 "rbap_false == rbap_false.",
                 Equals,
-                BoolLiteral(false),
-                BoolLiteral(false)
+                BoolLiteral(false.into()),
+                BoolLiteral(false.into())
             ),
         ];
 

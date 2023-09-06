@@ -22,7 +22,7 @@ pub enum Expression {
     IntLiteral(primitive::Int),
     StringLiteral(primitive::String),
     Ident(primitive::Identifier),
-    BoolLiteral(bool),
+    BoolLiteral(primitive::Bool),
     StringTemplate(Vec<Expression>),
     InfixExpression(Infix),
     PrefixExpression(Prefix),
@@ -65,7 +65,7 @@ impl Expression {
             TokenKind::IntLiteral => Ok(primitive::Int::parse(current)?.into()),
             TokenKind::StringLiteral => Ok(primitive::String::parse(current)?.into()),
             TokenKind::LParen => Self::parse_grouped_expression(carriage),
-            TokenKind::True | TokenKind::False => Self::parse_bool_literal_expression(current),
+            TokenKind::True | TokenKind::False => Ok(primitive::Bool::parse(current)?.into()),
             TokenKind::Ident => Ok(primitive::Identifier::parse(current)?.into()),
             TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
             TokenKind::Minus | TokenKind::Not => Ok(Prefix::parse(carriage, current)?.into()),
@@ -142,19 +142,6 @@ impl Expression {
         carriage.expect_tokens(&[TokenKind::RParen])?;
 
         Ok(list)
-    }
-
-    fn parse_bool_literal_expression(token: Token) -> Result<Self> {
-        match token.kind {
-            TokenKind::True => Ok(Expression::BoolLiteral(true)),
-            TokenKind::False => Ok(Expression::BoolLiteral(false)),
-            k => {
-                return Err(Error::expected_token(
-                    Some(k),
-                    [TokenKind::True, TokenKind::False].as_slice().into(),
-                ))
-            }
-        }
     }
 
     fn parse_string_template_expression(carriage: &mut Carriage, peek: Token) -> Result<Self> {
@@ -235,13 +222,7 @@ impl Display for Expression {
                 }
                 write!(f, "|")
             }
-            Expression::BoolLiteral(b) => {
-                if *b {
-                    write!(f, "rbap_true")
-                } else {
-                    write!(f, "rbap_false")
-                }
-            }
+            Expression::BoolLiteral(b) => write!(f, "{}", b),
             Expression::PrefixExpression(pe) => write!(f, "{}", pe),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
         }
