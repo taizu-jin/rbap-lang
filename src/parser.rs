@@ -1049,4 +1049,63 @@ ENDMETHOD.";
             }
         }
     }
+
+    struct TestCaseCallArg {
+        input: &'static str,
+        function: &'static str,
+        arguments: Vec<&'static str>,
+    }
+
+    macro_rules! def_case_callarg{
+        ($input:literal, $function:literal, $($argument:literal),*) => {
+            TestCaseCallArg{
+                input: $input.into(),
+                function: $function.into(),
+                arguments: vec![$($argument),*],
+            }
+        }
+    }
+
+    #[test]
+    fn test_call_expression_argument_parsing() {
+        let tests = vec![
+            def_case_callarg!("add().", "add",),
+            def_case_callarg!("add(1).", "add", "1"),
+            def_case_callarg!("add(1, 2 * 3, 4 + 5).", "add", "1", "(2 * 3)", "(4 + 5)"),
+        ];
+
+        for test in tests {
+            let program = parse_program(test.input.to_string());
+
+            assert_eq!(
+                1,
+                program.statements.len(),
+                "program has not enough statements. got={}",
+                program.statements.len()
+            );
+
+            if let Statement::Expression(CallExpression(ce)) = &program.statements[0] {
+                assert_eq!(ce.function, test.function);
+
+                assert_eq!(
+                    ce.arguments.len(),
+                    test.arguments.len(),
+                    "argument count does not match.\n\tgot={}\n\twant={}",
+                    ce.arguments.len(),
+                    test.arguments.len(),
+                );
+
+                let got = ce.arguments.iter().map(|arg| arg.to_string());
+
+                for (g, w) in got.zip(test.arguments.iter()) {
+                    assert_eq!(g, *w, "arguments do not match.\n\tgot={}\n\twant={}", g, w);
+                }
+            } else {
+                panic!(
+                "program.statements[0] is not an Statement::Expression(Expression::CallExpression). got={:?}",
+                program.statements[0]
+            )
+            }
+        }
+    }
 }
