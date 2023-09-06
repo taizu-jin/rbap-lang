@@ -10,6 +10,29 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq)]
+pub struct Call {
+    pub function: String,
+    pub arguments: Vec<Expression>,
+}
+
+impl Display for Call {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.function)?;
+
+        let mut iter = self.arguments.iter().peekable();
+
+        while let Some(exp) = iter.next() {
+            if iter.peek().is_some() {
+                write!(f, "{}, ", exp)?;
+            } else {
+                write!(f, "{}", exp)?;
+            }
+        }
+        write!(f, ")")
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Infix {
     pub left: Box<Expression>,
     pub operator: Operator,
@@ -335,28 +358,5 @@ impl Display for Expression {
             Expression::PrefixExpression(pe) => write!(f, "({}{})", pe.operator, pe.right),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
         }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Call {
-    pub function: String,
-    pub arguments: Vec<Expression>,
-}
-
-impl Display for Call {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.function)?;
-
-        let mut iter = self.arguments.iter().peekable();
-
-        while let Some(exp) = iter.next() {
-            if iter.peek().is_some() {
-                write!(f, "{}, ", exp)?;
-            } else {
-                write!(f, "{}", exp)?;
-            }
-        }
-        write!(f, ")")
     }
 }
