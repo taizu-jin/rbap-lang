@@ -199,14 +199,8 @@ impl Expression {
     fn parse_infix_expression(
         carriage: &mut Carriage,
         CurrentToken(current): CurrentToken,
-        left: Option<Expression>,
+        left: Expression,
     ) -> Result<Expression> {
-        let left = if let Some(left) = left {
-            left
-        } else {
-            return Err(Error::from(ParseInfixError::LeftExpression));
-        };
-
         let mut context = Context::from_carriage(carriage)?;
         context.precedence = Precedence::from(&current);
 
@@ -310,10 +304,7 @@ impl Expression {
         }
     }
 
-    fn parse_call_expression(
-        _carriage: &mut Carriage,
-        function: Option<Expression>,
-    ) -> Result<Self> {
+    fn parse_call_expression(_carriage: &mut Carriage, _function: Expression) -> Result<Self> {
         todo!("call expression")
     }
 }
