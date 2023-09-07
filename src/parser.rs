@@ -312,11 +312,14 @@ mod tests {
             def_case_data!(
                 "lv_int = |some { lv_string } literal|.",
                 "lv_int",
-                StringTemplate(vec![
-                    StringLiteral("some ".into()),
-                    Ident("lv_string".into()),
-                    StringLiteral(" literal".into()),
-                ])
+                StringTemplate(
+                    vec![
+                        StringLiteral("some ".into()),
+                        Ident("lv_string".into()),
+                        StringLiteral(" literal".into()),
+                    ]
+                    .into()
+                )
             ),
         ];
 
@@ -435,12 +438,15 @@ mod tests {
             def_case_expr!(
                 "|this{ | is | }{ |a { nested } string| } template|.",
                 StringLiteral("this".into()),
-                StringTemplate(vec![StringLiteral(" is ".into())]),
-                StringTemplate(vec![
-                    StringLiteral("a ".into()),
-                    Ident("nested".into()),
-                    StringLiteral(" string".into()),
-                ]),
+                StringTemplate(vec![StringLiteral(" is ".into())].into()),
+                StringTemplate(
+                    vec![
+                        StringLiteral("a ".into()),
+                        Ident("nested".into()),
+                        StringLiteral(" string".into()),
+                    ]
+                    .into()
+                ),
                 StringLiteral(" template".into())
             ),
         ];
@@ -457,9 +463,11 @@ mod tests {
 
             if let Statement::Expression(StringTemplate(expressions)) = &program.statements[0] {
                 assert_eq!(
-                    &test.expected, expressions,
+                    &test.expected,
+                    expressions.as_ref(),
                     "expression is not '{:?}'. got={:?}",
-                    test.expected, expressions
+                    test.expected,
+                    expressions
                 );
             } else {
                 panic!(
