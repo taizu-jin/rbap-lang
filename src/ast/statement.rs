@@ -1,5 +1,5 @@
-use std::fmt::Display;
 mod block;
+mod function;
 mod if_statement;
 
 use crate::{
@@ -8,7 +8,9 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-pub use self::{block::Block, if_statement::IfStatement};
+use std::fmt::Display;
+
+pub use self::{block::Block, function::Function, if_statement::IfStatement};
 
 use super::{primitive, Expression};
 
@@ -34,55 +36,13 @@ impl Statement {
             }
             TokenKind::Write => parse(carriage, &context, Self::parse_write_statement)?,
             TokenKind::If => parse(carriage, &context, IfStatement::parse)?.into(),
-            TokenKind::Method => parse(carriage, &context, Self::parse_function_statement)?,
+            TokenKind::Method => parse(carriage, &context, Function::parse)?.into(),
             _ => Statement::Expression(parse(carriage, &context, Expression::parse)?),
         };
 
         carriage.expect_tokens(&[TokenKind::Period])?;
 
         Ok(statement)
-    }
-
-    fn parse_function_statement(carriage: &mut Carriage) -> Result<Self> {
-        let ident = carriage.expect_tokens(&[TokenKind::Ident])?;
-
-        let name = ident.literal.to_string();
-
-        let mut parameters = Vec::new();
-        let mut returns = Vec::new();
-
-        if carriage.is_peek_token(TokenKind::Importing) {
-            carriage.next_token()?;
-
-            while !carriage.is_peek_token(TokenKind::Period)
-                && !carriage.is_peek_token(TokenKind::Returning)
-            {
-                let ddecl = Self::parse_data_declaration(carriage)?;
-                parameters.push(ddecl);
-            }
-        }
-
-        if carriage.is_peek_token(TokenKind::Returning) {
-            carriage.next_token()?;
-
-            while !carriage.is_peek_token(TokenKind::Period) {
-                let ddecl = Self::parse_data_declaration(carriage)?;
-                returns.push(ddecl);
-            }
-        }
-
-        carriage.expect_tokens(&[TokenKind::Period])?;
-        let body = Block::parse(carriage)?;
-        carriage.expect_tokens(&[TokenKind::EndMethod])?;
-
-        let function = Function {
-            name,
-            parameters,
-            returns,
-            body,
-        };
-
-        Ok(Statement::Function(function))
     }
 
     fn parse_data_declaration_statement(
@@ -287,33 +247,5 @@ pub struct DataDeclaration {
 impl Display for DataDeclaration {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} TYPE {}", self.ident, self.ty)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Function {
-    pub name: String,
-    pub parameters: Vec<DataDeclaration>,
-    pub returns: Vec<DataDeclaration>,
-    pub body: Block,
-}
-
-impl Display for Function {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "METHOD {}", self.name)?;
-        if !self.parameters.is_empty() {
-            write!(f, " IMPORTING ")?;
-            let mut iter = self.parameters.iter().peekable();
-            while let Some(dd) = iter.next() {
-                write!(f, "{} TYPE {}", dd.ident, dd.ty)?;
-                if iter.peek().is_some() {
-                    writeln!(f)?;
-                }
-            }
-        }
-        write!(f, ".")?;
-
-        writeln!(f, "{}", self.body)?;
-        writeln!(f, "ENDMETHOD.")
     }
 }
