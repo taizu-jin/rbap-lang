@@ -89,7 +89,7 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            Assignment, DataDeclaration, DataType,
+            Assignment, Data, DataType,
             Expression::{self, *},
             Infix, Operator,
         },
@@ -216,12 +216,12 @@ mod tests {
 
     struct TestCaseDataDeclaration {
         input: &'static str,
-        expected: Vec<DataDeclaration>,
+        expected: Vec<Data>,
     }
 
     macro_rules! def_ddecl {
         ($kind:ident,$literal:literal) => {
-            DataDeclaration {
+            Data {
                 ident: $literal.into(),
                 ty: DataType::$kind,
             }
@@ -263,8 +263,8 @@ mod tests {
                 program.statements.len()
             );
 
-            if let Statement::DataDeclaration(data_declaration) = &program.statements[0] {
-                for (i, dd) in data_declaration.iter().enumerate() {
+            if let Statement::Declaration(data_declaration) = &program.statements[0] {
+                for (i, dd) in data_declaration.as_ref().iter().enumerate() {
                     let expected = &test.expected[i];
 
                     assert_eq!(
@@ -412,9 +412,11 @@ mod tests {
 
             if let Statement::Write(expressions) = &program.statements[0] {
                 assert_eq!(
-                    &test.expected, expressions,
+                    &test.expected,
+                    expressions.as_ref(),
                     "expression is not '{:?}'. got={:?}",
-                    test.expected, expressions
+                    test.expected,
+                    expressions
                 );
             } else {
                 panic!(
@@ -874,8 +876,8 @@ ENDIF.";
     struct TestCaseFunction {
         input: &'static str,
         name: &'static str,
-        parameters: Vec<DataDeclaration>,
-        returns: Vec<DataDeclaration>,
+        parameters: Vec<Data>,
+        returns: Vec<Data>,
     }
 
     macro_rules! def_case_function {

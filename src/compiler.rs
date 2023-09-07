@@ -61,7 +61,7 @@ impl Compiler {
                     self.compile(e)?;
                     self.emit(OP_POP, &[]);
                 }
-                crate::ast::Statement::DataDeclaration(_) => todo!(),
+                crate::ast::Statement::Declaration(_) => todo!(),
                 crate::ast::Statement::Write(_) => todo!(),
                 crate::ast::Statement::Assignment(_) => todo!(),
                 crate::ast::Statement::Block(_) => todo!(),

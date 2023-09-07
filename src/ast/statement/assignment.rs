@@ -60,6 +60,6 @@ impl From<Assignment> for Statement {
 
 impl Display for Assignment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} = {}", self.ident, self.value)
+        write!(f, "{} = {}.", self.ident, self.value)
     }
 }
