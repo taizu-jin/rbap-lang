@@ -39,10 +39,17 @@ define_constant!(OP_DIV, 0x05);
 define_constant!(OP_GREATER_THAN, 0x06);
 define_constant!(OP_EQUAL, 0x07);
 define_constant!(OP_NOT_EQUAL, 0x08);
+define_constant!(OP_TRUE, 0x09);
+define_constant!(OP_FALSE, 0x10);
+define_constant!(OP_JUMP_NOT_TRUTH, 0x11, 2);
+define_constant!(OP_JUMP, 0x12, 2);
+define_constant!(OP_NULL, 0x13);
+define_constant!(OP_NOT, 0x14);
+define_constant!(OP_MINUS, 0x15);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Instructions(Vec<u8>);
 
 impl Deref for Instructions {

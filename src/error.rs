@@ -21,6 +21,7 @@ pub enum ErrorKind {
     ContextExpression,
     ParseInfixUnexpectedToken,
     ParseInfixUnusupportedOperator,
+    ParsePrefixUnusupportedOperator,
     UndefinedOpcode,
     UnknownOperator,
 }
@@ -36,6 +37,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParseExpression { .. } => Self::ParseExpression,
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
+            ErrorRepr::ParsePrefixError(e) => e.into(),
             ErrorRepr::ContextError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
             ErrorRepr::UnexpectedExpression(_) => Self::UnexpectedExpression,
@@ -48,6 +50,14 @@ impl From<&ParseInfixError> for ErrorKind {
         match value {
             ParseInfixError::UnsupportedOperator(_) => Self::ParseInfixUnusupportedOperator,
             ParseInfixError::UnexpectedToken { .. } => Self::ParseInfixUnexpectedToken,
+        }
+    }
+}
+
+impl From<&ParsePrefixError> for ErrorKind {
+    fn from(value: &ParsePrefixError) -> Self {
+        match value {
+            ParsePrefixError::UnsupportedOperator(_) => Self::ParsePrefixUnusupportedOperator,
         }
     }
 }
@@ -174,6 +184,15 @@ impl From<ParseInfixError> for Error {
     }
 }
 
+impl From<ParsePrefixError> for Error {
+    fn from(value: ParsePrefixError) -> Self {
+        Self {
+            kind: ErrorKind::from(&value),
+            repr: value.into(),
+        }
+    }
+}
+
 impl From<ContextError> for Error {
     fn from(value: ContextError) -> Self {
         Self {
@@ -204,6 +223,8 @@ enum ErrorRepr {
     ParseExpression { literal: String, kind: TokenKind },
     #[error(transparent)]
     ParseInfixError(#[from] ParseInfixError),
+    #[error(transparent)]
+    ParsePrefixError(#[from] ParsePrefixError),
     #[error("Unexpected expression {0}")]
     UnexpectedExpression(Expression),
     #[error("unknown operator {0}")]
@@ -227,4 +248,10 @@ pub enum ParseInfixError {
         token: TokenKind,
         expression: Expression,
     },
+}
+
+#[derive(Debug, Error)]
+pub enum ParsePrefixError {
+    #[error("Unsupported operator `{0}` for an prefix expression")]
+    UnsupportedOperator(Operator),
 }
