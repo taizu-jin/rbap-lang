@@ -1,10 +1,13 @@
 use std::fmt::Display;
+mod block;
 
 use crate::{
     error::{Error, Result},
     lexer::{Token, TokenKind},
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
+
+pub use self::block::Block;
 
 use super::{primitive, Expression};
 
@@ -68,7 +71,7 @@ impl Statement {
         }
 
         carriage.expect_tokens(&[TokenKind::Period])?;
-        let body = Self::parse_block_statement(carriage)?;
+        let body = Block::parse(carriage)?;
         carriage.expect_tokens(&[TokenKind::EndMethod])?;
 
         let function = Function {
@@ -207,13 +210,13 @@ impl Statement {
 
         carriage.expect_tokens(&[TokenKind::Period])?;
 
-        let consequence = Self::parse_block_statement(carriage)?;
+        let consequence = Block::parse(carriage)?;
 
         let alternative = if carriage.is_peek_token(TokenKind::Else) {
             carriage.expect_tokens(&[TokenKind::Else])?;
             carriage.expect_tokens(&[TokenKind::Period])?;
 
-            Some(Self::parse_block_statement(carriage)?)
+            Some(Block::parse(carriage)?)
         } else {
             None
         };
@@ -227,22 +230,6 @@ impl Statement {
         };
 
         Ok(Statement::If(statement))
-    }
-
-    fn parse_block_statement(carriage: &mut Carriage) -> Result<Block> {
-        let mut statements = Vec::new();
-
-        while !(carriage.is_peek_token(TokenKind::EndIf)
-            || carriage.is_peek_token(TokenKind::Else)
-            || carriage.is_peek_token(TokenKind::EndMethod))
-        {
-            let statement = Self::parse(carriage)?;
-            statements.push(statement);
-        }
-
-        let block = Block { statements };
-
-        Ok(block)
     }
 
     fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
@@ -323,21 +310,6 @@ impl Display for IfStatement {
             writeln!(f, "{}", alternative)?;
         }
         write!(f, "ENDIF.")
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Block {
-    pub statements: Vec<Statement>,
-}
-
-impl Display for Block {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for s in &self.statements {
-            write!(f, "{}", s)?;
-        }
-
-        Ok(())
     }
 }
 
