@@ -226,9 +226,11 @@ mod tests {
         assert_eq!(
             want.len(),
             got.len(),
-            "wrong instructions length.\nwant={}\ngot={}",
+            "wrong instructions length.\nwant={} {:?}\ngot={} {:?}",
             want.len(),
-            got.len()
+            want,
+            got.len(),
+            got
         );
 
         for (i, (want, got)) in want.iter().zip(got.iter()).enumerate() {
@@ -275,7 +277,101 @@ mod tests {
                      make(&OP_ADD, &[]),
                      make(&OP_POP, &[]),
                      ].concat().into()),
+            define_case!("1 - 2.";
+                     Object::Int(1), Object::Int(2);
+                     [
+                     make(&OP_CONSTANT, &[0]),
+                     make(&OP_CONSTANT, &[1]),
+                     make(&OP_SUB, &[]),
+                     make(&OP_POP, &[]),
+                     ].concat().into()),
+            define_case!("1 * 2.";
+                     Object::Int(1), Object::Int(2);
+                     [
+                     make(&OP_CONSTANT, &[0]),
+                     make(&OP_CONSTANT, &[1]),
+                     make(&OP_MUL, &[]),
+                     make(&OP_POP, &[]),
+                     ].concat().into()),
+            define_case!("2 / 1.";
+                     Object::Int(2), Object::Int(1);
+                     [
+                     make(&OP_CONSTANT, &[0]),
+                     make(&OP_CONSTANT, &[1]),
+                     make(&OP_DIV, &[]),
+                     make(&OP_POP, &[]),
+                     ].concat().into()),
+            define_case!("-1.";
+                     Object::Int(1);
+                     [
+                     make(&OP_CONSTANT, &[0]),
+                     make(&OP_MINUS, &[]),
+                     make(&OP_POP, &[]),
+                     ].concat().into()),
         ];
+
+        run_compiler_tests(tests)
+    }
+
+    #[test]
+    fn test_boolean_expressions() -> Result<()> {
+        let tests = vec![
+            define_case!("rbap_true.";;
+                         [make(&OP_TRUE, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("rbap_false.";;
+                         [make(&OP_FALSE, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("1 > 2.";Object::Int(1), Object::Int(2);
+                         [make(&OP_CONSTANT, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_GREATER_THAN, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("1 < 2.";Object::Int(2), Object::Int(1);
+                         [make(&OP_CONSTANT, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_GREATER_THAN, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("1 == 2.";Object::Int(1), Object::Int(2);
+                         [make(&OP_CONSTANT, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_EQUAL, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("1 <> 2.";Object::Int(1), Object::Int(2);
+                         [make(&OP_CONSTANT, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_NOT_EQUAL, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("rbap_true == rbap_false.";;
+                         [make(&OP_TRUE, &[]),
+                         make(&OP_FALSE, &[]),
+                         make(&OP_EQUAL, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("rbap_true <> rbap_false.";;
+                         [make(&OP_TRUE, &[]),
+                         make(&OP_FALSE, &[]),
+                         make(&OP_NOT_EQUAL, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("NOT rbap_true.";;
+                         [make(&OP_TRUE, &[]),
+                         make(&OP_NOT, &[]),
+                         make(&OP_POP, &[])].concat().into()),
+        ];
+
+        run_compiler_tests(tests)
+    }
+
+    fn test_conditionals_expressions() -> Result<()> {
+        let tests = vec![define_case!("IF rbap_true. 10. ENDIF. 20.";
+                         Object::Int(1), Object::Int(20);
+                         [make(&OP_TRUE, &[]),
+                         make(&OP_JUMP_NOT_TRUTH, &[10]),
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_JUMP, &[11]),
+                         make(&OP_NULL, &[]),
+                         make(&OP_POP, &[]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_POP, &[])].concat().into())];
 
         run_compiler_tests(tests)
     }
