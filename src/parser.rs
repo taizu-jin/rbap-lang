@@ -89,7 +89,7 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            Data, DataDeclaration, DataType,
+            Assignment, DataDeclaration, DataType,
             Expression::{self, *},
             Infix, Operator,
         },
@@ -289,14 +289,14 @@ mod tests {
 
     struct TestCaseData {
         input: &'static str,
-        expected: Data,
+        expected: Assignment,
     }
 
     macro_rules! def_case_data {
         ($input:expr,$ident:literal,$expected:expr) => {
             TestCaseData {
                 input: $input,
-                expected: Data {
+                expected: Assignment {
                     ident: $ident.into(),
                     value: $expected,
                 },
@@ -333,7 +333,7 @@ mod tests {
                 program.statements.len()
             );
 
-            if let Statement::Data(data) = &program.statements[0] {
+            if let Statement::Assignment(data) = &program.statements[0] {
                 assert_eq!(
                     test.expected.ident, data.ident,
                     "identifier is not '{}'. got={}",
