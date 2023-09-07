@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::code::*;
-use crate::error::{ParseInfixError, Result};
+use crate::error::{ParseInfixError, ParsePrefixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
 pub struct Bytecode {
@@ -80,7 +80,13 @@ impl Compiler {
                     self.emit(OP_CONSTANT, &[constant]);
                 }
                 crate::ast::Expression::Ident(_) => todo!(),
-                crate::ast::Expression::BoolLiteral(_) => todo!(),
+                crate::ast::Expression::BoolLiteral(b) => {
+                    if b.into() {
+                        self.emit(OP_TRUE, &[]);
+                    } else {
+                        self.emit(OP_FALSE, &[]);
+                    }
+                }
                 crate::ast::Expression::StringTemplate(_) => todo!(),
                 crate::ast::Expression::CallExpression(_) => todo!(),
                 crate::ast::Expression::InfixExpression(ie) => {
@@ -100,7 +106,14 @@ impl Compiler {
                     self.compile(right)?;
                     self.emit(operand_op_code, &[]);
                 }
-                crate::ast::Expression::PrefixExpression(_) => todo!(),
+                crate::ast::Expression::PrefixExpression(pe) => {
+                    self.compile(*pe.right)?;
+                    match pe.operator {
+                        crate::ast::Operator::Not => self.emit(OP_NOT, &[]),
+                        crate::ast::Operator::Sub => self.emit(OP_MINUS, &[]),
+                        o => return Err(ParsePrefixError::UnsupportedOperator(o).into()),
+                    };
+                }
             },
         }
 
