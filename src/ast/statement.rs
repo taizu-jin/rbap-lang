@@ -1,5 +1,6 @@
 use std::fmt::Display;
 mod block;
+mod if_statement;
 
 use crate::{
     error::{Error, Result},
@@ -7,7 +8,7 @@ use crate::{
     parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
 };
 
-pub use self::block::Block;
+pub use self::{block::Block, if_statement::IfStatement};
 
 use super::{primitive, Expression};
 
@@ -32,7 +33,7 @@ impl Statement {
                 parse(carriage, &context, Self::parse_data_assignment_statement)?
             }
             TokenKind::Write => parse(carriage, &context, Self::parse_write_statement)?,
-            TokenKind::If => parse(carriage, &context, Self::parse_if_statement)?,
+            TokenKind::If => parse(carriage, &context, IfStatement::parse)?.into(),
             TokenKind::Method => parse(carriage, &context, Self::parse_function_statement)?,
             _ => Statement::Expression(parse(carriage, &context, Expression::parse)?),
         };
@@ -203,35 +204,6 @@ impl Statement {
         Ok(Statement::Write(expressions))
     }
 
-    fn parse_if_statement(carriage: &mut Carriage) -> Result<Self> {
-        let context = Context::from_carriage(carriage)?;
-
-        let condition = parse(carriage, &context, Expression::parse)?;
-
-        carriage.expect_tokens(&[TokenKind::Period])?;
-
-        let consequence = Block::parse(carriage)?;
-
-        let alternative = if carriage.is_peek_token(TokenKind::Else) {
-            carriage.expect_tokens(&[TokenKind::Else])?;
-            carriage.expect_tokens(&[TokenKind::Period])?;
-
-            Some(Block::parse(carriage)?)
-        } else {
-            None
-        };
-
-        carriage.expect_tokens(&[TokenKind::EndIf])?;
-
-        let statement = IfStatement {
-            condition,
-            consequence,
-            alternative,
-        };
-
-        Ok(Statement::If(statement))
-    }
-
     fn expect_and_parse_expression(carriage: &mut Carriage) -> Result<Expression> {
         let token = carriage.expect_tokens(&[
             TokenKind::Ident,
@@ -291,25 +263,6 @@ impl Display for DataType {
             DataType::String => write!(f, "string"),
             DataType::Int => write!(f, "i"),
         }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct IfStatement {
-    pub condition: Expression,
-    pub consequence: Block,
-    pub alternative: Option<Block>,
-}
-
-impl Display for IfStatement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "IF {}.", self.condition)?;
-        writeln!(f, "{}", self.consequence)?;
-        if let Some(alternative) = &self.alternative {
-            writeln!(f, "ELSE.")?;
-            writeln!(f, "{}", alternative)?;
-        }
-        write!(f, "ENDIF.")
     }
 }
 
