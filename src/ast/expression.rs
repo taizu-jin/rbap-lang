@@ -3,19 +3,22 @@ mod infix;
 mod operator;
 mod prefix;
 pub mod primitive;
+mod string_template;
 
 use std::fmt::Display;
 
 use crate::{
     error::{Error, ErrorKind, ParseInfixError, Result},
-    lexer::{Token, TokenKind},
+    lexer::TokenKind,
     parser::{
         context::{CurrentToken, PeekToken},
         parse, Carriage, Context, Precedence,
     },
 };
 
-pub use self::{call::Call, infix::Infix, operator::Operator, prefix::Prefix};
+pub use self::{
+    call::Call, infix::Infix, operator::Operator, prefix::Prefix, string_template::StringTemplate,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -23,7 +26,7 @@ pub enum Expression {
     StringLiteral(primitive::String),
     Ident(primitive::Identifier),
     BoolLiteral(primitive::Bool),
-    StringTemplate(Vec<Expression>),
+    StringTemplate(StringTemplate),
     InfixExpression(Infix),
     PrefixExpression(Prefix),
     CallExpression(Call),
@@ -67,7 +70,7 @@ impl Expression {
             TokenKind::LParen => Self::parse_grouped_expression(carriage),
             TokenKind::True | TokenKind::False => Ok(primitive::Bool::parse(current)?.into()),
             TokenKind::Ident => Ok(primitive::Identifier::parse(current)?.into()),
-            TokenKind::VSlash => Self::parse_string_template_expression(carriage, peek),
+            TokenKind::VSlash => Ok(StringTemplate::parse(carriage, peek)?.into()),
             TokenKind::Minus | TokenKind::Not => Ok(Prefix::parse(carriage, current)?.into()),
             _ => Err(Error::parse_expression(&current)),
         }
@@ -143,69 +146,6 @@ impl Expression {
 
         Ok(list)
     }
-
-    fn parse_string_template_expression(carriage: &mut Carriage, peek: Token) -> Result<Self> {
-        let tokens = &[
-            TokenKind::StringLiteral,
-            TokenKind::LSquirly,
-            TokenKind::VSlash,
-        ];
-
-        if !tokens.contains(&peek.kind) {
-            return Err(Error::expected_token(None, tokens.as_slice().into()));
-        }
-
-        let mut expressions = Vec::new();
-
-        while let Some(expression) = Self::parse_string_template(carriage) {
-            let expression = expression?;
-
-            match expression {
-                Expression::StringLiteral(literal) if literal.as_ref().is_empty() => continue,
-                expression => expressions.push(expression),
-            }
-        }
-
-        Ok(Expression::StringTemplate(expressions))
-    }
-
-    fn parse_string_template(carriage: &mut Carriage) -> Option<Result<Expression>> {
-        let context = match Context::from_carriage(carriage) {
-            Ok(context) => context,
-            Err(err) => return Some(Err(err)),
-        };
-
-        match context.current_token.kind {
-            TokenKind::StringLiteral => {
-                let expression = match parse(carriage, &context, Expression::parse) {
-                    Ok(expression) => expression,
-                    Err(err) => return Some(Err(err)),
-                };
-
-                Some(Ok(expression))
-            }
-            TokenKind::LSquirly => {
-                let context = match Context::from_carriage(carriage) {
-                    Ok(context) => context,
-                    Err(err) => return Some(Err(err)),
-                };
-
-                let expression = match parse(carriage, &context, Expression::parse) {
-                    Ok(expression) => expression,
-                    Err(e) => return Some(Err(e)),
-                };
-
-                match carriage.expect_tokens(&[TokenKind::RSquirly]) {
-                    Ok(_) => (),
-                    Err(err) => return Some(Err(err)),
-                };
-
-                Some(Ok(expression))
-            }
-            TokenKind::VSlash => None,
-            _ => Some(Err(Error::parse_string_template(&context.current_token))),
-        }
-    }
 }
 
 impl Display for Expression {
@@ -215,13 +155,7 @@ impl Display for Expression {
             Expression::StringLiteral(sl) => write!(f, "{}", sl),
             Expression::Ident(ident) => write!(f, "{}", ident),
             Expression::InfixExpression(ie) => write!(f, "{}", ie),
-            Expression::StringTemplate(st) => {
-                write!(f, "|")?;
-                for s in st {
-                    write!(f, "{}", s)?;
-                }
-                write!(f, "|")
-            }
+            Expression::StringTemplate(st) => write!(f, "{}", st),
             Expression::BoolLiteral(b) => write!(f, "{}", b),
             Expression::PrefixExpression(pe) => write!(f, "{}", pe),
             Expression::CallExpression(ce) => write!(f, "{}", ce),
