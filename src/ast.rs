@@ -1,8 +1,8 @@
 mod expression;
 mod statement;
 
-pub use expression::{primitive, Expression, Infix, Operator};
-pub use statement::{Assignment, Block, Data, DataType, Statement};
+pub use expression::{primitive, Call, Expression, Infix, Operator, Prefix, StringTemplate};
+pub use statement::{Assignment, Block, Data, DataType, Declaration, Function, Statement, Write};
 
 #[derive(Debug)]
 pub struct Program {
