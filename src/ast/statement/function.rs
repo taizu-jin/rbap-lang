@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 use crate::{error::Result, lexer::TokenKind, parser::Carriage};
 
-use super::{Block, DataDeclaration, Statement};
+use super::{Block, Data, Statement};
 
 #[derive(Debug, PartialEq)]
 pub struct Function {
     pub name: String,
-    pub parameters: Vec<DataDeclaration>,
-    pub returns: Vec<DataDeclaration>,
+    pub parameters: Vec<Data>,
+    pub returns: Vec<Data>,
     pub body: Block,
 }
 
@@ -27,7 +27,7 @@ impl Function {
             while !carriage.is_peek_token(TokenKind::Period)
                 && !carriage.is_peek_token(TokenKind::Returning)
             {
-                let ddecl = Statement::parse_data_declaration(carriage)?;
+                let ddecl = Data::parse(carriage)?;
                 parameters.push(ddecl);
             }
         }
@@ -36,7 +36,7 @@ impl Function {
             carriage.next_token()?;
 
             while !carriage.is_peek_token(TokenKind::Period) {
-                let ddecl = Statement::parse_data_declaration(carriage)?;
+                let ddecl = Data::parse(carriage)?;
                 returns.push(ddecl);
             }
         }
