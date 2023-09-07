@@ -63,7 +63,7 @@ impl Compiler {
                 }
                 crate::ast::Statement::DataDeclaration(_) => todo!(),
                 crate::ast::Statement::Write(_) => todo!(),
-                crate::ast::Statement::Data(_) => todo!(),
+                crate::ast::Statement::Assignment(_) => todo!(),
                 crate::ast::Statement::Block(_) => todo!(),
                 crate::ast::Statement::If(_) => todo!(),
                 crate::ast::Statement::Function(_) => todo!(),

@@ -1,16 +1,19 @@
+mod assignment;
 mod block;
 mod function;
 mod if_statement;
 
 use crate::{
-    error::{Error, Result},
-    lexer::{Token, TokenKind},
-    parser::{context::CurrentToken, context::PeekToken, parse, Carriage, Context},
+    error::Result,
+    lexer::TokenKind,
+    parser::{context::PeekToken, parse, Carriage, Context},
 };
 
 use std::fmt::Display;
 
-pub use self::{block::Block, function::Function, if_statement::IfStatement};
+pub use self::{
+    assignment::Assignment, block::Block, function::Function, if_statement::IfStatement,
+};
 
 use super::{primitive, Expression};
 
@@ -19,7 +22,7 @@ pub enum Statement {
     Expression(Expression),
     DataDeclaration(Vec<DataDeclaration>),
     Write(Vec<Expression>),
-    Data(Data),
+    Assignment(Assignment),
     Block(Block),
     If(IfStatement),
     Function(Function),
@@ -32,7 +35,7 @@ impl Statement {
         let statement = match context.current_token.kind {
             TokenKind::Data => parse(carriage, &context, Self::parse_data_declaration_statement)?,
             TokenKind::Ident if context.peek_token.kind == TokenKind::Assign => {
-                parse(carriage, &context, Self::parse_data_assignment_statement)?
+                parse(carriage, &context, Assignment::parse)?.into()
             }
             TokenKind::Write => parse(carriage, &context, Self::parse_write_statement)?,
             TokenKind::If => parse(carriage, &context, IfStatement::parse)?.into(),
@@ -96,37 +99,6 @@ impl Statement {
         Ok(DataDeclaration { ident, ty })
     }
 
-    fn parse_data_assignment_statement(
-        carriage: &mut Carriage,
-        CurrentToken(current): CurrentToken,
-        PeekToken(peek): PeekToken,
-    ) -> Result<Self> {
-        let ident = match (current, peek) {
-            (
-                Token {
-                    literal,
-                    kind: TokenKind::Ident,
-                },
-                Token {
-                    kind: TokenKind::Assign,
-                    ..
-                },
-            ) => literal.to_string(),
-
-            (current, _) => {
-                return Err(Error::parse_data_assign(
-                    current.kind,
-                    carriage.peek_token()?.kind,
-                ))
-            }
-        };
-
-        carriage.expect_tokens(&[TokenKind::Assign])?;
-        let value = Self::expect_and_parse_expression(carriage)?;
-
-        Ok(Statement::Data(Data { ident, value }))
-    }
-
     fn parse_write_statement(
         carriage: &mut Carriage,
         PeekToken(peek_token): PeekToken,
@@ -184,7 +156,7 @@ impl Display for Statement {
             Statement::Function(func) => write!(f, "{}", func),
             Statement::Block(b) => write!(f, "{}", b),
             Statement::Expression(e) => write!(f, "{}.", e),
-            Statement::Data(d) => write!(f, "{}.", d),
+            Statement::Assignment(d) => write!(f, "{}.", d),
             Statement::DataDeclaration(dd) => {
                 write!(f, "DATA: ")?;
                 if dd.len() == 1 {
@@ -223,18 +195,6 @@ impl Display for DataType {
             DataType::String => write!(f, "string"),
             DataType::Int => write!(f, "i"),
         }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Data {
-    pub ident: String,
-    pub value: Expression,
-}
-
-impl Display for Data {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} = {}", self.ident, self.value)
     }
 }
 

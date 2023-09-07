@@ -2,7 +2,7 @@ mod expression;
 mod statement;
 
 pub use expression::{primitive, Expression, Infix, Operator};
-pub use statement::{Block, Data, DataDeclaration, DataType, Statement};
+pub use statement::{Assignment, Block, DataDeclaration, DataType, Statement};
 
 #[derive(Debug)]
 pub struct Program {
