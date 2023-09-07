@@ -46,7 +46,7 @@ impl Assignment {
         };
 
         carriage.expect_tokens(&[TokenKind::Assign])?;
-        let value = Statement::expect_and_parse_expression(carriage)?;
+        let value = Expression::expect_and_parse(carriage)?;
 
         Ok(Assignment { ident, value })
     }

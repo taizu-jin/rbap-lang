@@ -76,6 +76,19 @@ impl Expression {
         }
     }
 
+    fn get_expression_tokens<'a>() -> &'a [TokenKind] {
+        &[
+            TokenKind::Ident,
+            TokenKind::IntLiteral,
+            TokenKind::StringLiteral,
+            TokenKind::VSlash,
+            TokenKind::Minus,
+            TokenKind::True,
+            TokenKind::False,
+            TokenKind::LParen,
+        ]
+    }
+
     fn parse_infix(
         carriage: &mut Carriage,
         peek_kind: TokenKind,
@@ -145,6 +158,14 @@ impl Expression {
         carriage.expect_tokens(&[TokenKind::RParen])?;
 
         Ok(list)
+    }
+
+    pub fn expect_and_parse(carriage: &mut Carriage) -> Result<Expression> {
+        let token = carriage.expect_tokens(Self::get_expression_tokens())?;
+
+        let context = Context::new(token, carriage.peek_token()?.clone());
+
+        parse(carriage, &context, Expression::parse)
     }
 }
 
