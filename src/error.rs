@@ -24,6 +24,7 @@ pub enum ErrorKind {
     ParsePrefixUnusupportedOperator,
     UndefinedOpcode,
     UnknownOperator,
+    CompilerUndefinedVariable,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -39,6 +40,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParseInfixError(e) => e.into(),
             ErrorRepr::ParsePrefixError(e) => e.into(),
             ErrorRepr::ContextError(e) => e.into(),
+            ErrorRepr::CompilerError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
             ErrorRepr::UnexpectedExpression(_) => Self::UnexpectedExpression,
         }
@@ -66,6 +68,14 @@ impl From<&ContextError> for ErrorKind {
     fn from(value: &ContextError) -> Self {
         match value {
             ContextError::Expression => Self::ContextExpression,
+        }
+    }
+}
+
+impl From<&CompilerError> for ErrorKind {
+    fn from(value: &CompilerError) -> Self {
+        match value {
+            CompilerError::UndefinedVariable(_) => Self::CompilerUndefinedVariable,
         }
     }
 }
@@ -202,6 +212,15 @@ impl From<ContextError> for Error {
     }
 }
 
+impl From<CompilerError> for Error {
+    fn from(value: CompilerError) -> Self {
+        Self {
+            kind: ErrorKind::from(&value),
+            repr: value.into(),
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 enum ErrorRepr {
     #[error(transparent)]
@@ -231,6 +250,8 @@ enum ErrorRepr {
     UnknownOperator(TokenKind),
     #[error(transparent)]
     ContextError(#[from] ContextError),
+    #[error(transparent)]
+    CompilerError(#[from] CompilerError),
 }
 
 #[derive(Debug, Error)]
@@ -254,4 +275,10 @@ pub enum ParseInfixError {
 pub enum ParsePrefixError {
     #[error("Unsupported operator `{0}` for an prefix expression")]
     UnsupportedOperator(Operator),
+}
+
+#[derive(Debug, Error)]
+pub enum CompilerError {
+    #[error("undefined variable {0}")]
+    UndefinedVariable(String),
 }

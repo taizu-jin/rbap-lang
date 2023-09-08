@@ -3,10 +3,10 @@
 mod symbol_table;
 
 use crate::code::*;
-use crate::error::{ParseInfixError, ParsePrefixError, Result};
+use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
-use self::symbol_table::SymbolTable;
+use self::symbol_table::{Scope, Symbol, SymbolTable};
 
 pub struct Bytecode {
     instructions: Instructions,
@@ -69,7 +69,16 @@ impl Compiler {
                 }
                 crate::ast::Statement::Declaration(_) => todo!(),
                 crate::ast::Statement::Write(_) => todo!(),
-                crate::ast::Statement::Assignment(_) => todo!(),
+                crate::ast::Statement::Assignment(a) => {
+                    let symbol = self.symbol_table.define(a.ident);
+                    self.compile(a.value)?;
+
+                    if symbol.scope == Scope::Global {
+                        self.emit(OP_SET_GLOBAL, &[symbol.index.try_into().unwrap()]);
+                    } else {
+                        self.emit(OP_SET_LOCAL, &[symbol.index.try_into().unwrap()]);
+                    }
+                }
                 crate::ast::Statement::Block(_) => todo!(),
                 crate::ast::Statement::If(_) => todo!(),
                 crate::ast::Statement::Function(_) => todo!(),
@@ -85,7 +94,14 @@ impl Compiler {
                     let constant = self.add_constant(str);
                     self.emit(OP_CONSTANT, &[constant]);
                 }
-                crate::ast::Expression::Ident(_) => todo!(),
+                crate::ast::Expression::Ident(id) => {
+                    let symbol = self
+                        .symbol_table
+                        .resolve(id.as_ref())
+                        .ok_or(Error::from(CompilerError::UndefinedVariable(id.into())))?;
+
+                    self.load_symbol(symbol);
+                }
                 crate::ast::Expression::BoolLiteral(b) => {
                     if b.into() {
                         self.emit(OP_TRUE, &[]);
@@ -164,6 +180,20 @@ impl Compiler {
 
         current_scope.prev_instruction = previous;
         current_scope.last_insturction = last;
+    }
+
+    fn load_symbol(&mut self, symbol: Symbol) {
+        match symbol.scope {
+            Scope::Global => self.emit(
+                OP_GET_GLOBAL,
+                &[symbol.index.try_into().expect("max symbol count reached")],
+            ),
+            Scope::Local => self.emit(
+                OP_GET_LOCAL,
+                &[symbol.index.try_into().expect("max symbol count reached")],
+            ),
+            Scope::Function => self.emit(OP_CURRENT_CLOSURE, &[]),
+        };
     }
 }
 

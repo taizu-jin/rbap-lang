@@ -9,9 +9,9 @@ pub enum Scope {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Symbol {
-    name: Rc<str>,
-    scope: Scope,
-    index: usize,
+    pub name: Rc<str>,
+    pub scope: Scope,
+    pub index: usize,
 }
 
 impl Symbol {
