@@ -1,8 +1,12 @@
 #![allow(dead_code)]
 
+mod symbol_table;
+
 use crate::code::*;
 use crate::error::{ParseInfixError, ParsePrefixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
+
+use self::symbol_table::SymbolTable;
 
 pub struct Bytecode {
     instructions: Instructions,
@@ -24,6 +28,7 @@ struct CompilationScope {
 
 struct Compiler {
     constants: Vec<Object>,
+    symbol_table: SymbolTable,
 
     scopes: Vec<CompilationScope>,
     scope_index: usize,
@@ -35,6 +40,7 @@ impl Compiler {
 
         Self {
             constants: Vec::new(),
+            symbol_table: SymbolTable::new(),
             scopes: vec![main_scope],
             scope_index: 0,
         }
