@@ -67,10 +67,17 @@ impl Compiler {
                     self.compile(e)?;
                     self.emit(OP_POP, &[]);
                 }
-                crate::ast::Statement::Declaration(_) => todo!(),
+                crate::ast::Statement::Declaration(d) => {
+                    for declaration in d.as_ref() {
+                        self.symbol_table.define(declaration.ident.as_ref());
+                    }
+                }
                 crate::ast::Statement::Write(_) => todo!(),
                 crate::ast::Statement::Assignment(a) => {
-                    let symbol = self.symbol_table.define(a.ident);
+                    let symbol = self
+                        .symbol_table
+                        .resolve(a.ident.as_ref())
+                        .ok_or(Error::from(CompilerError::UndefinedVariable(a.ident)))?;
                     self.compile(a.value)?;
 
                     if symbol.scope == Scope::Global {
