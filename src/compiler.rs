@@ -418,4 +418,36 @@ mod tests {
 
         run_compiler_tests(tests)
     }
+
+    #[test]
+    fn test_declaration_and_assingment_statements() -> Result<()> {
+        let tests = vec![
+            define_case!("DATA: lv_one TYPE i,
+                                lv_two type i.
+
+                          lv_one = 1.
+                          lv_two = 2.";
+                         Object::Int(1), Object::Int(2);
+                         [
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_SET_GLOBAL, &[1]),
+                         ].concat().into()),
+            define_case!("DATA: lv_one TYPE i,
+                                lv_two type i.
+
+                          lv_one = 1.
+                          lv_two = 2.";
+                         Object::Int(1), Object::Int(2);
+                         [
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_SET_GLOBAL, &[1]),
+                         ].concat().into()),
+        ];
+
+        run_compiler_tests(tests)
+    }
 }
