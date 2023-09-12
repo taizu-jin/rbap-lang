@@ -262,7 +262,12 @@ impl Default for Compiler {
 
 #[cfg(test)]
 mod tests {
-    use crate::{ast::Program, error::Result, lexer::Lexer, parser::Parser};
+    use crate::{
+        ast::Program,
+        error::{ErrorKind, Result},
+        lexer::Lexer,
+        parser::Parser,
+    };
 
     use super::*;
 
@@ -535,5 +540,30 @@ mod tests {
         ];
 
         run_compiler_tests(tests)
+    }
+
+    #[test]
+    fn test_type_check_throws_an_error() {
+        let inputs = vec![
+            "DATA: lv_int TYPE i. lv_int = 'string'.",
+            "DATA: lv_string TYPE string. lv_string = 1 + 1.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = -1.",
+            "DATA: lv_int TYPE i, lv_string TYPE string. lv_int = lv_string.",
+        ];
+
+        for input in inputs {
+            let program = parse(input.into());
+
+            let mut compiler = Compiler::new();
+
+            match compiler.compile(program) {
+                Err(e) if e.kind() == ErrorKind::CompilerExpectedDataType => continue,
+                Err(e) => panic!("Unexpected error occured: {}", e),
+                _ => panic!(
+                    "Input should NOT have passed type check.\n\tinput='{}'",
+                    input
+                ),
+            }
+        }
     }
 }
