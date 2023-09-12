@@ -7,12 +7,13 @@ Project is written in Rust and contains bytecode compiler & bytecode virtual mac
 
 ```abap
 DATA: lv_string TYPE string,
+      lv_template_string TYPE string,
       lv_int TYPE i.
 
 lv_string = '(ツ)'.
 WRITE lv_string.
 
-DATA(lv_template_string) = |\_{ lv_string }_/|.
+lv_template_string = |\_{ lv_string }_/|.
 WRITE: / ' ', lv_template_string, ' '.
 
 WRITE: / lv_int.
@@ -36,6 +37,9 @@ METHOD sub IMPORTING iv_x TYPE i
   rv_sub = iv_x - iv_y.
 ENDMETHOD.
 
-DATA(lv_sum) = sum(2, 1).
-DATA(lv_sub) = sub(lv_sum, 2).
+DATA: lv_sum TYPE i,
+      lv_sub TYPE i.
+
+lv_sum = sum(2, 1).
+lv_sub = sub(lv_sum, 2).
 ```
