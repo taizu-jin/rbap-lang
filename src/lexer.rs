@@ -286,7 +286,8 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input = r"DATA: lv_string TYPE string,
-      lv_int TYPE i.
+      lv_int TYPE i,
+      lv_bool TYPE rbap_bool.
 
 lv_string = '(ツ)'.
 WRITE lv_string.
@@ -326,6 +327,10 @@ ENDMETHOD.";
             "lv_int":Ident,
             "type":Type,
             "i":Int,
+            ",":Comma,
+            "lv_bool":Ident,
+            "type":Type,
+            "rbap_bool":Bool,
             ".":Period,
             "lv_string":Ident,
             "=":Assign,
