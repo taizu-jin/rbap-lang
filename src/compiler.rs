@@ -607,4 +607,25 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_type_check_int() -> Result<()> {
+        let inputs = vec![
+            "DATA: lv_int TYPE i. lv_int = 1.",
+            "DATA: lv_int TYPE i. lv_int = -1.",
+            "DATA: lv_int TYPE i. lv_int = 1 + 2.",
+            "DATA: lv_int TYPE i. lv_int = 1 * 2.",
+            "DATA: lv_int TYPE i. lv_int = 2 - 1.",
+            "DATA: lv_int TYPE i. lv_int = 2 / 1 - 1.",
+            "DATA: lv_int TYPE i, lv_one type i. lv_one = 1. lv_int = lv_one.",
+        ];
+        for input in inputs {
+            let program = parse(input.into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program)?;
+        }
+
+        Ok(())
+    }
 }
