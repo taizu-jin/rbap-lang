@@ -2,8 +2,9 @@
 
 mod symbol_table;
 
+use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
-use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
+use crate::error::{CompilerError, ParseInfixError, ParsePrefixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
 use self::symbol_table::{Scope, Symbol, SymbolTable};
@@ -63,22 +64,19 @@ impl Compiler {
                 }
             }
             Node::Statement(s) => match s {
-                crate::ast::Statement::Expression(e) => {
+                Statement::Expression(e) => {
                     self.compile(e)?;
                     self.emit(OP_POP, &[]);
                 }
-                crate::ast::Statement::Declaration(d) => {
+                Statement::Declaration(d) => {
                     for declaration in d.as_ref() {
                         self.symbol_table
                             .define(declaration.ident.as_ref(), declaration.ty);
                     }
                 }
-                crate::ast::Statement::Write(_) => todo!(),
-                crate::ast::Statement::Assignment(a) => {
-                    let symbol = self
-                        .symbol_table
-                        .resolve(a.ident.as_ref())
-                        .ok_or(Error::from(CompilerError::UndefinedVariable(a.ident)))?;
+                Statement::Write(_) => todo!(),
+                Statement::Assignment(a) => {
+                    let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
                     self.compile(a.value)?;
 
                     if symbol.scope == Scope::Global {
@@ -87,48 +85,45 @@ impl Compiler {
                         self.emit(OP_SET_LOCAL, &[symbol.index.try_into().unwrap()]);
                     }
                 }
-                crate::ast::Statement::Block(_) => todo!(),
-                crate::ast::Statement::If(_) => todo!(),
-                crate::ast::Statement::Function(_) => todo!(),
+                Statement::Block(_) => todo!(),
+                Statement::If(_) => todo!(),
+                Statement::Function(_) => todo!(),
             },
             Node::Expression(e) => match e {
-                crate::ast::Expression::IntLiteral(i) => {
+                Expression::IntLiteral(i) => {
                     let int = Object::Int(i.into());
                     let constant = self.add_constant(int);
                     self.emit(OP_CONSTANT, &[constant]);
                 }
-                crate::ast::Expression::StringLiteral(s) => {
+                Expression::StringLiteral(s) => {
                     let str = Object::String(s.into());
                     let constant = self.add_constant(str);
                     self.emit(OP_CONSTANT, &[constant]);
                 }
-                crate::ast::Expression::Ident(id) => {
-                    let symbol = self
-                        .symbol_table
-                        .resolve(id.as_ref())
-                        .ok_or(Error::from(CompilerError::UndefinedVariable(id.into())))?;
+                Expression::Ident(id) => {
+                    let symbol = self.symbol_table.resolve(id.as_ref())?;
 
                     self.load_symbol(symbol);
                 }
-                crate::ast::Expression::BoolLiteral(b) => {
+                Expression::BoolLiteral(b) => {
                     if b.into() {
                         self.emit(OP_TRUE, &[]);
                     } else {
                         self.emit(OP_FALSE, &[]);
                     }
                 }
-                crate::ast::Expression::StringTemplate(_) => todo!(),
-                crate::ast::Expression::CallExpression(_) => todo!(),
-                crate::ast::Expression::InfixExpression(ie) => {
+                Expression::StringTemplate(_) => todo!(),
+                Expression::CallExpression(_) => todo!(),
+                Expression::InfixExpression(ie) => {
                     let (left, right, operand_op_code) = match ie.operator {
-                        crate::ast::Operator::Add => (*ie.left, *ie.right, OP_ADD),
-                        crate::ast::Operator::Div => (*ie.left, *ie.right, OP_DIV),
-                        crate::ast::Operator::Sub => (*ie.left, *ie.right, OP_SUB),
-                        crate::ast::Operator::Mul => (*ie.left, *ie.right, OP_MUL),
-                        crate::ast::Operator::GreaterThan => (*ie.left, *ie.right, OP_GREATER_THAN),
-                        crate::ast::Operator::LesserThan => (*ie.right, *ie.left, OP_GREATER_THAN),
-                        crate::ast::Operator::Equal => (*ie.left, *ie.right, OP_EQUAL),
-                        crate::ast::Operator::NotEqual => (*ie.left, *ie.right, OP_NOT_EQUAL),
+                        Operator::Add => (*ie.left, *ie.right, OP_ADD),
+                        Operator::Div => (*ie.left, *ie.right, OP_DIV),
+                        Operator::Sub => (*ie.left, *ie.right, OP_SUB),
+                        Operator::Mul => (*ie.left, *ie.right, OP_MUL),
+                        Operator::GreaterThan => (*ie.left, *ie.right, OP_GREATER_THAN),
+                        Operator::LesserThan => (*ie.right, *ie.left, OP_GREATER_THAN),
+                        Operator::Equal => (*ie.left, *ie.right, OP_EQUAL),
+                        Operator::NotEqual => (*ie.left, *ie.right, OP_NOT_EQUAL),
                         o => return Err(ParseInfixError::UnsupportedOperator(o).into()),
                     };
 
@@ -136,11 +131,11 @@ impl Compiler {
                     self.compile(right)?;
                     self.emit(operand_op_code, &[]);
                 }
-                crate::ast::Expression::PrefixExpression(pe) => {
+                Expression::PrefixExpression(pe) => {
                     self.compile(*pe.right)?;
                     match pe.operator {
-                        crate::ast::Operator::Not => self.emit(OP_NOT, &[]),
-                        crate::ast::Operator::Sub => self.emit(OP_MINUS, &[]),
+                        Operator::Not => self.emit(OP_NOT, &[]),
+                        Operator::Sub => self.emit(OP_MINUS, &[]),
                         o => return Err(ParsePrefixError::UnsupportedOperator(o).into()),
                     };
                 }
