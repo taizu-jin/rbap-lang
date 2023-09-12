@@ -582,4 +582,29 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_type_check_bool() -> Result<()> {
+        let inputs = vec![
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = rbap_true.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = rbap_false.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = NOT rbap_true.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = rbap_true AND rbap_true.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = rbap_true OR rbap_true.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = rbap_true OR rbap_true AND rbap_true.",
+            "DATA: lv_bool TYPE rbap_bool, lv_true type rbap_bool. lv_bool = lv_true.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 < 2.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 > 2.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 == 2.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 <> 2.",
+        ];
+        for input in inputs {
+            let program = parse(input.into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program)?;
+        }
+
+        Ok(())
+    }
 }
