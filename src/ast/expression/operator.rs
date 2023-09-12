@@ -15,6 +15,15 @@ pub enum Operator {
     Not,
 }
 
+impl Operator {
+    pub fn is_boolean(&self) -> bool {
+        matches!(
+            self,
+            Self::GreaterThan | Self::LesserThan | Self::Equal | Self::NotEqual | Self::Not
+        )
+    }
+}
+
 impl Display for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let literal: &'static str = Into::<&'static str>::into(*self);

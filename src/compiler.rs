@@ -77,6 +77,12 @@ impl Compiler {
                 Statement::Write(_) => todo!(),
                 Statement::Assignment(a) => {
                     let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
+                    let ty = Self::get_type(&a.value, &self.symbol_table)?;
+
+                    if symbol.ty != ty {
+                        return Err(CompilerError::from((symbol.ty, ty)).into());
+                    }
+
                     self.compile(a.value)?;
 
                     if symbol.scope == Scope::Global {
@@ -115,6 +121,8 @@ impl Compiler {
                 Expression::StringTemplate(_) => todo!(),
                 Expression::CallExpression(_) => todo!(),
                 Expression::InfixExpression(ie) => {
+                    Self::check_types(&ie.left, &ie.right, &self.symbol_table)?;
+
                     let (left, right, operand_op_code) = match ie.operator {
                         Operator::Add => (*ie.left, *ie.right, OP_ADD),
                         Operator::Div => (*ie.left, *ie.right, OP_DIV),
@@ -197,6 +205,52 @@ impl Compiler {
             ),
             Scope::Function => self.emit(OP_CURRENT_CLOSURE, &[]),
         };
+    }
+
+    fn get_type(expression: &Expression, symbol_table: &SymbolTable) -> Result<DataType> {
+        let dt = match expression {
+            Expression::IntLiteral(_) => DataType::Int,
+            Expression::BoolLiteral(_) => DataType::Bool,
+            Expression::StringLiteral(_) => DataType::String,
+            Expression::StringTemplate(_) => DataType::String,
+            Expression::Ident(i) => {
+                let symbol = symbol_table.resolve(i.as_ref())?;
+                symbol.ty
+            }
+            Expression::InfixExpression(ie) => {
+                let left = Self::get_type(&ie.left, symbol_table)?;
+                let right = Self::get_type(&ie.right, symbol_table)?;
+
+                if left != right {
+                    return Err(CompilerError::from((left, right)).into());
+                }
+
+                if ie.operator.is_boolean() {
+                    DataType::Bool
+                } else {
+                    left
+                }
+            }
+            Expression::PrefixExpression(pe) => Self::get_type(&pe.right, symbol_table)?,
+            Expression::CallExpression(_) => todo!(),
+        };
+
+        Ok(dt)
+    }
+
+    fn check_types(
+        left: &Expression,
+        right: &Expression,
+        symbol_table: &SymbolTable,
+    ) -> Result<()> {
+        let left = Self::get_type(left, symbol_table)?;
+        let right = Self::get_type(right, symbol_table)?;
+
+        if left != right {
+            return Err(CompilerError::from((left, right)).into());
+        }
+
+        Ok(())
     }
 }
 

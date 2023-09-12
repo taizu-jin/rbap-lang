@@ -3,7 +3,7 @@ use std::num::ParseIntError;
 use thiserror::Error;
 
 use crate::{
-    ast::{Expression, Operator},
+    ast::{DataType, Expression, Operator},
     lexer::{Token, TokenKind, TokenKinds},
 };
 
@@ -25,6 +25,7 @@ pub enum ErrorKind {
     UndefinedOpcode,
     UnknownOperator,
     CompilerUndefinedVariable,
+    CompilerExpectedDataType,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -76,6 +77,7 @@ impl From<&CompilerError> for ErrorKind {
     fn from(value: &CompilerError) -> Self {
         match value {
             CompilerError::UndefinedVariable(_) => Self::CompilerUndefinedVariable,
+            CompilerError::ExpectedDataType { .. } => Self::CompilerExpectedDataType,
         }
     }
 }
@@ -281,4 +283,15 @@ pub enum ParsePrefixError {
 pub enum CompilerError {
     #[error("undefined variable {0}")]
     UndefinedVariable(String),
+    #[error("Expected data type {expected}. Got {got}")]
+    ExpectedDataType { got: DataType, expected: DataType },
+}
+
+impl From<(DataType, DataType)> for CompilerError {
+    fn from(value: (DataType, DataType)) -> Self {
+        Self::ExpectedDataType {
+            expected: value.0,
+            got: value.1,
+        }
+    }
 }
