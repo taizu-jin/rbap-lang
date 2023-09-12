@@ -472,6 +472,16 @@ mod tests {
                          make(&OP_GET_GLOBAL, &[1]),
                          make(&OP_POP, &[]),
                          ].concat().into()),
+            define_case!("DATA: lv_true TYPE rbap_bool.
+
+                          lv_true = rbap_true.
+                          lv_true.";;
+                         [
+                         make(&OP_TRUE, &[]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
         ];
 
         run_compiler_tests(tests)
