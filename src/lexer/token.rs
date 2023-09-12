@@ -41,6 +41,7 @@ pub enum TokenKind {
     And,
     Or,
     Not,
+    Bool,
 
     Method,
     EndMethod,
@@ -89,6 +90,7 @@ impl Display for TokenKind {
             TokenKind::EndMethod => write!(f, "EndMethod"),
             TokenKind::Importing => write!(f, "Importing"),
             TokenKind::Returning => write!(f, "Returning"),
+            TokenKind::Bool => write!(f, "Bool"),
         }
     }
 }
@@ -138,6 +140,7 @@ impl TokenKind {
             "endmethod" => TokenKind::EndMethod,
             "importing" => TokenKind::Importing,
             "returning" => TokenKind::Returning,
+            "rbap_bool" => TokenKind::Bool,
             _ => return None,
         };
 
@@ -245,6 +248,10 @@ impl<'a> From<Cow<'a, str>> for Token<'a> {
             "rbap_false" => Token {
                 literal,
                 kind: TokenKind::False,
+            },
+            "rbap_bool" => Token {
+                literal,
+                kind: TokenKind::Bool,
             },
             "if" => Token {
                 literal,
