@@ -246,11 +246,13 @@ mod tests {
             def_case_ddecl!("DATA: lv_int type i,
                                    lv_int2 TYPE i,
                                    lv_string TYPE string,
-                                   lv_string2 TYPE string.",
+                                   lv_string2 TYPE string,
+                                   lv_bool TYPE rbap_bool.",
                             Int:"lv_int",
                             Int:"lv_int2",
                             String:"lv_string",
-                            String:"lv_string2"),
+                            String:"lv_string2",
+                            Bool:"lv_bool"),
         ];
 
         for test in tests {
