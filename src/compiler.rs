@@ -446,6 +446,32 @@ mod tests {
                          make(&OP_CONSTANT, &[1]),
                          make(&OP_SET_GLOBAL, &[1]),
                          ].concat().into()),
+            define_case!("DATA lv_one TYPE i.
+
+                          lv_one = 1.
+                          lv_one.";
+                         Object::Int(1);
+                         [
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
+            define_case!("DATA: lv_one TYPE i,
+                                lv_two TYPE i.
+
+                          lv_one = 1.
+                          lv_two = lv_one.
+                          lv_two.";
+                         Object::Int(1);
+                         [
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_SET_GLOBAL, &[1]),
+                         make(&OP_GET_GLOBAL, &[1]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
         ];
 
         run_compiler_tests(tests)
