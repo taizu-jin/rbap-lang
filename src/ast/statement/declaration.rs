@@ -82,6 +82,7 @@ impl Display for Declaration {
 pub enum DataType {
     String,
     Int,
+    Bool,
 }
 
 impl Display for DataType {
@@ -89,6 +90,7 @@ impl Display for DataType {
         match self {
             DataType::String => write!(f, "string"),
             DataType::Int => write!(f, "i"),
+            DataType::Bool => write!(f, "rbap_bool"),
         }
     }
 }
@@ -110,12 +112,14 @@ impl Data {
         };
 
         carriage.expect_tokens(&[TokenKind::Type])?;
-        let token = carriage.expect_tokens(&[TokenKind::String, TokenKind::Int])?;
+        let token =
+            carriage.expect_tokens(&[TokenKind::String, TokenKind::Int, TokenKind::Bool])?;
 
         let ty = match token.kind {
             TokenKind::Int => DataType::Int,
             TokenKind::String => DataType::String,
-            _ => unreachable!("current token must be either Int or String kind"),
+            TokenKind::Bool => DataType::Bool,
+            _ => unreachable!("current token must be either Int, String or Bool kind"),
         };
 
         Ok(Data { ident, ty })
