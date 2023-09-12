@@ -1,6 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::ast::DataType;
+use crate::{
+    ast::DataType,
+    error::{CompilerError, Result},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Scope {
@@ -65,20 +68,20 @@ impl SymbolTable {
         table
     }
 
-    pub fn resolve(&self, name: &str) -> Option<Symbol> {
+    pub fn resolve(&self, name: &str) -> Result<Symbol> {
         match self.store.get(name) {
             None => match &self.outer {
-                None => None,
+                None => Err(CompilerError::UndefinedVariable(name.to_owned()).into()),
                 Some(outer) => {
                     let symbol = outer.borrow().resolve(name)?;
                     if symbol.scope == Scope::Global {
-                        return Some(symbol);
+                        return Ok(symbol);
                     }
 
-                    None
+                    Err(CompilerError::UndefinedVariable(name.to_owned()).into())
                 }
             },
-            symbol => symbol.cloned(),
+            Some(symbol) => Ok(symbol.clone()),
         }
     }
 
@@ -93,6 +96,7 @@ impl SymbolTable {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::Result;
 
     #[test]
     fn test_define() {
@@ -173,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_global() {
+    fn test_resolve_global() -> Result<()> {
         let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
             (
                 "a".into(),
@@ -190,16 +194,15 @@ mod tests {
         global.define("b", DataType::Int);
 
         for (_, val) in expected {
-            let result = match global.resolve(&val.name) {
-                Some(symbol) => symbol,
-                None => panic!("name {} not resolvable", val.name),
-            };
+            let result = global.resolve(&val.name)?;
             assert_eq!(val, result, "expected={:?}, got={:?}", val, result);
         }
+
+        Ok(())
     }
 
     #[test]
-    fn test_resolve_local() {
+    fn test_resolve_local() -> Result<()> {
         let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
             (
                 "a".into(),
@@ -222,16 +225,15 @@ mod tests {
         scope.define("d", DataType::Int);
 
         for (_, val) in expected {
-            let result = match scope.resolve(&val.name) {
-                Some(symbol) => symbol,
-                None => panic!("name {} not resolvable", val.name),
-            };
+            let result = scope.resolve(&val.name)?;
             assert_eq!(val, result, "expected={:?}, got={:?}", val, result);
         }
+
+        Ok(())
     }
 
     #[test]
-    fn test_resolve_nested_local() {
+    fn test_resolve_nested_local() -> Result<()> {
         let global = RefCell::new(SymbolTable::new());
         global.borrow_mut().define("a", DataType::Int);
         global.borrow_mut().define("b", DataType::Int);
@@ -272,31 +274,29 @@ mod tests {
 
         for test in tests {
             for symbol in test.expected_symbols {
-                let result = match test.table.borrow().resolve(&symbol.name) {
-                    Some(symbol) => symbol,
-                    None => panic!("name {} not resolvable.\n{:#?}", symbol.name, &test.table),
-                };
+                let result = test.table.borrow().resolve(&symbol.name)?;
                 assert_eq!(symbol, result, "expected={:?}, got={:?}", symbol, result);
             }
         }
+
+        Ok(())
     }
 
     #[test]
-    fn test_define_and_resolve_function_name() {
+    fn test_define_and_resolve_function_name() -> Result<()> {
         let mut global = SymbolTable::new();
         global.define_function_name("a", DataType::Int);
 
         let expected = Symbol::new("a", Scope::Function, 0, DataType::Int);
 
-        let result = global.resolve("a");
+        let result = global.resolve("a")?;
 
         assert_eq!(
-            Some(&expected),
-            result.as_ref(),
+            expected, result,
             "expected {} to resolve to {:?}, got={:?}",
-            &expected.name,
-            &expected,
-            result
+            &expected.name, &expected, result
         );
+
+        Ok(())
     }
 }
