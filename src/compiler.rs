@@ -69,7 +69,8 @@ impl Compiler {
                 }
                 crate::ast::Statement::Declaration(d) => {
                     for declaration in d.as_ref() {
-                        self.symbol_table.define(declaration.ident.as_ref());
+                        self.symbol_table
+                            .define(declaration.ident.as_ref(), declaration.ty);
                     }
                 }
                 crate::ast::Statement::Write(_) => todo!(),
