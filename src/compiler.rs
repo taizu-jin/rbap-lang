@@ -566,4 +566,20 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_type_check_string() -> Result<()> {
+        let inputs = vec![
+            "DATA: lv_string TYPE string. lv_string = 'string'.",
+            "DATA: lv_string TYPE string, lv_some TYPE string. lv_some = 'some'. lv_string = lv_some.",
+        ];
+        for input in inputs {
+            let program = parse(input.into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program)?;
+        }
+
+        Ok(())
+    }
 }
