@@ -1,5 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use crate::ast::DataType;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Scope {
     Global,
@@ -12,14 +14,16 @@ pub struct Symbol {
     pub name: Rc<str>,
     pub scope: Scope,
     pub index: usize,
+    pub ty: DataType,
 }
 
 impl Symbol {
-    pub fn new(name: impl Into<Rc<str>>, scope: Scope, index: usize) -> Self {
+    pub fn new(name: impl Into<Rc<str>>, scope: Scope, index: usize, ty: DataType) -> Self {
         Self {
             name: name.into(),
             scope,
             index,
+            ty,
         }
     }
 }
@@ -41,14 +45,14 @@ impl SymbolTable {
         }
     }
 
-    pub fn define(&mut self, name: impl Into<Rc<str>>) -> Symbol {
+    pub fn define(&mut self, name: impl Into<Rc<str>>, ty: DataType) -> Symbol {
         let scope = if self.outer.is_none() {
             Scope::Global
         } else {
             Scope::Local
         };
 
-        let symbol = Symbol::new(name, scope, self.num_definitions);
+        let symbol = Symbol::new(name, scope, self.num_definitions, ty);
         self.store.insert(symbol.name.clone(), symbol.clone());
         self.num_definitions += 1;
 
@@ -78,9 +82,9 @@ impl SymbolTable {
         }
     }
 
-    pub fn define_function_name(&mut self, name: impl Into<Rc<str>>) -> Symbol {
+    pub fn define_function_name(&mut self, name: impl Into<Rc<str>>, ty: DataType) -> Symbol {
         let name = name.into();
-        let symbol = Symbol::new(name.clone(), Scope::Function, 0);
+        let symbol = Symbol::new(name.clone(), Scope::Function, 0, ty);
         self.store.insert(name, symbol.clone());
         symbol
     }
@@ -93,17 +97,23 @@ mod tests {
     #[test]
     fn test_define() {
         let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
-            ("a".into(), Symbol::new("a", Scope::Global, 0)),
-            ("b".into(), Symbol::new("b", Scope::Global, 1)),
-            ("c".into(), Symbol::new("c", Scope::Local, 0)),
-            ("d".into(), Symbol::new("d", Scope::Local, 1)),
-            ("e".into(), Symbol::new("e", Scope::Local, 0)),
-            ("f".into(), Symbol::new("f", Scope::Local, 1)),
+            (
+                "a".into(),
+                Symbol::new("a", Scope::Global, 0, DataType::Int),
+            ),
+            (
+                "b".into(),
+                Symbol::new("b", Scope::Global, 1, DataType::Int),
+            ),
+            ("c".into(), Symbol::new("c", Scope::Local, 0, DataType::Int)),
+            ("d".into(), Symbol::new("d", Scope::Local, 1, DataType::Int)),
+            ("e".into(), Symbol::new("e", Scope::Local, 0, DataType::Int)),
+            ("f".into(), Symbol::new("f", Scope::Local, 1, DataType::Int)),
         ]);
 
         let scope = Rc::new(RefCell::new(SymbolTable::new()));
 
-        let a = scope.borrow_mut().define("a");
+        let a = scope.borrow_mut().define("a", DataType::Int);
         assert_eq!(
             &a,
             expected.get("a").unwrap(),
@@ -112,7 +122,7 @@ mod tests {
             a
         );
 
-        let b = scope.borrow_mut().define("b");
+        let b = scope.borrow_mut().define("b", DataType::Int);
         assert_eq!(
             &b,
             expected.get("b").unwrap(),
@@ -123,7 +133,7 @@ mod tests {
 
         let scope = Rc::new(RefCell::new(SymbolTable::new_enclosed(scope)));
 
-        let c = scope.borrow_mut().define("c");
+        let c = scope.borrow_mut().define("c", DataType::Int);
         assert_eq!(
             &c,
             expected.get("c").unwrap(),
@@ -132,7 +142,7 @@ mod tests {
             c
         );
 
-        let d = scope.borrow_mut().define("d");
+        let d = scope.borrow_mut().define("d", DataType::Int);
         assert_eq!(
             &d,
             expected.get("d").unwrap(),
@@ -143,7 +153,7 @@ mod tests {
 
         let scope = Rc::new(RefCell::new(SymbolTable::new_enclosed(scope)));
 
-        let e = scope.borrow_mut().define("e");
+        let e = scope.borrow_mut().define("e", DataType::Int);
         assert_eq!(
             &e,
             expected.get("e").unwrap(),
@@ -152,7 +162,7 @@ mod tests {
             e
         );
 
-        let f = scope.borrow_mut().define("f");
+        let f = scope.borrow_mut().define("f", DataType::Int);
         assert_eq!(
             &f,
             expected.get("f").unwrap(),
@@ -165,13 +175,19 @@ mod tests {
     #[test]
     fn test_resolve_global() {
         let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
-            ("a".into(), Symbol::new("a", Scope::Global, 0)),
-            ("b".into(), Symbol::new("b", Scope::Global, 1)),
+            (
+                "a".into(),
+                Symbol::new("a", Scope::Global, 0, DataType::Int),
+            ),
+            (
+                "b".into(),
+                Symbol::new("b", Scope::Global, 1, DataType::Int),
+            ),
         ]);
 
         let mut global = SymbolTable::new();
-        global.define("a");
-        global.define("b");
+        global.define("a", DataType::Int);
+        global.define("b", DataType::Int);
 
         for (_, val) in expected {
             let result = match global.resolve(&val.name) {
@@ -185,19 +201,25 @@ mod tests {
     #[test]
     fn test_resolve_local() {
         let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
-            ("a".into(), Symbol::new("a", Scope::Global, 0)),
-            ("b".into(), Symbol::new("b", Scope::Global, 1)),
-            ("c".into(), Symbol::new("c", Scope::Local, 0)),
-            ("d".into(), Symbol::new("d", Scope::Local, 1)),
+            (
+                "a".into(),
+                Symbol::new("a", Scope::Global, 0, DataType::Int),
+            ),
+            (
+                "b".into(),
+                Symbol::new("b", Scope::Global, 1, DataType::Int),
+            ),
+            ("c".into(), Symbol::new("c", Scope::Local, 0, DataType::Int)),
+            ("d".into(), Symbol::new("d", Scope::Local, 1, DataType::Int)),
         ]);
 
         let scope = Rc::new(RefCell::new(SymbolTable::new()));
-        scope.borrow_mut().define("a");
-        scope.borrow_mut().define("b");
+        scope.borrow_mut().define("a", DataType::Int);
+        scope.borrow_mut().define("b", DataType::Int);
 
         let mut scope = SymbolTable::new_enclosed(scope);
-        scope.define("c");
-        scope.define("d");
+        scope.define("c", DataType::Int);
+        scope.define("d", DataType::Int);
 
         for (_, val) in expected {
             let result = match scope.resolve(&val.name) {
@@ -211,16 +233,16 @@ mod tests {
     #[test]
     fn test_resolve_nested_local() {
         let global = RefCell::new(SymbolTable::new());
-        global.borrow_mut().define("a");
-        global.borrow_mut().define("b");
+        global.borrow_mut().define("a", DataType::Int);
+        global.borrow_mut().define("b", DataType::Int);
 
         let first_local = Rc::new(RefCell::new(SymbolTable::new_enclosed(global)));
-        first_local.borrow_mut().define("c");
-        first_local.borrow_mut().define("d");
+        first_local.borrow_mut().define("c", DataType::Int);
+        first_local.borrow_mut().define("d", DataType::Int);
 
         let second_local = Rc::new(RefCell::new(SymbolTable::new_enclosed(first_local.clone())));
-        second_local.borrow_mut().define("e");
-        second_local.borrow_mut().define("f");
+        second_local.borrow_mut().define("e", DataType::Int);
+        second_local.borrow_mut().define("f", DataType::Int);
 
         struct TestCase {
             table: Rc<RefCell<SymbolTable>>,
@@ -231,19 +253,19 @@ mod tests {
             TestCase {
                 table: first_local,
                 expected_symbols: vec![
-                    Symbol::new("a", Scope::Global, 0),
-                    Symbol::new("b", Scope::Global, 1),
-                    Symbol::new("c", Scope::Local, 0),
-                    Symbol::new("d", Scope::Local, 1),
+                    Symbol::new("a", Scope::Global, 0, DataType::Int),
+                    Symbol::new("b", Scope::Global, 1, DataType::Int),
+                    Symbol::new("c", Scope::Local, 0, DataType::Int),
+                    Symbol::new("d", Scope::Local, 1, DataType::Int),
                 ],
             },
             TestCase {
                 table: second_local,
                 expected_symbols: vec![
-                    Symbol::new("a", Scope::Global, 0),
-                    Symbol::new("b", Scope::Global, 1),
-                    Symbol::new("e", Scope::Local, 0),
-                    Symbol::new("f", Scope::Local, 1),
+                    Symbol::new("a", Scope::Global, 0, DataType::Int),
+                    Symbol::new("b", Scope::Global, 1, DataType::Int),
+                    Symbol::new("e", Scope::Local, 0, DataType::Int),
+                    Symbol::new("f", Scope::Local, 1, DataType::Int),
                 ],
             },
         ];
@@ -262,9 +284,9 @@ mod tests {
     #[test]
     fn test_define_and_resolve_function_name() {
         let mut global = SymbolTable::new();
-        global.define_function_name("a");
+        global.define_function_name("a", DataType::Int);
 
-        let expected = Symbol::new("a", Scope::Function, 0);
+        let expected = Symbol::new("a", Scope::Function, 0, DataType::Int);
 
         let result = global.resolve("a");
 
