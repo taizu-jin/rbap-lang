@@ -118,7 +118,17 @@ impl Compiler {
                         self.emit(OP_FALSE, &[]);
                     }
                 }
-                Expression::StringTemplate(_) => todo!(),
+                Expression::StringTemplate(st) => {
+                    let expressions: Vec<_> = st.into();
+                    let count: u16 = expressions
+                        .len()
+                        .try_into()
+                        .expect("max string template element count reached");
+                    for exp in expressions {
+                        self.compile(exp)?;
+                    }
+                    self.emit(OP_STRING_TEMPLATE, &[count as i32]);
+                }
                 Expression::CallExpression(_) => todo!(),
                 Expression::InfixExpression(ie) => {
                     Self::check_types(&ie.left, &ie.right, &self.symbol_table)?;
