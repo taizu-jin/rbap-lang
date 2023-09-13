@@ -1,4 +1,4 @@
-use crate::error::{Error, Result};
+use crate::error::{CompilerError, Result};
 use std::{
     collections::HashMap,
     fmt::Display,
@@ -118,11 +118,11 @@ impl Deref for Opcode {
 }
 
 impl<'a> Opcode {
-    fn lookup(op: u8) -> Result<&'static Opcode> {
+    pub fn lookup(op: u8) -> Result<&'static Opcode> {
         let defitions = Opcode::get_definitions();
         match defitions.get(&op) {
             Some(opcode) => Ok(*opcode),
-            None => Err(Error::undefined_opcode(op)),
+            None => Err(CompilerError::UndefinedOpcode(op).into()),
         }
     }
 
