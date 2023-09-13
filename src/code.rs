@@ -130,7 +130,29 @@ impl<'a> Opcode {
         DEFINITIONS.get_or_init(|| {
             let mut map = HashMap::new();
             map.insert(*OP_CONSTANT, &OP_CONSTANT);
+            map.insert(*OP_POP, &OP_POP);
             map.insert(*OP_ADD, &OP_ADD);
+            map.insert(*OP_SUB, &OP_SUB);
+            map.insert(*OP_MUL, &OP_MUL);
+            map.insert(*OP_DIV, &OP_DIV);
+            map.insert(*OP_GREATER_THAN, &OP_GREATER_THAN);
+            map.insert(*OP_EQUAL, &OP_EQUAL);
+            map.insert(*OP_NOT_EQUAL, &OP_NOT_EQUAL);
+            map.insert(*OP_TRUE, &OP_TRUE);
+            map.insert(*OP_FALSE, &OP_FALSE);
+            map.insert(*OP_JUMP_NOT_TRUTH, &OP_JUMP_NOT_TRUTH);
+            map.insert(*OP_JUMP, &OP_JUMP);
+            map.insert(*OP_NULL, &OP_NULL);
+            map.insert(*OP_NOT, &OP_NOT);
+            map.insert(*OP_MINUS, &OP_MINUS);
+            map.insert(*OP_GET_GLOBAL, &OP_GET_GLOBAL);
+            map.insert(*OP_SET_GLOBAL, &OP_SET_GLOBAL);
+            map.insert(*OP_GET_LOCAL, &OP_GET_LOCAL);
+            map.insert(*OP_SET_LOCAL, &OP_SET_LOCAL);
+            map.insert(*OP_CURRENT_CLOSURE, &OP_CURRENT_CLOSURE);
+            map.insert(*OP_AND, &OP_AND);
+            map.insert(*OP_OR, &OP_OR);
+            map.insert(*OP_STRING_TEMPLATE, &OP_STRING_TEMPLATE);
             map
         })
     }
