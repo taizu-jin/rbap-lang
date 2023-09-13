@@ -51,6 +51,8 @@ define_constant!(OP_SET_GLOBAL, 0x17, 2);
 define_constant!(OP_GET_LOCAL, 0x18, 1);
 define_constant!(OP_SET_LOCAL, 0x19, 1);
 define_constant!(OP_CURRENT_CLOSURE, 0x20, 1);
+define_constant!(OP_AND, 0x21);
+define_constant!(OP_OR, 0x22);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
