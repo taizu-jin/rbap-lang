@@ -640,6 +640,18 @@ mod tests {
                 BoolLiteral(false.into()),
                 BoolLiteral(false.into())
             ),
+            def_case_infix!(
+                "rbap_true AND rbap_true.",
+                And,
+                BoolLiteral(true.into()),
+                BoolLiteral(true.into())
+            ),
+            def_case_infix!(
+                "rbap_true OR rbap_false.",
+                Or,
+                BoolLiteral(true.into()),
+                BoolLiteral(false.into())
+            ),
         ];
 
         for test in tests {
