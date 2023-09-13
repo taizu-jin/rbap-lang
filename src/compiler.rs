@@ -4,7 +4,7 @@ mod symbol_table;
 
 use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
-use crate::error::{CompilerError, ParseInfixError, ParsePrefixError, Result};
+use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
 use crate::{ast::Node, code::Instructions, object::Object};
 
 use self::symbol_table::{Scope, Symbol, SymbolTable};
@@ -121,15 +121,20 @@ impl Compiler {
                     }
                 }
                 Expression::StringTemplate(st) => {
+                    let op_pos = self.current_instructions().len();
+                    self.emit(OP_STRING_TEMPLATE, &[9999]);
+
                     let expressions: Vec<_> = st.into();
                     let count: u16 = expressions
                         .len()
                         .try_into()
-                        .expect("max string template element count reached");
+                        .expect("max string template bytes count reached");
+
                     for exp in expressions {
                         self.compile(exp)?;
                     }
-                    self.emit(OP_STRING_TEMPLATE, &[count as i32]);
+
+                    self.change_operand(op_pos, count as i32)?;
                 }
                 Expression::CallExpression(_) => todo!(),
                 Expression::InfixExpression(ie) => {
@@ -265,6 +270,25 @@ impl Compiler {
         }
 
         Ok(())
+    }
+
+    fn change_operand(&mut self, op_pos: usize, operand: i32) -> Result<()> {
+        let op = self
+            .current_instructions()
+            .get(op_pos)
+            .ok_or(Error::from(CompilerError::IndexOutOfBounds(op_pos)))?;
+        let op = Opcode::lookup(*op)?;
+
+        let new = make(op, &[operand]);
+        self.replace_instruction(op_pos, new);
+
+        Ok(())
+    }
+
+    fn replace_instruction(&mut self, pos: usize, mut instruction: Vec<u8>) {
+        let instructions = self.current_instructions_mut();
+
+        instructions[pos..pos + instruction.len()].swap_with_slice(instruction.as_mut_slice());
     }
 }
 

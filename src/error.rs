@@ -25,6 +25,7 @@ pub enum ErrorKind {
     UnknownOperator,
     CompilerUndefinedVariable,
     CompilerExpectedDataType,
+    CompilerIndexOutOfBounds,
     CompilerUndefinedOpcode,
 }
 
@@ -78,6 +79,7 @@ impl From<&CompilerError> for ErrorKind {
             CompilerError::UndefinedVariable(_) => Self::CompilerUndefinedVariable,
             CompilerError::ExpectedDataType { .. } => Self::CompilerExpectedDataType,
             CompilerError::UndefinedOpcode(_) => Self::CompilerUndefinedOpcode,
+            CompilerError::IndexOutOfBounds(_) => Self::CompilerIndexOutOfBounds,
         }
     }
 }
@@ -278,6 +280,8 @@ pub enum CompilerError {
     ExpectedDataType { got: DataType, expected: DataType },
     #[error("opcode {0} is undefined")]
     UndefinedOpcode(u8),
+    #[error("index {0} is out of instruction stack range")]
+    IndexOutOfBounds(usize),
 }
 
 impl From<(DataType, DataType)> for CompilerError {
