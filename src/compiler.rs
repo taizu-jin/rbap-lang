@@ -562,6 +562,7 @@ mod tests {
             "DATA: lv_int TYPE i. lv_int = 'string'.",
             "DATA: lv_string TYPE string. lv_string = 1 + 1.",
             "DATA: lv_bool TYPE rbap_bool. lv_bool = -1.",
+            "DATA: lv_bool TYPE rbap_bool. lv_bool = |some { 'string' } template|.",
             "DATA: lv_int TYPE i, lv_string TYPE string. lv_int = lv_string.",
         ];
 
@@ -585,6 +586,7 @@ mod tests {
     fn test_type_check_string() -> Result<()> {
         let inputs = vec![
             "DATA: lv_string TYPE string. lv_string = 'string'.",
+            "DATA: lv_string TYPE string. lv_string = |some { 'string' } template|.",
             "DATA: lv_string TYPE string, lv_some TYPE string. lv_some = 'some'. lv_string = lv_some.",
         ];
         for input in inputs {
