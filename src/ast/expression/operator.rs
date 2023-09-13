@@ -10,6 +10,8 @@ pub enum Operator {
     Sub,
     GreaterThan,
     LesserThan,
+    Or,
+    And,
     Equal,
     NotEqual,
     Not,
@@ -19,7 +21,13 @@ impl Operator {
     pub fn is_boolean(&self) -> bool {
         matches!(
             self,
-            Self::GreaterThan | Self::LesserThan | Self::Equal | Self::NotEqual | Self::Not
+            Self::GreaterThan
+                | Self::LesserThan
+                | Self::Equal
+                | Self::NotEqual
+                | Self::Not
+                | Self::And
+                | Self::Or
         )
     }
 }
@@ -43,6 +51,8 @@ impl From<Operator> for &'static str {
             Operator::Equal => "==",
             Operator::NotEqual => "<>",
             Operator::Not => "NOT ",
+            Operator::And => "AND",
+            Operator::Or => "OR",
         }
     }
 }
@@ -61,6 +71,8 @@ impl TryFrom<TokenKind> for Operator {
             TokenKind::Equals => Operator::Equal,
             TokenKind::NotEquals => Operator::NotEqual,
             TokenKind::Not => Operator::Not,
+            TokenKind::And => Operator::And,
+            TokenKind::Or => Operator::Or,
             _ => return Err(Error::unknown_operator(value)),
         };
 

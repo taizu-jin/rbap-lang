@@ -123,6 +123,8 @@ impl Expression {
                 | TokenKind::Equals
                 | TokenKind::NotEquals
                 | TokenKind::LParen
+                | TokenKind::And
+                | TokenKind::Or
         )
     }
 

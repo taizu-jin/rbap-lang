@@ -15,6 +15,7 @@ pub use context::Handler;
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedence {
     Lowest,
+    AndOr,
     Equals,
     LessGreater,
     Sum,
@@ -37,6 +38,7 @@ impl From<TokenKind> for Precedence {
             TokenKind::Asterisk | TokenKind::Slash => Precedence::Product,
             TokenKind::Equals | TokenKind::NotEquals => Precedence::Equals,
             TokenKind::LesserThan | TokenKind::GreaterThan => Precedence::LessGreater,
+            TokenKind::Or | TokenKind::And => Precedence::AndOr,
             TokenKind::LParen => Precedence::Call,
             _ => Precedence::Lowest,
         }

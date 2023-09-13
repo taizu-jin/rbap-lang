@@ -132,6 +132,8 @@ impl Compiler {
                         Operator::LesserThan => (*ie.right, *ie.left, OP_GREATER_THAN),
                         Operator::Equal => (*ie.left, *ie.right, OP_EQUAL),
                         Operator::NotEqual => (*ie.left, *ie.right, OP_NOT_EQUAL),
+                        Operator::And => (*ie.left, *ie.right, OP_AND),
+                        Operator::Or => (*ie.left, *ie.right, OP_OR),
                         o => return Err(ParseInfixError::UnsupportedOperator(o).into()),
                     };
 
