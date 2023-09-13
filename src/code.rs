@@ -97,6 +97,7 @@ impl Display for Instructions {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Opcode {
     pub code: u8,
     pub label: &'static str,
@@ -209,6 +210,16 @@ pub fn make(op: &Opcode, operands: &[i32]) -> Vec<u8> {
     }
 
     instruction
+}
+
+impl Display for Opcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}({:#04x})W{:?}",
+            self.label, self.code, self.operand_widths
+        )
+    }
 }
 
 #[cfg(test)]

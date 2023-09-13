@@ -20,6 +20,12 @@ struct EmittedInstruction {
     position: usize,
 }
 
+impl PartialEq<Opcode> for EmittedInstruction {
+    fn eq(&self, other: &Opcode) -> bool {
+        self.opcode == other.code
+    }
+}
+
 #[derive(Default)]
 struct CompilationScope {
     instructions: Instructions,
@@ -93,8 +99,40 @@ impl Compiler {
                         self.emit(OP_SET_LOCAL, &[index as i32]);
                     }
                 }
-                Statement::Block(_) => todo!(),
-                Statement::If(_) => todo!(),
+                Statement::Block(block) => {
+                    for statement in block.statements {
+                        self.compile(statement)?;
+                    }
+                }
+                Statement::If(is) => {
+                    self.compile(is.condition)?;
+
+                    let jump_not_truth_pos = self.emit(OP_JUMP_NOT_TRUTH, &[9999]);
+
+                    self.compile(is.consequence)?;
+
+                    let jump_pos = self.emit(OP_JUMP, &[9999]);
+
+                    let after_pos: u16 = self
+                        .current_instructions()
+                        .len()
+                        .try_into()
+                        .expect("max jump index reached");
+                    self.change_operand(jump_not_truth_pos, after_pos as i32)?;
+
+                    if let Some(alternative) = is.alternative {
+                        self.compile(alternative)?;
+                    } else {
+                        self.emit(OP_NULL, &[]);
+                    }
+
+                    let after_pos: u16 = self
+                        .current_instructions()
+                        .len()
+                        .try_into()
+                        .expect("max jump index reached");
+                    self.change_operand(jump_pos, after_pos as i32)?;
+                }
                 Statement::Function(_) => todo!(),
             },
             Node::Expression(e) => match e {
@@ -121,8 +159,7 @@ impl Compiler {
                     }
                 }
                 Expression::StringTemplate(st) => {
-                    let op_pos = self.current_instructions().len();
-                    self.emit(OP_STRING_TEMPLATE, &[9999]);
+                    let op_pos = self.emit(OP_STRING_TEMPLATE, &[9999]);
 
                     let expressions: Vec<_> = st.into();
                     let count: u16 = expressions
@@ -290,6 +327,23 @@ impl Compiler {
         let instructions = self.current_instructions_mut();
 
         instructions[pos..pos + instruction.len()].swap_with_slice(instruction.as_mut_slice());
+    }
+
+    fn last_instruction_is(&self, opcode: Opcode) -> bool {
+        if self.current_instructions().is_empty() {
+            return false;
+        }
+
+        self.scopes[self.scope_index].last_insturction == opcode
+    }
+
+    fn remove_last_instruction(&mut self) {
+        let last = self.scopes[self.scope_index].last_insturction;
+        let previous = self.scopes[self.scope_index].prev_instruction;
+
+        self.current_instructions_mut().truncate(last.position);
+        let scope = &mut self.scopes[self.scope_index];
+        scope.last_insturction = previous;
     }
 }
 
