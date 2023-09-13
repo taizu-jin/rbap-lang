@@ -596,6 +596,28 @@ mod tests {
     }
 
     #[test]
+    fn test_write_statement() -> Result<()> {
+        let tests = vec![define_case!("WRITE:/ 'print', / 'a', / 'string'.";
+                         Object::String("\n".into()),
+                         Object::String("print".into()),
+                         Object::String("\n".into()),
+                         Object::String("a".into()),
+                         Object::String("\n".into()),
+                         Object::String("string".into());
+                         [
+                         make(&OP_WRITE, &[6]),
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_CONSTANT, &[2]),
+                         make(&OP_CONSTANT, &[3]),
+                         make(&OP_CONSTANT, &[4]),
+                         make(&OP_CONSTANT, &[5]),
+                         ].concat().into())];
+
+        run_compiler_tests(tests)
+    }
+
+    #[test]
     fn test_conditionals_expressions() -> Result<()> {
         let tests = vec![
             define_case!("IF rbap_true. 10. ENDIF. 20.";
