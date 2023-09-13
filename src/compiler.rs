@@ -2,6 +2,9 @@
 
 mod symbol_table;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
 use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
@@ -35,7 +38,7 @@ struct CompilationScope {
 
 struct Compiler {
     constants: Vec<Object>,
-    symbol_table: SymbolTable,
+    symbol_table: Rc<RefCell<SymbolTable>>,
 
     scopes: Vec<CompilationScope>,
     scope_index: usize,
@@ -47,7 +50,7 @@ impl Compiler {
 
         Self {
             constants: Vec::new(),
-            symbol_table: SymbolTable::new(),
+            symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
             scopes: vec![main_scope],
             scope_index: 0,
         }
@@ -77,6 +80,7 @@ impl Compiler {
                 Statement::Declaration(d) => {
                     for declaration in d.as_ref() {
                         self.symbol_table
+                            .borrow_mut()
                             .define(declaration.ident.as_ref(), declaration.ty);
                     }
                 }
@@ -94,8 +98,8 @@ impl Compiler {
                     }
                 }
                 Statement::Assignment(a) => {
-                    let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
-                    let ty = Self::get_type(&a.value, &self.symbol_table)?;
+                    let symbol = self.symbol_table.borrow().resolve(a.ident.as_ref())?;
+                    let ty = Self::get_type(&a.value, &self.symbol_table.borrow())?;
 
                     if symbol.ty != ty {
                         return Err(CompilerError::from((symbol.ty, ty)).into());
@@ -159,7 +163,7 @@ impl Compiler {
                     self.emit(OP_CONSTANT, &[constant]);
                 }
                 Expression::Ident(id) => {
-                    let symbol = self.symbol_table.resolve(id.as_ref())?;
+                    let symbol = self.symbol_table.borrow().resolve(id.as_ref())?;
 
                     self.load_symbol(symbol);
                 }
@@ -185,7 +189,7 @@ impl Compiler {
                 }
                 Expression::CallExpression(_) => todo!(),
                 Expression::InfixExpression(ie) => {
-                    Self::check_types(&ie.left, &ie.right, &self.symbol_table)?;
+                    Self::check_types(&ie.left, &ie.right, &self.symbol_table.borrow())?;
 
                     let (left, right, operand_op_code) = match ie.operator {
                         Operator::Add => (*ie.left, *ie.right, OP_ADD),
