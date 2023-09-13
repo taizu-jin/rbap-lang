@@ -85,10 +85,12 @@ impl Compiler {
 
                     self.compile(a.value)?;
 
+                    let index: u8 = symbol.index.try_into().expect("max symbol count reached");
+
                     if symbol.scope == Scope::Global {
-                        self.emit(OP_SET_GLOBAL, &[symbol.index.try_into().unwrap()]);
+                        self.emit(OP_SET_GLOBAL, &[index as i32]);
                     } else {
-                        self.emit(OP_SET_LOCAL, &[symbol.index.try_into().unwrap()]);
+                        self.emit(OP_SET_LOCAL, &[index as i32]);
                     }
                 }
                 Statement::Block(_) => todo!(),
@@ -207,14 +209,14 @@ impl Compiler {
 
     fn load_symbol(&mut self, symbol: Symbol) {
         match symbol.scope {
-            Scope::Global => self.emit(
-                OP_GET_GLOBAL,
-                &[symbol.index.try_into().expect("max symbol count reached")],
-            ),
-            Scope::Local => self.emit(
-                OP_GET_LOCAL,
-                &[symbol.index.try_into().expect("max symbol count reached")],
-            ),
+            Scope::Global => {
+                let index: u8 = symbol.index.try_into().expect("max symbol count reached");
+                self.emit(OP_GET_GLOBAL, &[index as i32])
+            }
+            Scope::Local => {
+                let index: u8 = symbol.index.try_into().expect("max symbol count reached");
+                self.emit(OP_GET_LOCAL, &[index as i32])
+            }
             Scope::Function => self.emit(OP_CURRENT_CLOSURE, &[]),
         };
     }
