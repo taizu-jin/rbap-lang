@@ -425,7 +425,7 @@ mod tests {
 
             let bytecode = compiler.bytecode();
 
-            test_instructions(&test.expected_instructions, &bytecode.instructions);
+            test_instructions(&test.expected_instructions, &bytecode.instructions)?;
             test_constants(&test.expected_constants, &bytecode.constants);
         }
 
@@ -438,7 +438,7 @@ mod tests {
         parser.parse()
     }
 
-    fn test_instructions(want: impl AsRef<[u8]>, got: impl AsRef<[u8]>) {
+    fn test_instructions(want: impl AsRef<[u8]>, got: impl AsRef<[u8]>) -> Result<()> {
         let want = want.as_ref();
         let got = got.as_ref();
         assert_eq!(
@@ -452,12 +452,16 @@ mod tests {
         );
 
         for (i, (want, got)) in want.iter().zip(got.iter()).enumerate() {
+            let want = Opcode::lookup(*want)?;
+            let got = Opcode::lookup(*got)?;
             assert_eq!(
                 want, got,
                 "wrong instruction at {}.\nwant={}\ngot={}",
                 i, want, got
             );
         }
+
+        Ok(())
     }
 
     fn test_constants(want: &Vec<Object>, got: &Vec<Object>) {
@@ -579,17 +583,31 @@ mod tests {
         run_compiler_tests(tests)
     }
 
+    #[test]
     fn test_conditionals_expressions() -> Result<()> {
-        let tests = vec![define_case!("IF rbap_true. 10. ENDIF. 20.";
-                         Object::Int(1), Object::Int(20);
+        let tests = vec![
+            define_case!("IF rbap_true. 10. ENDIF. 20.";
+                         Object::Int(10), Object::Int(20);
                          [make(&OP_TRUE, &[]),
-                         make(&OP_JUMP_NOT_TRUTH, &[10]),
+                         make(&OP_JUMP_NOT_TRUTH, &[11]),
                          make(&OP_CONSTANT, &[0]),
-                         make(&OP_JUMP, &[11]),
-                         make(&OP_NULL, &[]),
                          make(&OP_POP, &[]),
+                         make(&OP_JUMP, &[12]),
+                         make(&OP_NULL, &[]),
                          make(&OP_CONSTANT, &[1]),
-                         make(&OP_POP, &[])].concat().into())];
+                         make(&OP_POP, &[])].concat().into()),
+            define_case!("IF rbap_true. 10. ELSE. 15. ENDIF. 20.";
+                         Object::Int(10), Object::Int(15), Object::Int(20);
+                         [make(&OP_TRUE, &[]),            
+                         make(&OP_JUMP_NOT_TRUTH, &[11]),
+                         make(&OP_CONSTANT, &[0]),      
+                         make(&OP_POP, &[]),           
+                         make(&OP_JUMP, &[15]),
+                         make(&OP_CONSTANT, &[1]),
+                         make(&OP_POP, &[]),
+                         make(&OP_CONSTANT, &[2]),
+                         make(&OP_POP, &[])].concat().into()),
+        ];
 
         run_compiler_tests(tests)
     }
