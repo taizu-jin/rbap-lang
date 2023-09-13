@@ -49,6 +49,7 @@ define_constant!(OP_CURRENT_CLOSURE, 0x14, 1);
 define_constant!(OP_AND, 0x15);
 define_constant!(OP_OR, 0x16);
 define_constant!(OP_STRING_TEMPLATE, 0x17, 2);
+define_constant!(OP_WRITE, 0x18, 2);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
@@ -140,6 +141,7 @@ impl<'a> Opcode {
             map.insert(OP_AND.into(), &OP_AND);
             map.insert(OP_OR.into(), &OP_OR);
             map.insert(OP_STRING_TEMPLATE.into(), &OP_STRING_TEMPLATE);
+            map.insert(OP_WRITE.into(), &OP_WRITE);
             map
         })
     }
