@@ -171,19 +171,17 @@ impl Compiler {
                     }
                 }
                 Expression::StringTemplate(st) => {
-                    let op_pos = self.emit(OP_STRING_TEMPLATE, &[9999]);
-
                     let expressions: Vec<_> = st.into();
                     let count: u16 = expressions
                         .len()
                         .try_into()
                         .expect("max string template bytes count reached");
 
+                    self.emit(OP_STRING_TEMPLATE, &[count as i32]);
+
                     for exp in expressions {
                         self.compile(exp)?;
                     }
-
-                    self.change_operand(op_pos, count as i32)?;
                 }
                 Expression::CallExpression(_) => todo!(),
                 Expression::InfixExpression(ie) => {
