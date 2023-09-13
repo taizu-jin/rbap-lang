@@ -193,18 +193,18 @@ impl Compiler {
         pos_new_instructions
     }
 
-    fn current_instructions(&self) -> &Instructions {
-        &self.scopes[self.scope_index].instructions
+    fn current_instructions(&self) -> &[u8] {
+        self.scopes[self.scope_index].instructions.as_ref()
     }
-    fn current_instructions_mut(&mut self) -> &mut Instructions {
-        &mut self.scopes[self.scope_index].instructions
+    fn current_instructions_mut(&mut self) -> &mut Vec<u8> {
+        self.scopes[self.scope_index].instructions.as_mut()
     }
 
     fn set_last_instruction(&mut self, op: Opcode, pos: usize) {
         let current_scope = &mut self.scopes[self.scope_index];
         let previous = current_scope.prev_instruction;
         let last = EmittedInstruction {
-            opcode: *op,
+            opcode: op.into(),
             position: pos,
         };
 
@@ -275,6 +275,7 @@ impl Compiler {
     fn change_operand(&mut self, op_pos: usize, operand: i32) -> Result<()> {
         let op = self
             .current_instructions()
+            .as_ref()
             .get(op_pos)
             .ok_or(Error::from(CompilerError::IndexOutOfBounds(op_pos)))?;
         let op = Opcode::lookup(*op)?;
@@ -383,7 +384,9 @@ mod tests {
         parser.parse()
     }
 
-    fn test_instructions(want: &Instructions, got: &Instructions) {
+    fn test_instructions(want: impl AsRef<[u8]>, got: impl AsRef<[u8]>) {
+        let want = want.as_ref();
+        let got = got.as_ref();
         assert_eq!(
             want.len(),
             got.len(),

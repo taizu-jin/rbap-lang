@@ -1,10 +1,5 @@
 use crate::error::{CompilerError, Result};
-use std::{
-    collections::HashMap,
-    fmt::Display,
-    ops::{Deref, DerefMut},
-    sync::OnceLock,
-};
+use std::{collections::HashMap, fmt::Display, sync::OnceLock};
 
 /// Define an `Opcode` constant.
 ///
@@ -60,15 +55,14 @@ static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 #[derive(Default, Debug)]
 pub struct Instructions(Vec<u8>);
 
-impl Deref for Instructions {
-    type Target = Vec<u8>;
-    fn deref(&self) -> &Self::Target {
+impl AsRef<[u8]> for Instructions {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl DerefMut for Instructions {
-    fn deref_mut(&mut self) -> &mut Self::Target {
+impl AsMut<Vec<u8>> for Instructions {
+    fn as_mut(&mut self) -> &mut Vec<u8> {
         &mut self.0
     }
 }
@@ -109,14 +103,6 @@ pub struct Opcode {
     pub operand_widths: &'static [&'static usize],
 }
 
-impl Deref for Opcode {
-    type Target = u8;
-
-    fn deref(&self) -> &Self::Target {
-        &self.code
-    }
-}
-
 impl<'a> Opcode {
     pub fn lookup(op: u8) -> Result<&'static Opcode> {
         let defitions = Opcode::get_definitions();
@@ -129,30 +115,30 @@ impl<'a> Opcode {
     fn get_definitions() -> &'a HashMap<u8, &'static Opcode> {
         DEFINITIONS.get_or_init(|| {
             let mut map = HashMap::new();
-            map.insert(*OP_CONSTANT, &OP_CONSTANT);
-            map.insert(*OP_POP, &OP_POP);
-            map.insert(*OP_ADD, &OP_ADD);
-            map.insert(*OP_SUB, &OP_SUB);
-            map.insert(*OP_MUL, &OP_MUL);
-            map.insert(*OP_DIV, &OP_DIV);
-            map.insert(*OP_GREATER_THAN, &OP_GREATER_THAN);
-            map.insert(*OP_EQUAL, &OP_EQUAL);
-            map.insert(*OP_NOT_EQUAL, &OP_NOT_EQUAL);
-            map.insert(*OP_TRUE, &OP_TRUE);
-            map.insert(*OP_FALSE, &OP_FALSE);
-            map.insert(*OP_JUMP_NOT_TRUTH, &OP_JUMP_NOT_TRUTH);
-            map.insert(*OP_JUMP, &OP_JUMP);
-            map.insert(*OP_NULL, &OP_NULL);
-            map.insert(*OP_NOT, &OP_NOT);
-            map.insert(*OP_MINUS, &OP_MINUS);
-            map.insert(*OP_GET_GLOBAL, &OP_GET_GLOBAL);
-            map.insert(*OP_SET_GLOBAL, &OP_SET_GLOBAL);
-            map.insert(*OP_GET_LOCAL, &OP_GET_LOCAL);
-            map.insert(*OP_SET_LOCAL, &OP_SET_LOCAL);
-            map.insert(*OP_CURRENT_CLOSURE, &OP_CURRENT_CLOSURE);
-            map.insert(*OP_AND, &OP_AND);
-            map.insert(*OP_OR, &OP_OR);
-            map.insert(*OP_STRING_TEMPLATE, &OP_STRING_TEMPLATE);
+            map.insert(OP_CONSTANT.into(), &OP_CONSTANT);
+            map.insert(OP_POP.into(), &OP_POP);
+            map.insert(OP_ADD.into(), &OP_ADD);
+            map.insert(OP_SUB.into(), &OP_SUB);
+            map.insert(OP_MUL.into(), &OP_MUL);
+            map.insert(OP_DIV.into(), &OP_DIV);
+            map.insert(OP_GREATER_THAN.into(), &OP_GREATER_THAN);
+            map.insert(OP_EQUAL.into(), &OP_EQUAL);
+            map.insert(OP_NOT_EQUAL.into(), &OP_NOT_EQUAL);
+            map.insert(OP_TRUE.into(), &OP_TRUE);
+            map.insert(OP_FALSE.into(), &OP_FALSE);
+            map.insert(OP_JUMP_NOT_TRUTH.into(), &OP_JUMP_NOT_TRUTH);
+            map.insert(OP_JUMP.into(), &OP_JUMP);
+            map.insert(OP_NULL.into(), &OP_NULL);
+            map.insert(OP_NOT.into(), &OP_NOT);
+            map.insert(OP_MINUS.into(), &OP_MINUS);
+            map.insert(OP_GET_GLOBAL.into(), &OP_GET_GLOBAL);
+            map.insert(OP_SET_GLOBAL.into(), &OP_SET_GLOBAL);
+            map.insert(OP_GET_LOCAL.into(), &OP_GET_LOCAL);
+            map.insert(OP_SET_LOCAL.into(), &OP_SET_LOCAL);
+            map.insert(OP_CURRENT_CLOSURE.into(), &OP_CURRENT_CLOSURE);
+            map.insert(OP_AND.into(), &OP_AND);
+            map.insert(OP_OR.into(), &OP_OR);
+            map.insert(OP_STRING_TEMPLATE.into(), &OP_STRING_TEMPLATE);
             map
         })
     }
@@ -175,6 +161,12 @@ impl<'a> Opcode {
                 })
                 .collect();
         (operands, offset)
+    }
+}
+
+impl From<Opcode> for u8 {
+    fn from(value: Opcode) -> Self {
+        value.code
     }
 }
 
@@ -236,7 +228,7 @@ mod tests {
                 TestCase {
                     op: $op_code,
                     operands: vec![$($operand), *],
-                    expected: vec![*$op_code, $($expected), *],
+                    expected: vec![$op_code.into(), $($expected), *],
                 }
             };
         }
