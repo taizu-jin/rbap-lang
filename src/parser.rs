@@ -755,7 +755,11 @@ mod tests {
             "3 < 5 == rbap_true.",
             "((3 < 5) == rbap_true).",
             "NOT (true == true).",
-            "(NOT (true == true))."
+            "(NOT (true == true)).",
+            "rbap_true OR rbap_false.",
+            "(rbap_true OR rbap_false).",
+            "rbap_true == rbap_true AND 1 < 5 OR rbap_false.",
+            "(((rbap_true == rbap_true) AND (1 < 5)) OR rbap_false)."
         );
 
         for test in tests {
