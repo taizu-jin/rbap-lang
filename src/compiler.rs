@@ -80,7 +80,19 @@ impl Compiler {
                             .define(declaration.ident.as_ref(), declaration.ty);
                     }
                 }
-                Statement::Write(_) => todo!(),
+                Statement::Write(w) => {
+                    let expressions: Vec<_> = w.into();
+                    let count: u16 = expressions
+                        .len()
+                        .try_into()
+                        .expect("max string template bytes count reached");
+
+                    self.emit(OP_WRITE, &[count as i32]);
+
+                    for exp in expressions {
+                        self.compile(exp)?;
+                    }
+                }
                 Statement::Assignment(a) => {
                     let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
                     let ty = Self::get_type(&a.value, &self.symbol_table)?;
