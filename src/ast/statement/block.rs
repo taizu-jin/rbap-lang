@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{error::Result, lexer::TokenKind, parser::Carriage};
+use crate::{ast::Node, error::Result, lexer::TokenKind, parser::Carriage};
 
 use super::Statement;
 
@@ -34,5 +34,11 @@ impl Display for Block {
         }
 
         Ok(())
+    }
+}
+
+impl From<Block> for Node {
+    fn from(value: Block) -> Self {
+        Node::Statement(Statement::Block(value))
     }
 }
