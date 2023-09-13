@@ -22,10 +22,10 @@ pub enum ErrorKind {
     ParseInfixUnexpectedToken,
     ParseInfixUnusupportedOperator,
     ParsePrefixUnusupportedOperator,
-    UndefinedOpcode,
     UnknownOperator,
     CompilerUndefinedVariable,
     CompilerExpectedDataType,
+    CompilerUndefinedOpcode,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -35,7 +35,6 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ExpectToken { .. } => Self::ExpectToken,
             ErrorRepr::ParseDataAssign { .. } => Self::ParseDataAssign,
             ErrorRepr::ParseStringTemplate { .. } => Self::ParseStringTemplate,
-            ErrorRepr::UndefinedOpcode(_) => Self::UndefinedOpcode,
             ErrorRepr::ParseExpression { .. } => Self::ParseExpression,
             ErrorRepr::Eof => Self::Eof,
             ErrorRepr::ParseInfixError(e) => e.into(),
@@ -78,6 +77,7 @@ impl From<&CompilerError> for ErrorKind {
         match value {
             CompilerError::UndefinedVariable(_) => Self::CompilerUndefinedVariable,
             CompilerError::ExpectedDataType { .. } => Self::CompilerExpectedDataType,
+            CompilerError::UndefinedOpcode(_) => Self::CompilerUndefinedOpcode,
         }
     }
 }
@@ -144,13 +144,6 @@ impl Error {
                 kind: token.kind,
                 literal: token.literal.to_string(),
             },
-        }
-    }
-
-    pub fn undefined_opcode(opcode: u8) -> Self {
-        Self {
-            kind: ErrorKind::UndefinedOpcode,
-            repr: ErrorRepr::UndefinedOpcode(opcode),
         }
     }
 
@@ -238,8 +231,6 @@ enum ErrorRepr {
     ParseStringTemplate { kind: TokenKind, literal: String },
     #[error("expected a token, but reached EOF")]
     Eof,
-    #[error("opcode {0} is undefined")]
-    UndefinedOpcode(u8),
     #[error("can't parse expression '{literal}({kind})")]
     ParseExpression { literal: String, kind: TokenKind },
     #[error(transparent)]
@@ -285,6 +276,8 @@ pub enum CompilerError {
     UndefinedVariable(String),
     #[error("Expected data type {expected}. Got {got}")]
     ExpectedDataType { got: DataType, expected: DataType },
+    #[error("opcode {0} is undefined")]
+    UndefinedOpcode(u8),
 }
 
 impl From<(DataType, DataType)> for CompilerError {
