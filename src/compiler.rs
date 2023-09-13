@@ -328,10 +328,35 @@ mod tests {
 
     #[test]
     fn test_string_expressions() -> Result<()> {
-        let tests = vec![define_case!("'monkey'.";
+        let tests = vec![
+            define_case!("'monkey'.";
                          Object::String("monkey".into());
                          [make(&OP_CONSTANT, &[0]),
-                          make(&OP_POP, &[])].concat().into())];
+                          make(&OP_POP, &[])].concat().into()),
+            define_case!("|some { 'string' } template|.";
+                         Object::String("some ".into()),
+                         Object::String("string".into()),
+                         Object::String(" template".into());
+                         [
+                          make(&OP_STRING_TEMPLATE, &[3]),
+                          make(&OP_CONSTANT, &[0]),
+                          make(&OP_CONSTANT, &[1]),
+                          make(&OP_CONSTANT, &[2]),
+                          make(&OP_POP, &[])].concat().into()),
+            define_case!("|some { |other { 'string' }| } template|.";
+                         Object::String("some ".into()),
+                         Object::String("other ".into()),
+                         Object::String("string".into()),
+                         Object::String(" template".into());
+                         [
+                          make(&OP_STRING_TEMPLATE, &[3]),
+                          make(&OP_CONSTANT, &[0]),
+                          make(&OP_STRING_TEMPLATE, &[2]),
+                          make(&OP_CONSTANT, &[1]),
+                          make(&OP_CONSTANT, &[2]),
+                          make(&OP_CONSTANT, &[3]),
+                          make(&OP_POP, &[])].concat().into()),
+        ];
 
         run_compiler_tests(tests)
     }
