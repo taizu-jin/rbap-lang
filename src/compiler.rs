@@ -353,7 +353,7 @@ impl Compiler {
                 }
             }
             Expression::PrefixExpression(pe) => Self::get_type(&pe.right, symbol_table)?,
-            Expression::CallExpression(_) => todo!(),
+            Expression::CallExpression(ce) => symbol_table.resolve(ce.function.as_ref())?.ty,
         };
 
         Ok(dt)
