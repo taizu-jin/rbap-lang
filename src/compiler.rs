@@ -810,6 +810,10 @@ mod tests {
             "DATA: lv_bool TYPE rbap_bool. lv_bool = -1.",
             "DATA: lv_bool TYPE rbap_bool. lv_bool = |some { 'string' } template|.",
             "DATA: lv_int TYPE i, lv_string TYPE string. lv_int = lv_string.",
+            "DATA: lv_bool TYPE rbap_bool.
+             METHOD return_string RETURNING rv_string TYPE string.
+             ENDMETHOD.
+             lv_bool = return_string().",
         ];
 
         for input in inputs {
@@ -834,6 +838,10 @@ mod tests {
             "DATA: lv_string TYPE string. lv_string = 'string'.",
             "DATA: lv_string TYPE string. lv_string = |some { 'string' } template|.",
             "DATA: lv_string TYPE string, lv_some TYPE string. lv_some = 'some'. lv_string = lv_some.",
+            "DATA: lv_string TYPE string.
+             METHOD return_string RETURNING rv_string TYPE string.
+             ENDMETHOD.
+             lv_string = return_string().",
         ];
         for input in inputs {
             let program = parse(input.into());
@@ -859,6 +867,10 @@ mod tests {
             "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 > 2.",
             "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 == 2.",
             "DATA: lv_bool TYPE rbap_bool. lv_bool = 1 <> 2.",
+            "DATA: lv_bool TYPE rbap_bool.
+             METHOD return_bool RETURNING rv_true TYPE rbap_bool.
+             ENDMETHOD.
+             lv_bool = return_bool().",
         ];
         for input in inputs {
             let program = parse(input.into());
@@ -880,6 +892,10 @@ mod tests {
             "DATA: lv_int TYPE i. lv_int = 2 - 1.",
             "DATA: lv_int TYPE i. lv_int = 2 / 1 - 1.",
             "DATA: lv_int TYPE i, lv_one type i. lv_one = 1. lv_int = lv_one.",
+            "DATA: lv_int TYPE i.
+             METHOD return_int RETURNING rv_int TYPE i.
+             ENDMETHOD.
+             lv_int = return_int().",
         ];
         for input in inputs {
             let program = parse(input.into());
