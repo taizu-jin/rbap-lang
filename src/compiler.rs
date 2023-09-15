@@ -8,6 +8,7 @@ use std::rc::Rc;
 use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
 use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
+use crate::object::CompiledFunction;
 use crate::{ast::Node, code::Instructions, object::Object};
 
 use self::symbol_table::{Scope, Symbol, SymbolTable};
@@ -149,7 +150,39 @@ impl Compiler {
                         .expect("max jump index reached");
                     self.change_operand(jump_pos, after_pos as i32)?;
                 }
-                Statement::Function(_) => todo!(),
+                Statement::Function(f) => {
+                    self.enter_scope();
+
+                    self.symbol_table.borrow_mut().define_function_name(
+                        f.name,
+                        f.ret.as_ref().map_or(DataType::None, |r| r.ty),
+                    );
+
+                    let num_parameters = f.parameters.len();
+
+                    for p in f.parameters {
+                        self.symbol_table.borrow_mut().define(p.ident, p.ty);
+                    }
+
+                    if let Some(ret) = f.ret {
+                        self.symbol_table.borrow_mut().define(ret.ident, ret.ty);
+                    }
+
+                    self.compile(f.body)?;
+
+                    let num_locals = self.symbol_table.borrow().num_definitions;
+                    let instructions = self.leave_scope();
+
+                    let compiled_function = CompiledFunction {
+                        instructions,
+                        num_locals,
+                        num_parameters,
+                    };
+
+                    let fn_index = self.add_constant(compiled_function.into());
+
+                    self.emit(OP_FUNCTION, &[fn_index]);
+                }
             },
             Node::Expression(e) => match e {
                 Expression::IntLiteral(i) => {
