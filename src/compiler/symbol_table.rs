@@ -33,7 +33,7 @@ impl Symbol {
 
 #[derive(Debug)]
 pub struct SymbolTable {
-    outer: Option<Rc<RefCell<SymbolTable>>>,
+    pub outer: Option<Rc<RefCell<SymbolTable>>>,
 
     store: HashMap<Rc<str>, Symbol>,
     num_definitions: usize,
