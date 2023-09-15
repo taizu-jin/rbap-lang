@@ -549,11 +549,18 @@ mod tests {
         );
 
         for (i, (want, got)) in want.iter().zip(got.iter()).enumerate() {
-            assert_eq!(
-                want, got,
-                "wrong constant at {}.\nwant={}\ngot={}",
-                i, want, got
-            );
+            match (got, want) {
+                (Object::Function(got), Object::Function(want)) => assert_eq!(
+                    want, got,
+                    "wrong constant at {}.\nwant={}\ngot={}",
+                    i, want, got
+                ),
+                _ => assert_eq!(
+                    want, got,
+                    "wrong constant at {}.\nwant={}\ngot={}",
+                    i, want, got
+                ),
+            };
         }
     }
 
@@ -964,5 +971,30 @@ mod tests {
             previous.opcode,
             OP_MUL
         );
+    }
+
+    #[test]
+    fn test_functions() -> Result<()> {
+        let tests = vec![
+            define_case!("METHOD sum IMPORTING iv_left TYPE i iv_right TYPE i RETURNING rv_sum TYPE i.
+                            rv_sum = 5 + 10.
+                          ENDMETHOD.";
+                         Object::Int(5), Object::Int(10),
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_CONSTANT, &[0]),
+                                 make(&OP_CONSTANT, &[1]),
+                                 make(&OP_ADD, &[]),
+                                 make(&OP_SET_LOCAL, &[2]),
+                             ].concat().into(),
+                             num_parameters: 2,
+                             num_locals: 3,
+                         });
+                         [
+                         make(&OP_FUNCTION, &[2]),
+                         ].concat().into()),
+        ];
+
+        run_compiler_tests(tests)
     }
 }
