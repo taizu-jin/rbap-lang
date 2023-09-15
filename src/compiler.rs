@@ -359,6 +359,34 @@ impl Compiler {
         let scope = &mut self.scopes[self.scope_index];
         scope.last_instruction = previous;
     }
+
+    fn enter_scope(&mut self) {
+        let scope = CompilationScope {
+            ..Default::default()
+        };
+
+        self.scopes.push(scope);
+        self.scope_index += 1;
+        self.symbol_table = Rc::new(RefCell::new(SymbolTable::new_enclosed(Rc::clone(
+            &self.symbol_table,
+        ))));
+    }
+
+    fn leave_scope(&mut self) -> Instructions {
+        let scope = self.scopes.remove(self.scopes.len() - 1);
+        self.scope_index -= 1;
+
+        let symbol_table = self
+            .symbol_table
+            .borrow_mut()
+            .outer
+            .take()
+            .expect("should always have an outer scope");
+
+        self.symbol_table = symbol_table;
+
+        scope.instructions
+    }
 }
 
 impl Default for Compiler {
