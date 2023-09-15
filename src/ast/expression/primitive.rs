@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
+    ast::Node,
     error::{Error, Result},
     lexer::{Token, TokenKind},
 };
@@ -122,6 +123,12 @@ impl From<Identifier> for std::string::String {
 impl From<Identifier> for Expression {
     fn from(value: Identifier) -> Self {
         Expression::Ident(value)
+    }
+}
+
+impl From<Identifier> for Node {
+    fn from(value: Identifier) -> Self {
+        Node::Expression(value.into())
     }
 }
 
