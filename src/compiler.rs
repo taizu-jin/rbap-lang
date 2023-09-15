@@ -832,4 +832,104 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_compiler_scopes() {
+        let mut compiler = Compiler::new();
+        assert_eq!(
+            compiler.scope_index, 0,
+            "scope_index wrong.\n\tgot={}\n\twant={}",
+            compiler.scope_index, 0
+        );
+
+        compiler.emit(OP_MUL, &[]);
+
+        compiler.enter_scope();
+
+        assert_eq!(
+            compiler.scope_index, 1,
+            "scope_index wrong.\n\tgot={}\n\twant={}",
+            compiler.scope_index, 1
+        );
+
+        compiler.emit(OP_SUB, &[]);
+
+        assert_eq!(
+            compiler.scopes[compiler.scope_index]
+                .instructions
+                .as_ref()
+                .len(),
+            1,
+            "instruction length wrong.\n\tgot={}\n\twant={}",
+            compiler.scopes[compiler.scope_index]
+                .instructions
+                .as_ref()
+                .len(),
+            1
+        );
+
+        let last = compiler.scopes[compiler.scope_index].last_instruction;
+
+        assert_eq!(
+            last.opcode,
+            OP_SUB.into(),
+            "last.op_code wrong.\n\tgot={}\n\twant={}",
+            last.opcode,
+            OP_SUB
+        );
+
+        assert!(
+            compiler.symbol_table.borrow().outer.is_some(),
+            "compiler did not enclose symbol table",
+        );
+
+        compiler.leave_scope();
+
+        assert_eq!(
+            compiler.scope_index, 0,
+            "scope_index wrong.\n\tgot={}\n\twant={}",
+            compiler.scope_index, 0
+        );
+
+        assert!(
+            compiler.symbol_table.borrow().outer.is_none(),
+            "compiler modified global symbol table incorrectly",
+        );
+
+        compiler.emit(OP_ADD, &[]);
+
+        assert_eq!(
+            compiler.scopes[compiler.scope_index]
+                .instructions
+                .as_ref()
+                .len(),
+            2,
+            "instruction length wrong.\n\tgot={}\n\twant={}",
+            compiler.scopes[compiler.scope_index]
+                .instructions
+                .as_ref()
+                .len(),
+            2
+        );
+
+        let last = compiler.scopes[compiler.scope_index].last_instruction;
+
+        assert_eq!(
+            last.opcode,
+            OP_ADD.into(),
+            "last.op_code wrong.\n\tgot={}\n\twant={}",
+            last.opcode,
+            OP_ADD
+        );
+
+        let previous = compiler.scopes[compiler.scope_index].prev_instruction;
+
+        assert_eq!(
+            previous.opcode,
+            OP_MUL.into(),
+            "previous.op_code wrong.\n\tgot={}\n\twant={}",
+            previous.opcode,
+            OP_MUL
+        );
+    }
 }
