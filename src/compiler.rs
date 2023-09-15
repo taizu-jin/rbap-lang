@@ -151,6 +151,11 @@ impl Compiler {
                     self.change_operand(jump_pos, after_pos as i32)?;
                 }
                 Statement::Function(f) => {
+                    self.symbol_table.borrow_mut().define(
+                        f.name.clone(),
+                        f.ret.as_ref().map_or(DataType::None, |r| r.ty),
+                    );
+
                     self.enter_scope();
 
                     self.symbol_table.borrow_mut().define_function_name(
@@ -220,7 +225,20 @@ impl Compiler {
                         self.compile(exp)?;
                     }
                 }
-                Expression::CallExpression(_) => todo!(),
+                Expression::CallExpression(ce) => {
+                    self.compile(ce.function)?;
+                    let arg_count: u8 = ce
+                        .arguments
+                        .len()
+                        .try_into()
+                        .expect("reached max function call argument count");
+
+                    for arg in ce.arguments {
+                        self.compile(arg)?;
+                    }
+
+                    self.emit(OP_CALL, &[arg_count as i32]);
+                }
                 Expression::InfixExpression(ie) => {
                     Self::check_types(&ie.left, &ie.right, &self.symbol_table.borrow())?;
 
