@@ -32,7 +32,7 @@ impl PartialEq<Opcode> for EmittedInstruction {
 #[derive(Default)]
 struct CompilationScope {
     instructions: Instructions,
-    last_insturction: EmittedInstruction,
+    last_instruction: EmittedInstruction,
     prev_instruction: EmittedInstruction,
 }
 
@@ -253,14 +253,14 @@ impl Compiler {
 
     fn set_last_instruction(&mut self, op: Opcode, pos: usize) {
         let current_scope = &mut self.scopes[self.scope_index];
-        let previous = current_scope.prev_instruction;
+        let previous = current_scope.last_instruction;
         let last = EmittedInstruction {
             opcode: op.into(),
             position: pos,
         };
 
         current_scope.prev_instruction = previous;
-        current_scope.last_insturction = last;
+        current_scope.last_instruction = last;
     }
 
     fn load_symbol(&mut self, symbol: Symbol) {
@@ -348,16 +348,16 @@ impl Compiler {
             return false;
         }
 
-        self.scopes[self.scope_index].last_insturction == opcode
+        self.scopes[self.scope_index].last_instruction == opcode
     }
 
     fn remove_last_instruction(&mut self) {
-        let last = self.scopes[self.scope_index].last_insturction;
+        let last = self.scopes[self.scope_index].last_instruction;
         let previous = self.scopes[self.scope_index].prev_instruction;
 
         self.current_instructions_mut().truncate(last.position);
         let scope = &mut self.scopes[self.scope_index];
-        scope.last_insturction = previous;
+        scope.last_instruction = previous;
     }
 }
 
