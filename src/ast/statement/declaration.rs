@@ -83,6 +83,7 @@ pub enum DataType {
     String,
     Int,
     Bool,
+    None,
 }
 
 impl Display for DataType {
@@ -91,6 +92,7 @@ impl Display for DataType {
             DataType::String => write!(f, "string"),
             DataType::Int => write!(f, "i"),
             DataType::Bool => write!(f, "rbap_bool"),
+            DataType::None => write!(f, "null"),
         }
     }
 }
