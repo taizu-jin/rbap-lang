@@ -897,16 +897,24 @@ ENDIF.";
         input: &'static str,
         name: &'static str,
         parameters: Vec<Data>,
-        returns: Vec<Data>,
+        ret: Option<Data>,
     }
 
     macro_rules! def_case_function {
-            ($input:expr;$name:expr;$($par_ident:literal,$par_ty:ident),+;$($ret_ident:literal,$ret_ty:ident),+) => {
+            ($input:expr,$name:expr,$ret_ident:literal,$ret_ty:ident;$($par_ident:literal,$par_ty:ident),+) => {
                 TestCaseFunction{
                     input: $input,
                     name: $name.into(),
                     parameters: vec![$(def_ddecl!($par_ty, $par_ident)),+],
-                    returns: vec![$(def_ddecl!($ret_ty, $ret_ident)),+],
+                    ret: Some(def_ddecl!($ret_ty, $ret_ident)),
+                }
+            };
+            ($input:expr,$name:expr;$($par_ident:literal,$par_ty:ident),+) => {
+                TestCaseFunction{
+                    input: $input,
+                    name: $name.into(),
+                    parameters: vec![$(def_ddecl!($par_ty, $par_ident)),+],
+                    ret: None,
                 }
             };
         }
@@ -915,11 +923,15 @@ ENDIF.";
     fn test_function_statement_name_and_parameter_parsing() {
         let tests = vec![def_case_function!(
             "METHOD sum IMPORTING iv_x TYPE i iv_y TYPE i RETURNING rv_sum TYPE i.
-rv_sum = iv_x + iv_y.
-ENDMETHOD.";
-            "sum";
-            "iv_x", Int, "iv_y", Int;
-            "rv_sum", Int
+                rv_sum = iv_x + iv_y.
+             ENDMETHOD.",
+            "sum",
+            "rv_sum",
+            Int;
+            "iv_x",
+            Int,
+            "iv_y",
+            Int
         )];
 
         for test in tests {
@@ -952,16 +964,10 @@ ENDMETHOD.";
                 }
 
                 assert_eq!(
-                    statement.returns.len(),
-                    test.returns.len(),
-                    "return parameter count does not match.\n\tgot={}\n\twant={}",
-                    statement.returns.len(),
-                    test.returns.len()
+                    statement.ret, test.ret,
+                    "return parameter does not match.\n\tgot={:?}\n\twant={:?}",
+                    statement.ret, test.ret
                 );
-
-                for (g, w) in statement.returns.iter().zip(test.returns.iter()) {
-                    assert_eq!(g, w, "parameters do not match.\n\tgot={}\n\twant={}", g, w);
-                }
             } else {
                 panic!(
                     "program.statements[0] is not an Statement::Function. got={:?}",

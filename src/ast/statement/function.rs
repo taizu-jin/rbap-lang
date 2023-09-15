@@ -8,7 +8,7 @@ use super::{Block, Data, Statement};
 pub struct Function {
     pub name: String,
     pub parameters: Vec<Data>,
-    pub returns: Vec<Data>,
+    pub ret: Option<Data>,
     pub body: Block,
 }
 
@@ -19,7 +19,6 @@ impl Function {
         let name = ident.literal.to_string();
 
         let mut parameters = Vec::new();
-        let mut returns = Vec::new();
 
         if carriage.is_peek_token(TokenKind::Importing) {
             carriage.next_token()?;
@@ -32,14 +31,13 @@ impl Function {
             }
         }
 
-        if carriage.is_peek_token(TokenKind::Returning) {
+        let ret = if carriage.is_peek_token(TokenKind::Returning) {
             carriage.next_token()?;
 
-            while !carriage.is_peek_token(TokenKind::Period) {
-                let ddecl = Data::parse(carriage)?;
-                returns.push(ddecl);
-            }
-        }
+            Some(Data::parse(carriage)?)
+        } else {
+            None
+        };
 
         carriage.expect_tokens(&[TokenKind::Period])?;
         let body = Block::parse(carriage)?;
@@ -48,7 +46,7 @@ impl Function {
         let function = Function {
             name,
             parameters,
-            returns,
+            ret,
             body,
         };
 
