@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     ast::DataType,
@@ -33,7 +33,7 @@ impl Symbol {
 
 #[derive(Debug)]
 pub struct SymbolTable {
-    pub outer: Option<Rc<RefCell<SymbolTable>>>,
+    pub outer: Option<Box<SymbolTable>>,
 
     store: HashMap<Rc<str>, Symbol>,
     pub num_definitions: usize,
@@ -62,10 +62,10 @@ impl SymbolTable {
         symbol
     }
 
-    pub fn new_enclosed(outer: impl Into<Rc<RefCell<Self>>>) -> Self {
-        let mut table = Self::new();
-        table.outer = Some(outer.into());
-        table
+    pub fn enclose(&mut self) {
+        let table = Self::new();
+        let me = std::mem::replace(self, table);
+        self.outer = Some(Box::new(me));
     }
 
     pub fn resolve(&self, name: &str) -> Result<Symbol> {
@@ -73,7 +73,7 @@ impl SymbolTable {
             None => match &self.outer {
                 None => Err(CompilerError::UndefinedVariable(name.to_owned()).into()),
                 Some(outer) => {
-                    let symbol = outer.borrow().resolve(name)?;
+                    let symbol = outer.resolve(name)?;
                     if symbol.scope == Scope::Global {
                         return Ok(symbol);
                     }
@@ -115,9 +115,9 @@ mod tests {
             ("f".into(), Symbol::new("f", Scope::Local, 1, DataType::Int)),
         ]);
 
-        let scope = Rc::new(RefCell::new(SymbolTable::new()));
+        let mut scope = SymbolTable::new();
 
-        let a = scope.borrow_mut().define("a", DataType::Int);
+        let a = scope.define("a", DataType::Int);
         assert_eq!(
             &a,
             expected.get("a").unwrap(),
@@ -126,7 +126,7 @@ mod tests {
             a
         );
 
-        let b = scope.borrow_mut().define("b", DataType::Int);
+        let b = scope.define("b", DataType::Int);
         assert_eq!(
             &b,
             expected.get("b").unwrap(),
@@ -135,9 +135,9 @@ mod tests {
             b
         );
 
-        let scope = Rc::new(RefCell::new(SymbolTable::new_enclosed(scope)));
+        scope.enclose();
 
-        let c = scope.borrow_mut().define("c", DataType::Int);
+        let c = scope.define("c", DataType::Int);
         assert_eq!(
             &c,
             expected.get("c").unwrap(),
@@ -146,7 +146,7 @@ mod tests {
             c
         );
 
-        let d = scope.borrow_mut().define("d", DataType::Int);
+        let d = scope.define("d", DataType::Int);
         assert_eq!(
             &d,
             expected.get("d").unwrap(),
@@ -155,9 +155,9 @@ mod tests {
             d
         );
 
-        let scope = Rc::new(RefCell::new(SymbolTable::new_enclosed(scope)));
+        scope.enclose();
 
-        let e = scope.borrow_mut().define("e", DataType::Int);
+        let e = scope.define("e", DataType::Int);
         assert_eq!(
             &e,
             expected.get("e").unwrap(),
@@ -166,7 +166,7 @@ mod tests {
             e
         );
 
-        let f = scope.borrow_mut().define("f", DataType::Int);
+        let f = scope.define("f", DataType::Int);
         assert_eq!(
             &f,
             expected.get("f").unwrap(),
@@ -216,11 +216,12 @@ mod tests {
             ("d".into(), Symbol::new("d", Scope::Local, 1, DataType::Int)),
         ]);
 
-        let scope = Rc::new(RefCell::new(SymbolTable::new()));
-        scope.borrow_mut().define("a", DataType::Int);
-        scope.borrow_mut().define("b", DataType::Int);
+        let mut scope = SymbolTable::new();
+        scope.define("a", DataType::Int);
+        scope.define("b", DataType::Int);
 
-        let mut scope = SymbolTable::new_enclosed(scope);
+        scope.enclose();
+
         scope.define("c", DataType::Int);
         scope.define("d", DataType::Int);
 
@@ -234,35 +235,26 @@ mod tests {
 
     #[test]
     fn test_resolve_nested_local() -> Result<()> {
-        let global = RefCell::new(SymbolTable::new());
-        global.borrow_mut().define("a", DataType::Int);
-        global.borrow_mut().define("b", DataType::Int);
+        let mut table = SymbolTable::new();
+        table.define("a", DataType::Int);
+        table.define("b", DataType::Int);
 
-        let first_local = Rc::new(RefCell::new(SymbolTable::new_enclosed(global)));
-        first_local.borrow_mut().define("c", DataType::Int);
-        first_local.borrow_mut().define("d", DataType::Int);
+        table.enclose();
 
-        let second_local = Rc::new(RefCell::new(SymbolTable::new_enclosed(first_local.clone())));
-        second_local.borrow_mut().define("e", DataType::Int);
-        second_local.borrow_mut().define("f", DataType::Int);
+        table.define("c", DataType::Int);
+        table.define("d", DataType::Int);
+
+        table.enclose();
+
+        table.define("e", DataType::Int);
+        table.define("f", DataType::Int);
 
         struct TestCase {
-            table: Rc<RefCell<SymbolTable>>,
             expected_symbols: Vec<Symbol>,
         }
 
         let tests = vec![
             TestCase {
-                table: first_local,
-                expected_symbols: vec![
-                    Symbol::new("a", Scope::Global, 0, DataType::Int),
-                    Symbol::new("b", Scope::Global, 1, DataType::Int),
-                    Symbol::new("c", Scope::Local, 0, DataType::Int),
-                    Symbol::new("d", Scope::Local, 1, DataType::Int),
-                ],
-            },
-            TestCase {
-                table: second_local,
                 expected_symbols: vec![
                     Symbol::new("a", Scope::Global, 0, DataType::Int),
                     Symbol::new("b", Scope::Global, 1, DataType::Int),
@@ -270,13 +262,22 @@ mod tests {
                     Symbol::new("f", Scope::Local, 1, DataType::Int),
                 ],
             },
+            TestCase {
+                expected_symbols: vec![
+                    Symbol::new("a", Scope::Global, 0, DataType::Int),
+                    Symbol::new("b", Scope::Global, 1, DataType::Int),
+                    Symbol::new("c", Scope::Local, 0, DataType::Int),
+                    Symbol::new("d", Scope::Local, 1, DataType::Int),
+                ],
+            },
         ];
 
         for test in tests {
             for symbol in test.expected_symbols {
-                let result = test.table.borrow().resolve(&symbol.name)?;
+                let result = table.resolve(&symbol.name)?;
                 assert_eq!(symbol, result, "expected={:?}, got={:?}", symbol, result);
             }
+            table = *table.outer.take().unwrap();
         }
 
         Ok(())

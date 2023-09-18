@@ -2,9 +2,6 @@
 
 mod symbol_table;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
 use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
@@ -39,7 +36,7 @@ struct CompilationScope {
 
 struct Compiler {
     constants: Vec<Object>,
-    symbol_table: Rc<RefCell<SymbolTable>>,
+    symbol_table: SymbolTable,
 
     scopes: Vec<CompilationScope>,
 }
@@ -50,7 +47,7 @@ impl Compiler {
 
         Self {
             constants: Vec::new(),
-            symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
+            symbol_table: SymbolTable::new(),
             scopes: vec![main_scope],
         }
     }
@@ -83,7 +80,6 @@ impl Compiler {
                 Statement::Declaration(d) => {
                     for declaration in d.as_ref() {
                         self.symbol_table
-                            .borrow_mut()
                             .define(declaration.ident.as_ref(), declaration.ty);
                     }
                 }
@@ -101,8 +97,8 @@ impl Compiler {
                     }
                 }
                 Statement::Assignment(a) => {
-                    let symbol = self.symbol_table.borrow().resolve(a.ident.as_ref())?;
-                    let ty = Self::get_type(&a.value, &self.symbol_table.borrow())?;
+                    let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
+                    let ty = Self::get_type(&a.value, &self.symbol_table)?;
 
                     if symbol.ty != ty {
                         return Err(CompilerError::from((symbol.ty, ty)).into());
@@ -153,14 +149,14 @@ impl Compiler {
                     self.change_operand(jump_pos, after_pos as i32)?;
                 }
                 Statement::Function(f) => {
-                    self.symbol_table.borrow_mut().define(
+                    self.symbol_table.define(
                         f.name.clone(),
                         f.ret.as_ref().map_or(DataType::None, |r| r.ty),
                     );
 
                     self.enter_scope();
 
-                    self.symbol_table.borrow_mut().define_function_name(
+                    self.symbol_table.define_function_name(
                         f.name,
                         f.ret.as_ref().map_or(DataType::None, |r| r.ty),
                     );
@@ -168,16 +164,16 @@ impl Compiler {
                     let num_parameters = f.parameters.len();
 
                     for p in f.parameters {
-                        self.symbol_table.borrow_mut().define(p.ident, p.ty);
+                        self.symbol_table.define(p.ident, p.ty);
                     }
 
                     if let Some(ret) = f.ret {
-                        self.symbol_table.borrow_mut().define(ret.ident, ret.ty);
+                        self.symbol_table.define(ret.ident, ret.ty);
                     }
 
                     self.compile(f.body)?;
 
-                    let num_locals = self.symbol_table.borrow().num_definitions;
+                    let num_locals = self.symbol_table.num_definitions;
                     let instructions = self.leave_scope();
 
                     let compiled_function = CompiledFunction {
@@ -203,7 +199,7 @@ impl Compiler {
                     self.emit(OP_CONSTANT, &[constant]);
                 }
                 Expression::Ident(id) => {
-                    let symbol = self.symbol_table.borrow().resolve(id.as_ref())?;
+                    let symbol = self.symbol_table.resolve(id.as_ref())?;
 
                     self.load_symbol(symbol);
                 }
@@ -242,7 +238,7 @@ impl Compiler {
                     self.emit(OP_CALL, &[arg_count as i32]);
                 }
                 Expression::InfixExpression(ie) => {
-                    Self::check_types(&ie.left, &ie.right, &self.symbol_table.borrow())?;
+                    Self::check_types(&ie.left, &ie.right, &self.symbol_table)?;
 
                     let (left, right, operand_op_code) = match ie.operator {
                         Operator::Add => (*ie.left, *ie.right, OP_ADD),
@@ -432,9 +428,7 @@ impl Compiler {
         };
 
         self.scopes.push(scope);
-        self.symbol_table = Rc::new(RefCell::new(SymbolTable::new_enclosed(Rc::clone(
-            &self.symbol_table,
-        ))));
+        self.symbol_table.enclose();
     }
 
     fn leave_scope(&mut self) -> Instructions {
@@ -445,12 +439,11 @@ impl Compiler {
 
         let symbol_table = self
             .symbol_table
-            .borrow_mut()
             .outer
             .take()
             .expect("should always have an outer scope");
 
-        self.symbol_table = symbol_table;
+        self.symbol_table = *symbol_table;
 
         scope.instructions
     }
@@ -967,7 +960,7 @@ mod tests {
         );
 
         assert!(
-            compiler.symbol_table.borrow().outer.is_some(),
+            compiler.symbol_table.outer.is_some(),
             "compiler did not enclose symbol table",
         );
 
@@ -982,7 +975,7 @@ mod tests {
         );
 
         assert!(
-            compiler.symbol_table.borrow().outer.is_none(),
+            compiler.symbol_table.outer.is_none(),
             "compiler modified global symbol table incorrectly",
         );
 
