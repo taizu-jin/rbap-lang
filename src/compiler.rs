@@ -42,7 +42,6 @@ struct Compiler {
     symbol_table: Rc<RefCell<SymbolTable>>,
 
     scopes: Vec<CompilationScope>,
-    scope_index: usize,
 }
 
 impl Compiler {
@@ -53,13 +52,16 @@ impl Compiler {
             constants: Vec::new(),
             symbol_table: Rc::new(RefCell::new(SymbolTable::new())),
             scopes: vec![main_scope],
-            scope_index: 0,
         }
     }
 
     pub fn bytecode(mut self) -> Bytecode {
         Bytecode {
-            instructions: self.scopes.remove(self.scope_index).instructions,
+            instructions: self
+                .scopes
+                .pop()
+                .expect("at least one scope is always initialized upon creation")
+                .instructions,
             constants: self.constants,
         }
     }
@@ -295,15 +297,27 @@ impl Compiler {
         pos_new_instructions
     }
 
+    fn current_scope(&self) -> &CompilationScope {
+        self.scopes
+            .last()
+            .expect("at least one scope is always present")
+    }
+
+    fn current_scope_mut(&mut self) -> &mut CompilationScope {
+        self.scopes
+            .last_mut()
+            .expect("at least one scope is always present")
+    }
+
     fn current_instructions(&self) -> &[u8] {
-        self.scopes[self.scope_index].instructions.as_ref()
+        self.current_scope().instructions.as_ref()
     }
     fn current_instructions_mut(&mut self) -> &mut Vec<u8> {
-        self.scopes[self.scope_index].instructions.as_mut()
+        self.current_scope_mut().instructions.as_mut()
     }
 
     fn set_last_instruction(&mut self, op: Opcode, pos: usize) {
-        let current_scope = &mut self.scopes[self.scope_index];
+        let current_scope = &mut self.current_scope_mut();
         let previous = current_scope.last_instruction;
         let last = EmittedInstruction {
             opcode: op.into(),
@@ -399,15 +413,16 @@ impl Compiler {
             return false;
         }
 
-        self.scopes[self.scope_index].last_instruction == opcode
+        self.current_scope().last_instruction == opcode
     }
 
     fn remove_last_instruction(&mut self) {
-        let last = self.scopes[self.scope_index].last_instruction;
-        let previous = self.scopes[self.scope_index].prev_instruction;
+        let scope = self.current_scope();
+        let last = scope.last_instruction;
+        let previous = scope.prev_instruction;
 
         self.current_instructions_mut().truncate(last.position);
-        let scope = &mut self.scopes[self.scope_index];
+        let scope = self.current_scope_mut();
         scope.last_instruction = previous;
     }
 
@@ -417,15 +432,16 @@ impl Compiler {
         };
 
         self.scopes.push(scope);
-        self.scope_index += 1;
         self.symbol_table = Rc::new(RefCell::new(SymbolTable::new_enclosed(Rc::clone(
             &self.symbol_table,
         ))));
     }
 
     fn leave_scope(&mut self) -> Instructions {
-        let scope = self.scopes.remove(self.scopes.len() - 1);
-        self.scope_index -= 1;
+        let scope = self
+            .scopes
+            .pop()
+            .expect("at least one scope is always initialized");
 
         let symbol_table = self
             .symbol_table
@@ -911,9 +927,11 @@ mod tests {
     fn test_compiler_scopes() {
         let mut compiler = Compiler::new();
         assert_eq!(
-            compiler.scope_index, 0,
-            "scope_index wrong.\n\tgot={}\n\twant={}",
-            compiler.scope_index, 0
+            compiler.scopes.len(),
+            1,
+            "scope length is wrong.\n\tgot={}\n\twant={}",
+            compiler.scopes.len(),
+            1
         );
 
         compiler.emit(OP_MUL, &[]);
@@ -921,28 +939,24 @@ mod tests {
         compiler.enter_scope();
 
         assert_eq!(
-            compiler.scope_index, 1,
-            "scope_index wrong.\n\tgot={}\n\twant={}",
-            compiler.scope_index, 1
+            compiler.scopes.len(),
+            2,
+            "scope length is wrong.\n\tgot={}\n\twant={}",
+            compiler.scopes.len(),
+            2
         );
 
         compiler.emit(OP_SUB, &[]);
 
         assert_eq!(
-            compiler.scopes[compiler.scope_index]
-                .instructions
-                .as_ref()
-                .len(),
+            compiler.current_instructions().len(),
             1,
             "instruction length wrong.\n\tgot={}\n\twant={}",
-            compiler.scopes[compiler.scope_index]
-                .instructions
-                .as_ref()
-                .len(),
+            compiler.current_instructions().len(),
             1
         );
 
-        let last = compiler.scopes[compiler.scope_index].last_instruction;
+        let last = compiler.current_scope().last_instruction;
 
         assert_eq!(
             last.opcode,
@@ -960,9 +974,11 @@ mod tests {
         compiler.leave_scope();
 
         assert_eq!(
-            compiler.scope_index, 0,
-            "scope_index wrong.\n\tgot={}\n\twant={}",
-            compiler.scope_index, 0
+            compiler.scopes.len(),
+            1,
+            "scope length is wrong.\n\tgot={}\n\twant={}",
+            compiler.scopes.len(),
+            1
         );
 
         assert!(
@@ -973,20 +989,14 @@ mod tests {
         compiler.emit(OP_ADD, &[]);
 
         assert_eq!(
-            compiler.scopes[compiler.scope_index]
-                .instructions
-                .as_ref()
-                .len(),
+            compiler.current_instructions().len(),
             2,
             "instruction length wrong.\n\tgot={}\n\twant={}",
-            compiler.scopes[compiler.scope_index]
-                .instructions
-                .as_ref()
-                .len(),
+            compiler.current_instructions().len(),
             2
         );
 
-        let last = compiler.scopes[compiler.scope_index].last_instruction;
+        let last = compiler.current_scope().last_instruction;
 
         assert_eq!(
             last.opcode,
@@ -996,7 +1006,7 @@ mod tests {
             OP_ADD
         );
 
-        let previous = compiler.scopes[compiler.scope_index].prev_instruction;
+        let previous = compiler.current_scope().prev_instruction;
 
         assert_eq!(
             previous.opcode,
