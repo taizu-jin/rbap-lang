@@ -14,8 +14,8 @@ use crate::{ast::Node, code::Instructions, object::Object};
 use self::symbol_table::{Scope, Symbol, SymbolTable};
 
 pub struct Bytecode {
-    instructions: Instructions,
-    constants: Vec<Object>,
+    pub instructions: Instructions,
+    pub constants: Vec<Object>,
 }
 
 #[derive(Clone, Copy, Default)]

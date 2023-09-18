@@ -6,5 +6,6 @@ mod lexer;
 mod object;
 mod parser;
 mod repl;
+mod vm;
 
 pub use repl::start;
