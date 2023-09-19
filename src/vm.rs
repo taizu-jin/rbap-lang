@@ -401,7 +401,15 @@ mod tests {
             "(1 > 2) == rbap_true.",
             false,
             "(1 > 2) == rbap_false.",
-            true
+            true,
+            "NOT rbap_true.",
+            false,
+            "NOT rbap_false.",
+            true,
+            "NOT NOT rbap_true.",
+            true,
+            "NOT NOT rbap_false.",
+            false
         );
 
         run_vm_tests(tests)
