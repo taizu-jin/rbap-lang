@@ -34,7 +34,7 @@ struct CompilationScope {
     prev_instruction: EmittedInstruction,
 }
 
-struct Compiler {
+pub struct Compiler {
     constants: Vec<Object>,
     symbol_table: SymbolTable,
 
