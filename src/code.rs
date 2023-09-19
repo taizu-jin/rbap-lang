@@ -55,7 +55,7 @@ define_constant!(OP_CALL, 0x1A, 1);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Instructions(Vec<u8>);
 
 impl AsRef<[u8]> for Instructions {
@@ -100,7 +100,7 @@ impl Display for Instructions {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Opcode {
     pub code: u8,
     pub label: &'static str,
