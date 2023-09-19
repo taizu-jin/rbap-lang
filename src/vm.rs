@@ -249,6 +249,44 @@ mod tests {
         };
     }
 
+    #[derive(Debug)]
+    struct TestCaseBool {
+        input: &'static str,
+        expected: bool,
+    }
+
+    impl GetInput for TestCaseBool {
+        fn input(&self) -> &'static str {
+            self.input
+        }
+    }
+
+    impl GetErrorMessage for TestCaseBool {
+        fn message<T: Display>(&self, expected: &T) -> String {
+            format!("expected {}, got {}", self.expected, expected)
+        }
+    }
+
+    impl PartialEq<Object> for TestCaseBool {
+        fn eq(&self, other: &Object) -> bool {
+            match other {
+                Object::Bool(b) => *b == self.expected,
+                _ => false,
+            }
+        }
+    }
+
+    macro_rules! def_case_bool {
+        ($($input:literal, $integer:literal),*) => {
+            vec![$(
+            TestCaseBool {
+                input: $input,
+                expected: $integer,
+            }),*
+            ]
+        };
+    }
+
     #[test]
     fn test_integer_arithmetic() -> Result<()> {
         let tests = def_case_int!(
@@ -302,5 +340,55 @@ mod tests {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer.iter());
         parser.parse()
+    }
+
+    #[test]
+    fn test_boolean_expressions() -> Result<()> {
+        let tests = def_case_bool!(
+            "rbap_true.",
+            true,
+            "rbap_false.",
+            false,
+            "1 < 2.",
+            true,
+            "1 > 2.",
+            false,
+            "1 < 1.",
+            false,
+            "1 > 1.",
+            false,
+            "1 == 1.",
+            true,
+            "1 <> 1.",
+            false,
+            "1 == 2.",
+            false,
+            "1 <> 2.",
+            true,
+            "rbap_true == rbap_true.",
+            true,
+            "rbap_false == rbap_false.",
+            true,
+            "rbap_true == rbap_false.",
+            false,
+            "rbap_false == rbap_true.",
+            false,
+            "rbap_true <> rbap_true.",
+            false,
+            "rbap_false <> rbap_true.",
+            true,
+            "rbap_true <> rbap_false.",
+            true,
+            "(1 < 2) == rbap_true.",
+            true,
+            "(1 < 2) == rbap_false.",
+            false,
+            "(1 > 2) == rbap_true.",
+            false,
+            "(1 > 2) == rbap_false.",
+            true
+        );
+
+        run_vm_tests(tests)
     }
 }
