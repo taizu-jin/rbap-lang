@@ -157,4 +157,111 @@ impl VM {
 
 }
 
+#[cfg(test)]
+mod tests {
+    use std::fmt::{Debug, Display};
+
+    use crate::{
+        ast::Program, compiler::Compiler, error::Result, lexer::Lexer, object::Object,
+        parser::Parser,
+    };
+
+    use super::*;
+
+    trait GetInput {
+        fn input(&self) -> &'static str;
+    }
+
+    trait GetErrorMessage {
+        fn message<T: Display>(&self, got: &T) -> String;
+    }
+
+    #[derive(Debug)]
+    struct TestCaseInt {
+        input: &'static str,
+        expected: i64,
+    }
+
+    impl GetInput for TestCaseInt {
+        fn input(&self) -> &'static str {
+            self.input
+        }
+    }
+
+    impl GetErrorMessage for TestCaseInt {
+        fn message<T: Display>(&self, expected: &T) -> String {
+            format!("expected {}, got {}", self.expected, expected)
+        }
+    }
+
+    impl PartialEq<Object> for TestCaseInt {
+        fn eq(&self, other: &Object) -> bool {
+            match other {
+                Object::Int(int) => *int == self.expected,
+                _ => false,
+            }
+        }
+    }
+
+    macro_rules! def_case_int {
+        ($($input:literal, $integer:literal),*) => {
+            vec![$(
+            TestCaseInt {
+                input: $input,
+                expected: $integer,
+            }),*
+            ]
+        };
+    }
+
+    #[test]
+    fn test_integer_arithmetic() -> Result<()> {
+        let tests = def_case_int!(
+            "1.",
+            1,
+            "2.",
+            2,
+            "1 + 2.",
+            3,
+            "1 - 2.",
+            -1,
+            "1 * 2.",
+            2,
+            "4 / 2.",
+            2,
+            "50 / 2 * 2 + 10 - 5.",
+            55,
+            "5 * (2 + 10).",
+            60,
+        );
+
+        run_vm_tests(tests)
+    }
+
+    fn run_vm_tests<T>(tests: Vec<T>) -> Result<()>
+    where
+        T: PartialEq<Object> + GetInput + GetErrorMessage + Debug,
+    {
+        for test in tests {
+            let program = parse(test.input().into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program)?;
+
+            let mut vm = VM::new(compiler.bytecode());
+            vm.run()?;
+
+            let stack_element = vm.last_popped_stack_elem().unwrap();
+
+            assert_eq!(test, stack_element, "{}", test.message(&stack_element))
+        }
+
+        Ok(())
+    }
+
+    fn parse(input: String) -> Program {
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer.iter());
+        parser.parse()
+    }
 }
