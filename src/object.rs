@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 use crate::{ast::DataType, code::Instructions};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum Object {
     String(String),
     Int(i64),
@@ -23,7 +23,7 @@ impl Display for Object {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct CompiledFunction {
     pub instructions: Instructions,
     pub num_locals: usize,
