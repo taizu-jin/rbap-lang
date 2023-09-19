@@ -88,6 +88,7 @@ impl VM {
                 opcode if matches!(opcode, &OP_ADD | &OP_SUB | &OP_MUL | &OP_DIV) => {
                     self.execute_binary_operation(opcode)?
                 }
+                &OP_MINUS => self.execute_minus_operator()?,
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
 
@@ -155,6 +156,23 @@ impl VM {
         }
     }
 
+    fn execute_minus_operator(&mut self) -> Result<()> {
+        let operand = self.pop()?;
+
+        let value = if let Object::Int(value) = operand {
+            value
+        } else {
+            return Err(Error::from(VMError::UnsupportedTypeForNegation(
+                operand.into(),
+            )));
+        };
+
+        self.push(Object::Int(-value))
+    }
+
+    pub fn last_popped_stack_elem(&self) -> Option<Object> {
+        self.last_popped.clone()
+    }
 }
 
 #[cfg(test)]
