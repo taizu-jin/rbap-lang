@@ -89,6 +89,11 @@ impl VM {
                     self.execute_binary_operation(opcode)?
                 }
                 &OP_MINUS => self.execute_minus_operator()?,
+                &OP_TRUE => self.push(Object::Bool(true))?,
+                &OP_FALSE => self.push(Object::Bool(false))?,
+                opcode if matches!(opcode, &OP_EQUAL | &OP_NOT_EQUAL | &OP_GREATER_THAN) => {
+                    self.execute_comparison(opcode)?
+                }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
 
@@ -168,6 +173,18 @@ impl VM {
         };
 
         self.push(Object::Int(-value))
+    }
+
+    fn execute_comparison(&mut self, opcode: &Opcode) -> Result<()> {
+        let right = self.pop()?;
+        let left = self.pop()?;
+
+        match *opcode {
+            OP_EQUAL => self.push(Object::Bool(right == left)),
+            OP_NOT_EQUAL => self.push(Object::Bool(right != left)),
+            OP_GREATER_THAN => self.push(Object::Bool(left > right)),
+            _ => unreachable!("should be unreacheable due to the callee check"),
+        }
     }
 
     pub fn last_popped_stack_elem(&self) -> Option<Object> {
