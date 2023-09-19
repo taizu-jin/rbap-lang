@@ -91,6 +91,7 @@ impl VM {
                 &OP_MINUS => self.execute_minus_operator()?,
                 &OP_TRUE => self.push(Object::Bool(true))?,
                 &OP_FALSE => self.push(Object::Bool(false))?,
+                &OP_NOT => self.execute_not_operator()?,
                 opcode if matches!(opcode, &OP_EQUAL | &OP_NOT_EQUAL | &OP_GREATER_THAN) => {
                     self.execute_comparison(opcode)?
                 }
@@ -185,6 +186,20 @@ impl VM {
             OP_GREATER_THAN => self.push(Object::Bool(left > right)),
             _ => unreachable!("should be unreacheable due to the callee check"),
         }
+    }
+
+    fn execute_not_operator(&mut self) -> Result<()> {
+        let operand = self.pop()?;
+
+        let value = if let Object::Bool(value) = operand {
+            value
+        } else {
+            return Err(Error::from(VMError::UnsupportedTypeForNegation(
+                operand.into(),
+            )));
+        };
+
+        self.push(Object::Bool(!value))
     }
 
     pub fn last_popped_stack_elem(&self) -> Option<Object> {
