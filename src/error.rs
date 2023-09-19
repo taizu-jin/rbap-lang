@@ -27,6 +27,11 @@ pub enum ErrorKind {
     CompilerExpectedDataType,
     CompilerIndexOutOfBounds,
     CompilerUndefinedOpcode,
+    VMStackOverflow,
+    VMStackEmpty,
+    VMUnsupportedTypes,
+    VMUnsupportedTypeForNegation,
+    VMConstantIndexOutOfBounds,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -42,6 +47,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::ParsePrefixError(e) => e.into(),
             ErrorRepr::ContextError(e) => e.into(),
             ErrorRepr::CompilerError(e) => e.into(),
+            ErrorRepr::VMError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
             ErrorRepr::UnexpectedExpression(_) => Self::UnexpectedExpression,
         }
@@ -80,6 +86,18 @@ impl From<&CompilerError> for ErrorKind {
             CompilerError::ExpectedDataType { .. } => Self::CompilerExpectedDataType,
             CompilerError::UndefinedOpcode(_) => Self::CompilerUndefinedOpcode,
             CompilerError::IndexOutOfBounds(_) => Self::CompilerIndexOutOfBounds,
+        }
+    }
+}
+
+impl From<&VMError> for ErrorKind {
+    fn from(value: &VMError) -> Self {
+        match value {
+            VMError::StackOverflow => Self::VMStackOverflow,
+            VMError::StackEmpty => Self::VMStackEmpty,
+            VMError::ConstantIndexOutOfBounds(_) => Self::VMConstantIndexOutOfBounds,
+            VMError::UnsupportedTypes(..) => Self::VMUnsupportedTypes,
+            VMError::UnsupportedTypeForNegation(..) => Self::VMUnsupportedTypeForNegation,
         }
     }
 }
@@ -218,6 +236,15 @@ impl From<CompilerError> for Error {
     }
 }
 
+impl From<VMError> for Error {
+    fn from(value: VMError) -> Self {
+        Self {
+            kind: ErrorKind::from(&value),
+            repr: value.into(),
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 enum ErrorRepr {
     #[error(transparent)]
@@ -247,6 +274,8 @@ enum ErrorRepr {
     ContextError(#[from] ContextError),
     #[error(transparent)]
     CompilerError(#[from] CompilerError),
+    #[error(transparent)]
+    VMError(#[from] VMError),
 }
 
 #[derive(Debug, Error)]
@@ -291,4 +320,18 @@ impl From<(DataType, DataType)> for CompilerError {
             got: value.1,
         }
     }
+}
+
+#[derive(Debug, Error)]
+pub enum VMError {
+    #[error("Constant index {0} out of bounds")]
+    ConstantIndexOutOfBounds(usize),
+    #[error("Stack overflow")]
+    StackOverflow,
+    #[error("StackEmpty")]
+    StackEmpty,
+    #[error("Unsupported types for binary operation: {0} {1}")]
+    UnsupportedTypes(DataType, DataType),
+    #[error("Unsupported type for negation: {0}")]
+    UnsupportedTypeForNegation(DataType),
 }
