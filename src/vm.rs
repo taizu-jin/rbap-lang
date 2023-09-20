@@ -298,8 +298,8 @@ mod tests {
     }
 
     impl GetErrorMessage for TestCaseInt {
-        fn message<T: Display>(&self, expected: &T) -> String {
-            format!("expected {}, got {}", self.expected, expected)
+        fn message<T: Display>(&self, got: &T) -> String {
+            format!("expected {}, got {}", self.expected, got)
         }
     }
 
@@ -336,8 +336,8 @@ mod tests {
     }
 
     impl GetErrorMessage for TestCaseBool {
-        fn message<T: Display>(&self, expected: &T) -> String {
-            format!("expected {}, got {}", self.expected, expected)
+        fn message<T: Display>(&self, got: &T) -> String {
+            format!("expected {}, got {}", self.expected, got)
         }
     }
 
@@ -351,11 +351,49 @@ mod tests {
     }
 
     macro_rules! def_case_bool {
-        ($($input:literal, $integer:literal),*) => {
+        ($($input:literal, $bool:literal),*) => {
             vec![$(
             TestCaseBool {
                 input: $input,
-                expected: $integer,
+                expected: $bool,
+            }),*
+            ]
+        };
+    }
+
+    #[derive(Debug)]
+    struct TestCaseString {
+        input: &'static str,
+        expected: &'static str,
+    }
+
+    impl GetInput for TestCaseString {
+        fn input(&self) -> &'static str {
+            self.input
+        }
+    }
+
+    impl GetErrorMessage for TestCaseString {
+        fn message<T: Display>(&self, got: &T) -> String {
+            format!("expected {}, got {}", self.expected, got)
+        }
+    }
+
+    impl PartialEq<Object> for TestCaseString {
+        fn eq(&self, other: &Object) -> bool {
+            match other {
+                Object::String(s) => *s == self.expected,
+                _ => false,
+            }
+        }
+    }
+
+    macro_rules! def_case_str {
+        ($($input:literal, $string:literal),*) => {
+            vec![$(
+            TestCaseString {
+                input: $input,
+                expected: $string,
             }),*
             ]
         };
@@ -506,6 +544,13 @@ mod tests {
              lv_one + lv_two.",
             3
         );
+
+        run_vm_tests(tests)
+    }
+
+    #[test]
+    fn test_string_expressions() -> Result<()> {
+        let tests = def_case_str!("'rbap lang'.", "rbap lang");
 
         run_vm_tests(tests)
     }
