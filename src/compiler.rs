@@ -217,11 +217,11 @@ impl Compiler {
                         .try_into()
                         .expect("max string template bytes count reached");
 
-                    self.emit(OP_STRING_TEMPLATE, &[count as i32]);
-
                     for exp in expressions {
                         self.compile(exp)?;
                     }
+
+                    self.emit(OP_STRING_TEMPLATE, &[count as i32]);
                 }
                 Expression::CallExpression(ce) => {
                     self.compile(ce.function)?;
@@ -495,10 +495,10 @@ mod tests {
                          Object::String("string".into()),
                          Object::String(" template".into());
                          [
-                          make(&OP_STRING_TEMPLATE, &[3]),
                           make(&OP_CONSTANT, &[0]),
                           make(&OP_CONSTANT, &[1]),
                           make(&OP_CONSTANT, &[2]),
+                          make(&OP_STRING_TEMPLATE, &[3]),
                           make(&OP_POP, &[])].concat().into()),
             define_case!("|some { |other { 'string' }| } template|.";
                          Object::String("some ".into()),
@@ -506,12 +506,12 @@ mod tests {
                          Object::String("string".into()),
                          Object::String(" template".into());
                          [
-                          make(&OP_STRING_TEMPLATE, &[3]),
                           make(&OP_CONSTANT, &[0]),
-                          make(&OP_STRING_TEMPLATE, &[2]),
                           make(&OP_CONSTANT, &[1]),
                           make(&OP_CONSTANT, &[2]),
+                          make(&OP_STRING_TEMPLATE, &[2]),
                           make(&OP_CONSTANT, &[3]),
+                          make(&OP_STRING_TEMPLATE, &[3]),
                           make(&OP_POP, &[])].concat().into()),
         ];
 
