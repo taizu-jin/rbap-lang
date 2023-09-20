@@ -426,4 +426,28 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_global_assignment_statements() -> Result<()> {
+        let tests = def_case_int!(
+            "DATA: lv_one TYPE i.
+             lv_one = 1.
+             lv_one.",
+            1,
+            "DATA: lv_one TYPE i,
+                   lv_two TYPE i.
+             lv_one = 1.
+             lv_two = 2.
+             lv_one + lv_two.",
+            3,
+            "DATA: lv_one TYPE i,
+             lv_two TYPE i.
+             lv_one = 1.
+             lv_two = lv_one + lv_one.
+             lv_one + lv_two.",
+            3
+        );
+
+        run_vm_tests(tests)
+    }
 }
