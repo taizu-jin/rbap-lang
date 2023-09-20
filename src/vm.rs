@@ -98,7 +98,10 @@ impl VM {
                     self.pop()?;
                 }
                 opcode if matches!(opcode, &OP_ADD | &OP_SUB | &OP_MUL | &OP_DIV) => {
-                    self.execute_binary_operation(opcode)?
+                    self.execute_binary_intiger_operation(opcode)?
+                }
+                opcode if matches!(opcode, &OP_AND | &OP_OR) => {
+                    self.execute_binary_bool_operation(opcode)?
                 }
                 &OP_MINUS => self.execute_minus_operator()?,
                 &OP_TRUE => self.push(Object::Bool(true))?,
@@ -154,7 +157,7 @@ impl VM {
         Ok(object)
     }
 
-    fn execute_binary_operation(&mut self, opcode: &Opcode) -> Result<()> {
+    fn execute_binary_intiger_operation(&mut self, opcode: &Opcode) -> Result<()> {
         let right = self.pop()?;
         let left = self.pop()?;
 
@@ -212,6 +215,24 @@ impl VM {
         };
 
         self.push(Object::Bool(!value))
+    }
+
+    fn execute_binary_bool_operation(&mut self, opcode: &Opcode) -> Result<()> {
+        let right = self.pop()?;
+        let left = self.pop()?;
+
+        match (left, right) {
+            (Object::Bool(left), Object::Bool(right)) => {
+                let result = match *opcode {
+                    OP_AND => left & right,
+                    OP_OR => left | right,
+                    _ => unreachable!("should be unreacheable due to the callee check"),
+                };
+
+                self.push(Object::Bool(result))
+            }
+            (left, right) => Err(VMError::UnsupportedTypes(left.into(), right.into()).into()),
+        }
     }
 
     pub fn last_popped_stack_elem(&self) -> Option<Object> {
