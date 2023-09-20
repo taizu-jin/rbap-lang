@@ -442,7 +442,19 @@ mod tests {
             "NOT NOT rbap_true.",
             true,
             "NOT NOT rbap_false.",
-            false
+            false,
+            "rbap_true AND rbap_true.",
+            true,
+            "rbap_false AND rbap_false.",
+            false,
+            "rbap_true AND rbap_false.",
+            false,
+            "rbap_true OR rbap_true.",
+            true,
+            "rbap_false OR rbap_false.",
+            false,
+            "rbap_true OR rbap_false.",
+            true
         );
 
         run_vm_tests(tests)
