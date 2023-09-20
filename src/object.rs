@@ -10,6 +10,7 @@ pub enum Object {
     Int(i64),
     Bool(bool),
     Function(CompiledFunction),
+    Null,
 }
 
 impl Display for Object {
@@ -19,6 +20,7 @@ impl Display for Object {
             Object::Int(i) => write!(f, "{}", i),
             Object::Bool(b) => write!(f, "{}", b),
             Object::Function(func) => write!(f, "{}", func),
+            Object::Null => write!(f, "null"),
         }
     }
 }
@@ -53,6 +55,7 @@ impl From<Object> for DataType {
             Object::String(_) => DataType::String,
             Object::Int(_) => DataType::Int,
             Object::Bool(_) => DataType::Bool,
+            Object::Null => DataType::None,
             Object::Function(_) => todo!(),
         }
     }

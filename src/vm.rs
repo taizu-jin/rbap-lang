@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub const STACK_SIZE: usize = 2048;
-pub const GLOBAL_SIZE: usize = 65536;
+pub const GLOBAL_SIZE: usize = 2024;
 pub const MAX_FRAMES: usize = 1024;
 
 struct Frame {
@@ -34,7 +34,7 @@ impl Frame {
 pub struct VM {
     constants: Vec<Object>,
     stack: Vec<Object>,
-    globals: Vec<Object>,
+    globals: [Object; GLOBAL_SIZE],
     frames: Vec<Frame>,
 
     last_popped: Option<Object>,
@@ -60,7 +60,7 @@ impl VM {
         Self {
             constants,
             stack: Vec::with_capacity(STACK_SIZE),
-            globals: Vec::with_capacity(GLOBAL_SIZE),
+            globals: vec![Object::Null; GLOBAL_SIZE].try_into().unwrap(),
             frames,
             last_popped: None,
         }
@@ -81,6 +81,18 @@ impl VM {
                     let constant = self.get_constant(const_index)?;
 
                     self.push(constant)?;
+                }
+                &OP_SET_GLOBAL => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let global_index = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+                    self.globals[global_index] = self.pop()?;
+                }
+                &OP_GET_GLOBAL => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let global_index = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+                    self.push(self.globals[global_index].clone())?;
                 }
                 &OP_POP => {
                     self.pop()?;
