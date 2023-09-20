@@ -550,7 +550,18 @@ mod tests {
 
     #[test]
     fn test_string_expressions() -> Result<()> {
-        let tests = def_case_str!("'rbap lang'.", "rbap lang");
+        let tests = def_case_str!(
+            "'rbap lang'.",
+            "rbap lang",
+            "|some { 'string' } template|.",
+            "some string template",
+            "|one { 2 } three|.",
+            "one 2 three",
+            "|is it { rbap_true }|.",
+            "is it rbap_true",
+            "|is it { rbap_false }|.",
+            "is it rbap_false"
+        );
 
         run_vm_tests(tests)
     }
