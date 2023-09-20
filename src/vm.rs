@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub const STACK_SIZE: usize = 2048;
-pub const GLOBAL_SIZE: usize = 2024;
+pub const GLOBAL_SIZE: usize = 65536;
 pub const MAX_FRAMES: usize = 1024;
 
 struct Frame {
@@ -34,7 +34,7 @@ impl Frame {
 pub struct VM {
     constants: Vec<Object>,
     stack: Vec<Object>,
-    globals: [Object; GLOBAL_SIZE],
+    globals: Box<[Object; GLOBAL_SIZE]>,
     frames: Vec<Frame>,
 
     last_popped: Option<Object>,
