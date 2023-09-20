@@ -103,6 +103,32 @@ impl VM {
                 opcode if matches!(opcode, &OP_AND | &OP_OR) => {
                     self.execute_binary_bool_operation(opcode)?
                 }
+                &OP_STRING_TEMPLATE => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let count = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+
+                    let mut result = String::new();
+
+                    for _ in 0..count {
+                        let object = self.pop()?;
+
+                        match object {
+                            Object::String(s) => result = format!("{}{}", s, result),
+                            Object::Int(i) => result = format!("{}{}", i, result),
+                            Object::Bool(b) => {
+                                result = format!(
+                                    "{}{}",
+                                    if b { "rbap_true" } else { "rbap_false" },
+                                    result
+                                );
+                            }
+                            Object::Null => unreachable!("null"),
+                            Object::Function(_) => unreachable!("func"),
+                        }
+                    }
+                    self.push(Object::String(result))?;
+                }
                 &OP_MINUS => self.execute_minus_operator()?,
                 &OP_TRUE => self.push(Object::Bool(true))?,
                 &OP_FALSE => self.push(Object::Bool(false))?,
