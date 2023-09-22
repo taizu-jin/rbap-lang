@@ -832,6 +832,10 @@ mod tests {
              METHOD return_string RETURNING rv_string TYPE string.
              ENDMETHOD.
              lv_bool = return_string().",
+            "DATA: lv_bool TYPE rbap_bool.
+             METHOD return_nothing.
+             ENDMETHOD.
+             lv_bool = return_nothing().",
         ];
 
         for input in inputs {
