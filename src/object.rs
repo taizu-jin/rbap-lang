@@ -30,6 +30,7 @@ pub struct CompiledFunction {
     pub instructions: Instructions,
     pub num_locals: usize,
     pub num_parameters: usize,
+    pub ty: DataType,
 }
 
 impl Display for CompiledFunction {
@@ -56,7 +57,7 @@ impl From<Object> for DataType {
             Object::Int(_) => DataType::Int,
             Object::Bool(_) => DataType::Bool,
             Object::Null => DataType::None,
-            Object::Function(_) => todo!(),
+            Object::Function(f) => f.ty,
         }
     }
 }

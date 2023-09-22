@@ -51,6 +51,7 @@ impl VM {
             instructions,
             num_locals: 0,
             num_parameters: 0,
+            ty: crate::ast::DataType::None,
         };
         let main_frame = Frame::new(main_fn, 0);
 

@@ -78,7 +78,7 @@ impl Display for Declaration {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
 pub enum DataType {
     String,
     Int,
