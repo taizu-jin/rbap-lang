@@ -174,7 +174,10 @@ impl Compiler {
                         self.symbol_table.define(p.ident, p.ty);
                     }
 
+                    let mut ret_ty = DataType::None;
+
                     if let Some(ret) = f.ret {
+                        ret_ty = ret.ty;
                         self.symbol_table.define(ret.ident, ret.ty);
                     }
 
@@ -187,6 +190,7 @@ impl Compiler {
                         instructions,
                         num_locals,
                         num_parameters,
+                        ty: ret_ty,
                     };
 
                     let fn_index = self.add_constant(compiled_function.into());
@@ -1031,6 +1035,7 @@ mod tests {
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
+                             ty: DataType::Int,
                          });
                          [
                          make(&OP_FUNCTION, &[2]),
@@ -1058,6 +1063,7 @@ mod tests {
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
+                             ty: DataType::Int,
                          }),
                          Object::Int(5), Object::Int(15);
                          [
