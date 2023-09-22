@@ -605,4 +605,18 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_conditionals_without_bock() -> Result<()> {
+        let tests = def_case_bool!(
+            "IF rbap_false. 10. ENDIF.",
+            false,
+            "IF rbap_true. ELSE. 20. ENDIF.",
+            true,
+            "IF rbap_true. ELSE. ENDIF.",
+            true
+        );
+
+        run_vm_tests(tests)
+    }
 }
