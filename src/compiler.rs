@@ -126,27 +126,34 @@ impl Compiler {
 
                     self.compile(is.consequence)?;
 
-                    let jump_pos = self.emit(OP_JUMP, &[9999]);
-
-                    let after_pos: u16 = self
-                        .current_instructions()
-                        .len()
-                        .try_into()
-                        .expect("max jump index reached");
-                    self.change_operand(jump_not_truth_pos, after_pos as i32)?;
+                    let after_not_truth_pos: u16;
 
                     if let Some(alternative) = is.alternative {
+                        let jump_pos = self.emit(OP_JUMP, &[9999]);
+
+                        after_not_truth_pos = self
+                            .current_instructions()
+                            .len()
+                            .try_into()
+                            .expect("max jump index reached");
+
                         self.compile(alternative)?;
+
+                        let after_pos: u16 = self
+                            .current_instructions()
+                            .len()
+                            .try_into()
+                            .expect("max jump index reached");
+                        self.change_operand(jump_pos, after_pos as i32)?;
                     } else {
-                        self.emit(OP_NULL, &[]);
+                        after_not_truth_pos = self
+                            .current_instructions()
+                            .len()
+                            .try_into()
+                            .expect("max jump index reached");
                     }
 
-                    let after_pos: u16 = self
-                        .current_instructions()
-                        .len()
-                        .try_into()
-                        .expect("max jump index reached");
-                    self.change_operand(jump_pos, after_pos as i32)?;
+                    self.change_operand(jump_not_truth_pos, after_not_truth_pos as i32)?;
                 }
                 Statement::Function(f) => {
                     self.symbol_table.define(
@@ -720,11 +727,9 @@ mod tests {
             define_case!("IF rbap_true. 10. ENDIF. 20.";
                          Object::Int(10), Object::Int(20);
                          [make(&OP_TRUE, &[]),
-                         make(&OP_JUMP_NOT_TRUTH, &[11]),
+                         make(&OP_JUMP_NOT_TRUTH, &[8]),
                          make(&OP_CONSTANT, &[0]),
                          make(&OP_POP, &[]),
-                         make(&OP_JUMP, &[12]),
-                         make(&OP_NULL, &[]),
                          make(&OP_CONSTANT, &[1]),
                          make(&OP_POP, &[])].concat().into()),
             define_case!("IF rbap_true. 10. ELSE. 15. ENDIF. 20.";
