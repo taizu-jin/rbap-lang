@@ -585,4 +585,24 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_conditionals() -> Result<()> {
+        let tests = def_case_int!(
+            "IF rbap_true. 10. ENDIF.",
+            10,
+            "IF rbap_true. 10. ELSE. 20. ENDIF.",
+            10,
+            "IF rbap_false. 10. ELSE. 20. ENDIF.",
+            20,
+            "IF 1 < 2. 10. ENDIF.",
+            10,
+            "IF 1 < 2. 10. ELSE. 20. ENDIF.",
+            10,
+            "IF 1 > 2. 10. ELSE. 20. ENDIF.",
+            20
+        );
+
+        run_vm_tests(tests)
+    }
 }
