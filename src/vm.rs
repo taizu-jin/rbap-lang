@@ -136,6 +136,26 @@ impl VM {
                 opcode if matches!(opcode, &OP_EQUAL | &OP_NOT_EQUAL | &OP_GREATER_THAN) => {
                     self.execute_comparison(opcode)?
                 }
+                &OP_JUMP => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let pos = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip = pos - 1;
+                }
+                &OP_JUMP_NOT_TRUTH => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let pos = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+
+                    let condition = if let Object::Bool(condition) = self.pop()? {
+                        condition
+                    } else {
+                        unreachable!("there will always be a condition as last element")
+                    };
+
+                    if !condition {
+                        self.current_frame_mut().ip = pos - 1;
+                    }
+                }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
 
