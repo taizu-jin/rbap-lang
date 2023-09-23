@@ -176,12 +176,17 @@ impl Compiler {
 
                     let mut ret_ty = DataType::None;
 
-                    if let Some(ret) = f.ret {
+                    if let Some(ret) = &f.ret {
                         ret_ty = ret.ty;
-                        self.symbol_table.define(ret.ident, ret.ty);
+                        self.symbol_table.define(ret.ident.to_owned(), ret.ty);
                     }
 
                     self.compile(f.body)?;
+
+                    if let Some(ret) = f.ret {
+                        let symbol = self.symbol_table.resolve(&ret.ident)?;
+                        self.load_symbol(symbol);
+                    }
 
                     let num_locals = self.symbol_table.num_definitions;
                     let instructions = self.leave_scope();
@@ -1036,6 +1041,7 @@ mod tests {
                                  make(&OP_CONSTANT, &[1]),
                                  make(&OP_ADD, &[]),
                                  make(&OP_SET_LOCAL, &[2]),
+                                 make(&OP_GET_LOCAL, &[2]),
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
@@ -1064,6 +1070,7 @@ mod tests {
                                  make(&OP_CONSTANT, &[1]),
                                  make(&OP_ADD, &[]),
                                  make(&OP_SET_LOCAL, &[2]),
+                                 make(&OP_GET_LOCAL, &[2]),
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
