@@ -186,6 +186,9 @@ impl Compiler {
                     if let Some(ret) = f.ret {
                         let symbol = self.symbol_table.resolve(&ret.ident)?;
                         self.load_symbol(symbol);
+                        self.emit(OP_RETURN_VALUE, &[]);
+                    } else {
+                        self.emit(OP_RETURN, &[]);
                     }
 
                     let num_locals = self.symbol_table.num_definitions;
