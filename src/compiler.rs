@@ -1045,10 +1045,30 @@ mod tests {
                                  make(&OP_ADD, &[]),
                                  make(&OP_SET_LOCAL, &[2]),
                                  make(&OP_GET_LOCAL, &[2]),
+                                 make(&OP_RETURN_VALUE, &[]),
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
                              ty: DataType::Int,
+                         });
+                         [
+                         make(&OP_FUNCTION, &[2]),
+                         ].concat().into()),
+            define_case!("METHOD sum IMPORTING iv_left TYPE i iv_right TYPE i.
+                            5 + 10.
+                          ENDMETHOD.";
+                         Object::Int(5), Object::Int(10),
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_CONSTANT, &[0]),
+                                 make(&OP_CONSTANT, &[1]),
+                                 make(&OP_ADD, &[]),
+                                 make(&OP_POP, &[]),
+                                 make(&OP_RETURN, &[]),
+                             ].concat().into(),
+                             num_parameters: 2,
+                             num_locals: 2,
+                             ty: DataType::None,
                          });
                          [
                          make(&OP_FUNCTION, &[2]),
@@ -1074,10 +1094,38 @@ mod tests {
                                  make(&OP_ADD, &[]),
                                  make(&OP_SET_LOCAL, &[2]),
                                  make(&OP_GET_LOCAL, &[2]),
+                                 make(&OP_RETURN_VALUE, &[]),
                              ].concat().into(),
                              num_parameters: 2,
                              num_locals: 3,
                              ty: DataType::Int,
+                         }),
+                         Object::Int(5), Object::Int(15);
+                         [
+                         make(&OP_FUNCTION, &[2]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_CONSTANT, &[3]),
+                         make(&OP_CONSTANT, &[4]),
+                         make(&OP_CALL, &[2]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
+            define_case!("METHOD sum IMPORTING iv_left TYPE i iv_right TYPE i.
+                            5 + 10.
+                          ENDMETHOD.
+
+                          sum(5, 15).";
+                         Object::Int(5), Object::Int(10), 
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_CONSTANT, &[0]),
+                                 make(&OP_CONSTANT, &[1]),
+                                 make(&OP_ADD, &[]),
+                                 make(&OP_POP, &[]),
+                                 make(&OP_RETURN, &[]),
+                             ].concat().into(),
+                             num_parameters: 2,
+                             num_locals: 2,
+                             ty: DataType::None,
                          }),
                          Object::Int(5), Object::Int(15);
                          [
