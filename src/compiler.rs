@@ -345,7 +345,7 @@ impl Compiler {
                 let index: u8 = symbol.index.try_into().expect("max symbol count reached");
                 self.emit(OP_GET_LOCAL, &[index as i32])
             }
-            Scope::Function => self.emit(OP_CURRENT_CLOSURE, &[]),
+            Scope::Function => self.emit(OP_CURRENT_FUNCTION, &[]),
         };
     }
 
