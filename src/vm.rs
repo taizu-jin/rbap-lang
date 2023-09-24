@@ -822,4 +822,67 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_functions_with_arguments_and_bindings() -> Result<()> {
+        let tests = def_case_int!(
+            "METHOD identity IMPORTING iv_id TYPE i RETURNING rv_id TYPE i.
+                rv_id = iv_id.
+             ENDMETHOD.
+
+             identity(4).",
+            4,
+            "METHOD sum IMPORTING iv_a TYPE i
+                                  iv_b TYPE i 
+                        RETURNING rv_sum TYPE i.
+                rv_sum = iv_a + iv_b.
+             ENDMETHOD.
+
+             sum(1, 2).",
+            3,
+            "METHOD sum IMPORTING iv_a TYPE i
+                                  iv_b TYPE i 
+                        RETURNING rv_sum TYPE i.
+                DATA: lv_sum TYPE i.
+                lv_sum = iv_a + iv_b.
+                rv_sum = lv_sum.
+             ENDMETHOD.
+
+             sum(1, 2) + sum(3, 4).",
+            10,
+            "METHOD sum IMPORTING iv_a TYPE i
+                                  iv_b TYPE i 
+                        RETURNING rv_sum TYPE i.
+                DATA: lv_sum TYPE i.
+                lv_sum = iv_a + iv_b.
+                rv_sum = lv_sum.
+             ENDMETHOD.
+
+             METHOD outer RETURNING rv_result TYPE i.
+                rv_result = sum(1, 2) + sum(3, 4).
+             ENDMETHOD.
+
+             outer().",
+            10,
+            "DATA gv_num TYPE i.
+             gv_num = 10.
+
+             METHOD sum IMPORTING iv_a TYPE i
+                                  iv_b TYPE i 
+                        RETURNING rv_sum TYPE i.
+                DATA: lv_sum TYPE i.
+                lv_sum = iv_a + iv_b.
+                rv_sum = lv_sum + gv_num.
+             ENDMETHOD.
+
+             METHOD outer RETURNING rv_result TYPE i.
+                rv_result = sum(1, 2) + sum(3, 4) + gv_num.
+             ENDMETHOD.
+
+             outer() + gv_num.",
+            50
+        );
+
+        run_vm_tests(tests)
+    }
 }
