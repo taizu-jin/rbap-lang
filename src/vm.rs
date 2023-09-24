@@ -889,4 +889,22 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_recursive_functions() -> Result<()> {
+        let tests = def_case_int!(
+            "METHOD count_down IMPORTING iv_x TYPE i RETURNING rv_result TYPE i.
+                IF iv_x == 0.
+                    rv_result = 0.
+                ELSE.
+                    rv_result = count_down(iv_x - 1).
+                ENDIF.
+             ENDMETHOD.
+
+             count_down(1).",
+            0
+        );
+
+        run_vm_tests(tests)
+    }
 }
