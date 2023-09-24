@@ -1147,6 +1147,25 @@ mod tests {
                          make(&OP_CALL, &[2]),
                          make(&OP_POP, &[]),
                          ].concat().into()),
+            define_case!("METHOD no_return.
+                          ENDMETHOD.
+
+                          no_return().";
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_RETURN, &[]),
+                             ].concat().into(),
+                             num_parameters: 0,
+                             num_locals: 0,
+                             ty: DataType::None,
+                         });
+                         [
+                         make(&OP_FUNCTION, &[0]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_CALL, &[0]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
         ];
 
         run_compiler_tests(tests)
