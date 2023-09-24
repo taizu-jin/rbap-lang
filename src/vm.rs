@@ -360,7 +360,7 @@ impl VM {
         if let Object::Function(f) = callee {
             self.call_function(f, num_args)?;
         } else {
-            todo!("error for non-function call")
+            return Err(VMError::NonFunctionCall.into());
         }
 
         Ok(())

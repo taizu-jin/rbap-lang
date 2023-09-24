@@ -35,6 +35,7 @@ pub enum ErrorKind {
     VMUnsupportedTypeForNegation,
     VMConstantIndexOutOfBounds,
     VMConstantNotFunction,
+    VMNonFunctionCall,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -103,6 +104,7 @@ impl From<&VMError> for ErrorKind {
             VMError::UnsupportedTypes(..) => Self::VMUnsupportedTypes,
             VMError::UnsupportedTypeForNegation(..) => Self::VMUnsupportedTypeForNegation,
             VMError::ConstantNotFunction(..) => Self::VMConstantNotFunction,
+            VMError::NonFunctionCall => Self::VMNonFunctionCall,
         }
     }
 }
@@ -329,6 +331,8 @@ impl From<(DataType, DataType)> for CompilerError {
 
 #[derive(Debug, Error)]
 pub enum VMError {
+    #[error("Calling non-function")]
+    NonFunctionCall,
     #[error("Constant {0} not a function")]
     ConstantNotFunction(Object),
     #[error("Constant index {0} out of bounds")]
