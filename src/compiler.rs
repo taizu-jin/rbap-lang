@@ -156,7 +156,7 @@ impl Compiler {
                     self.change_operand(jump_not_truth_pos, after_not_truth_pos as i32)?;
                 }
                 Statement::Function(f) => {
-                    self.symbol_table.define(
+                    let symbol = self.symbol_table.define(
                         f.name.clone(),
                         f.ret.as_ref().map_or(DataType::None, |r| r.ty),
                     );
@@ -204,6 +204,13 @@ impl Compiler {
                     let fn_index = self.add_constant(compiled_function.into());
 
                     self.emit(OP_FUNCTION, &[fn_index]);
+
+                    let index: u8 = symbol.index.try_into().expect("max symbol count reached");
+                    if symbol.scope == Scope::Global {
+                        self.emit(OP_SET_GLOBAL, &[index as i32]);
+                    } else {
+                        self.emit(OP_SET_LOCAL, &[index as i32]);
+                    }
                 }
             },
             Node::Expression(e) => match e {
@@ -1053,6 +1060,7 @@ mod tests {
                          });
                          [
                          make(&OP_FUNCTION, &[2]),
+                         make(&OP_SET_GLOBAL, &[0]),
                          ].concat().into()),
             define_case!("METHOD sum IMPORTING iv_left TYPE i iv_right TYPE i.
                             5 + 10.
@@ -1072,6 +1080,7 @@ mod tests {
                          });
                          [
                          make(&OP_FUNCTION, &[2]),
+                         make(&OP_SET_GLOBAL, &[0]),
                          ].concat().into()),
         ];
 
@@ -1103,6 +1112,7 @@ mod tests {
                          Object::Int(5), Object::Int(15);
                          [
                          make(&OP_FUNCTION, &[2]),
+                         make(&OP_SET_GLOBAL, &[0]),
                          make(&OP_GET_GLOBAL, &[0]),
                          make(&OP_CONSTANT, &[3]),
                          make(&OP_CONSTANT, &[4]),
@@ -1130,6 +1140,7 @@ mod tests {
                          Object::Int(5), Object::Int(15);
                          [
                          make(&OP_FUNCTION, &[2]),
+                         make(&OP_SET_GLOBAL, &[0]),
                          make(&OP_GET_GLOBAL, &[0]),
                          make(&OP_CONSTANT, &[3]),
                          make(&OP_CONSTANT, &[4]),
