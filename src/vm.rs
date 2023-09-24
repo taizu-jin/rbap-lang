@@ -13,7 +13,7 @@ pub const MAX_FRAMES: usize = 1024;
 
 struct Frame {
     func: CompiledFunction,
-    ip: usize,
+    ip: isize,
     base_pointer: usize,
 }
 
@@ -21,7 +21,7 @@ impl Frame {
     fn new(func: CompiledFunction, base_pointer: usize) -> Self {
         Self {
             func,
-            ip: 0,
+            ip: -1,
             base_pointer,
         }
     }
@@ -68,8 +68,9 @@ impl VM {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        while self.current_frame().ip < self.current_frame().instructions().len() {
-            let ip = self.current_frame().ip;
+        while ((self.current_frame().ip + 1) as usize) < self.current_frame().instructions().len() {
+            self.current_frame_mut().ip += 1;
+            let ip = (self.current_frame().ip) as usize;
             let ins = self.current_frame().instructions();
 
             let opcode = Opcode::lookup(ins[ip])?;
@@ -139,7 +140,7 @@ impl VM {
                 }
                 &OP_JUMP => {
                     let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let pos = u16::from_be_bytes(slice) as usize;
+                    let pos = u16::from_be_bytes(slice) as isize;
                     self.current_frame_mut().ip = pos - 1;
                 }
                 &OP_JUMP_NOT_TRUTH => {
@@ -154,13 +155,11 @@ impl VM {
                     };
 
                     if !condition {
-                        self.current_frame_mut().ip = pos - 1;
+                        self.current_frame_mut().ip = (pos - 1) as isize;
                     }
                 }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
-
-            self.current_frame_mut().ip += 1;
         }
 
         Ok(())
