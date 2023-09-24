@@ -515,6 +515,39 @@ mod tests {
         };
     }
 
+    #[derive(Debug)]
+    struct TestCaseNull {
+        input: &'static str,
+    }
+
+    impl GetInput for TestCaseNull {
+        fn input(&self) -> &'static str {
+            self.input
+        }
+    }
+
+    impl GetErrorMessage for TestCaseNull {
+        fn message<T: Display>(&self, got: &T) -> String {
+            format!("expected {}, got {}", Object::Null, got)
+        }
+    }
+
+    impl PartialEq<Object> for TestCaseNull {
+        fn eq(&self, other: &Object) -> bool {
+            other == &Object::Null
+        }
+    }
+
+    macro_rules! def_case_null {
+        ($($input:literal),*) => {
+            vec![$(
+            TestCaseNull {
+                input: $input,
+            }),*
+            ]
+        };
+    }
+
     #[test]
     fn test_integer_arithmetic() -> Result<()> {
         let tests = def_case_int!(
@@ -715,4 +748,12 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_functions_without_return_value() -> Result<()> {
+        let tests = def_case_null!("METHOD no_return. ENDMETHOD. no_return().");
+
+        run_vm_tests(tests)
+    }
+
 }
