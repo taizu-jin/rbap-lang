@@ -158,6 +158,55 @@ impl VM {
                         self.current_frame_mut().ip = (pos - 1) as isize;
                     }
                 }
+                &OP_CURRENT_FUNCTION => {
+                    let current_function = self.current_frame().func.clone();
+                    self.push(current_function.into())?;
+                }
+                &OP_FUNCTION => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let const_index = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+
+                    self.push_function(const_index)?;
+                }
+                &OP_GET_LOCAL => {
+                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
+                    let local_index = u8::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 1;
+
+                    let base_pointer = self.current_frame().base_pointer;
+                    let local = self.stack[base_pointer + local_index].clone();
+                    self.push(local)?;
+                }
+                &OP_SET_LOCAL => {
+                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
+                    let local_index = u8::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 1;
+
+                    let base_pointer = self.current_frame().base_pointer;
+
+                    self.stack[base_pointer + local_index] = self.pop();
+                }
+                &OP_RETURN => {
+                    let frame = self.pop_frame()?;
+                    self.sp = frame.base_pointer - 1;
+                    self.push(Object::Null)?;
+                }
+                &OP_RETURN_VALUE => {
+                    let return_value = self.pop();
+
+                    let frame = self.pop_frame()?;
+                    self.sp = frame.base_pointer - 1;
+
+                    self.push(return_value)?;
+                }
+                &OP_CALL => {
+                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
+                    let num_args = u8::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 1;
+
+                    self.execute_call(num_args)?;
+                }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
         }
@@ -279,6 +328,57 @@ impl VM {
         }
     }
 
+    fn push_function(&mut self, const_index: usize) -> Result<()> {
+        let function = self.get_constant(const_index)?;
+
+        if !matches!(function, Object::Function(..)) {
+            return Err(Error::from(VMError::ConstantNotFunction(function)));
+        }
+
+        self.push(function)
+    }
+
+    fn push_frame(&mut self, frame: Frame) -> Result<()> {
+        if self.frames.len() + 1 > MAX_FRAMES {
+            return Err(VMError::FrameOverflow.into());
+        }
+
+        self.frames.push(frame);
+
+        Ok(())
+    }
+
+    fn pop_frame(&mut self) -> Result<Frame> {
+        self.frames
+            .pop()
+            .ok_or_else(|| Error::from(VMError::FramesEmpty))
+    }
+
+    fn execute_call(&mut self, num_args: usize) -> Result<()> {
+        let callee = self.stack[self.sp - 1 - num_args].clone();
+
+        if let Object::Function(f) = callee {
+            self.call_function(f, num_args)?;
+        } else {
+            todo!("error for non-function call")
+        }
+
+        Ok(())
+    }
+
+    fn call_function(&mut self, func: CompiledFunction, num_args: usize) -> Result<()> {
+        if num_args != func.num_parameters {
+            todo!("error for incorrect parameter count")
+        }
+
+        let num_locals = func.num_locals;
+        let frame = Frame::new(func, self.sp - num_args);
+        self.sp = frame.base_pointer + num_locals;
+        self.push_frame(frame)
+    }
+
+    pub fn last_popped_stack_elem(&self) -> Object {
+        self.stack[self.sp].clone()
     }
 }
 

@@ -5,6 +5,7 @@ use thiserror::Error;
 use crate::{
     ast::{DataType, Expression, Operator},
     lexer::{Token, TokenKind, TokenKinds},
+    object::Object,
 };
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -28,10 +29,12 @@ pub enum ErrorKind {
     CompilerIndexOutOfBounds,
     CompilerUndefinedOpcode,
     VMStackOverflow,
-    VMStackEmpty,
+    VMFramesEmpty,
+    VMFrameOverflow,
     VMUnsupportedTypes,
     VMUnsupportedTypeForNegation,
     VMConstantIndexOutOfBounds,
+    VMConstantNotFunction,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -94,10 +97,12 @@ impl From<&VMError> for ErrorKind {
     fn from(value: &VMError) -> Self {
         match value {
             VMError::StackOverflow => Self::VMStackOverflow,
-            VMError::StackEmpty => Self::VMStackEmpty,
+            VMError::FrameOverflow => Self::VMFrameOverflow,
+            VMError::FramesEmpty => Self::VMFramesEmpty,
             VMError::ConstantIndexOutOfBounds(_) => Self::VMConstantIndexOutOfBounds,
             VMError::UnsupportedTypes(..) => Self::VMUnsupportedTypes,
             VMError::UnsupportedTypeForNegation(..) => Self::VMUnsupportedTypeForNegation,
+            VMError::ConstantNotFunction(..) => Self::VMConstantNotFunction,
         }
     }
 }
@@ -324,12 +329,16 @@ impl From<(DataType, DataType)> for CompilerError {
 
 #[derive(Debug, Error)]
 pub enum VMError {
+    #[error("Constant {0} not a function")]
+    ConstantNotFunction(Object),
     #[error("Constant index {0} out of bounds")]
     ConstantIndexOutOfBounds(usize),
     #[error("Stack overflow")]
     StackOverflow,
-    #[error("StackEmpty")]
-    StackEmpty,
+    #[error("Frame overflow")]
+    FrameOverflow,
+    #[error("FramesEmpty")]
+    FramesEmpty,
     #[error("Unsupported types for binary operation: {0} {1}")]
     UnsupportedTypes(DataType, DataType),
     #[error("Unsupported type for negation: {0}")]
