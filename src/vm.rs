@@ -368,7 +368,11 @@ impl VM {
 
     fn call_function(&mut self, func: CompiledFunction, num_args: usize) -> Result<()> {
         if num_args != func.num_parameters {
-            todo!("error for incorrect parameter count")
+            return Err(VMError::WrongArgumentCount {
+                want: func.num_parameters,
+                got: num_args,
+            }
+            .into());
         }
 
         let num_locals = func.num_locals;
