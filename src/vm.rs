@@ -775,4 +775,51 @@ mod tests {
         run_vm_tests(tests)
     }
 
+    #[test]
+    fn test_functions_with_bindings() -> Result<()> {
+        let tests = def_case_int!(
+            "METHOD one RETURNING rv_one TYPE i.
+                DATA: lv_one TYPE i.
+
+                lv_one = 1.
+                rv_one = lv_one.
+             ENDMETHOD.
+
+             one().",
+            1,
+            "METHOD one_and_two RETURNING rv_result TYPE i.
+                DATA: lv_one TYPE i,
+                      lv_two TYPE i.
+
+                lv_one = 1.
+                lv_two = 2.
+                rv_result = lv_one + lv_two.
+             ENDMETHOD.
+
+             one_and_two().",
+            3,
+            "DATA: gv_global_seed TYPE i.
+
+             gv_global_seed = 50.
+             
+             METHOD minus_one RETURNING rv_result TYPE i.
+                DATA: lv_num TYPE i.
+
+                lv_num = 1.
+                rv_result = gv_global_seed - lv_num.
+             ENDMETHOD.
+
+             METHOD minus_two RETURNING rv_result TYPE i.
+                DATA: lv_num TYPE i.
+
+                lv_num = 2.
+                rv_result = gv_global_seed - lv_num.
+             ENDMETHOD.
+
+             minus_one() + minus_two().",
+            97
+        );
+
+        run_vm_tests(tests)
+    }
 }
