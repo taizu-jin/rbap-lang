@@ -33,11 +33,11 @@ impl Frame {
 
 pub struct VM {
     constants: Vec<Object>,
-    stack: Vec<Object>,
+    stack: Box<[Object; STACK_SIZE]>,
+    /// Always points to the next value. Top of the stack is stack\[sp-1\].
+    sp: usize,
     globals: Box<[Object; GLOBAL_SIZE]>,
     frames: Vec<Frame>,
-
-    last_popped: Option<Object>,
 }
 
 impl VM {
@@ -60,10 +60,10 @@ impl VM {
 
         Self {
             constants,
-            stack: Vec::with_capacity(STACK_SIZE),
+            stack: vec![Object::Null; STACK_SIZE].try_into().unwrap(),
+            sp: 0,
             globals: vec![Object::Null; GLOBAL_SIZE].try_into().unwrap(),
             frames,
-            last_popped: None,
         }
     }
 
@@ -87,7 +87,7 @@ impl VM {
                     let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
                     let global_index = u16::from_be_bytes(slice) as usize;
                     self.current_frame_mut().ip += 2;
-                    self.globals[global_index] = self.pop()?;
+                    self.globals[global_index] = self.pop();
                 }
                 &OP_GET_GLOBAL => {
                     let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
@@ -96,7 +96,7 @@ impl VM {
                     self.push(self.globals[global_index].clone())?;
                 }
                 &OP_POP => {
-                    self.pop()?;
+                    self.pop();
                 }
                 opcode if matches!(opcode, &OP_ADD | &OP_SUB | &OP_MUL | &OP_DIV) => {
                     self.execute_binary_intiger_operation(opcode)?
@@ -112,7 +112,7 @@ impl VM {
                     let mut result = String::new();
 
                     for _ in 0..count {
-                        let object = self.pop()?;
+                        let object = self.pop();
 
                         match object {
                             Object::String(s) => result = format!("{}{}", s, result),
@@ -147,7 +147,7 @@ impl VM {
                     let pos = u16::from_be_bytes(slice) as usize;
                     self.current_frame_mut().ip += 2;
 
-                    let condition = if let Object::Bool(condition) = self.pop()? {
+                    let condition = if let Object::Bool(condition) = self.pop() {
                         condition
                     } else {
                         unreachable!("there will always be a condition as last element")
@@ -185,28 +185,26 @@ impl VM {
     }
 
     fn push(&mut self, object: Object) -> Result<()> {
-        if self.stack.len() + 1 > STACK_SIZE {
+        if self.sp >= STACK_SIZE {
             return Err(VMError::StackOverflow.into());
         }
 
-        self.stack.push(object);
+        self.stack[self.sp] = object;
+        self.sp += 1;
 
         Ok(())
     }
 
-    fn pop(&mut self) -> Result<Object> {
-        let object = self
-            .stack
-            .pop()
-            .ok_or_else(|| Error::from(VMError::StackEmpty))?;
+    fn pop(&mut self) -> Object {
+        let object = self.stack[self.sp - 1].clone();
+        self.sp -= 1;
 
-        self.last_popped = Some(object.clone());
-        Ok(object)
+        object
     }
 
     fn execute_binary_intiger_operation(&mut self, opcode: &Opcode) -> Result<()> {
-        let right = self.pop()?;
-        let left = self.pop()?;
+        let right = self.pop();
+        let left = self.pop();
 
         match (left, right) {
             (Object::Int(left), Object::Int(right)) => {
@@ -225,7 +223,7 @@ impl VM {
     }
 
     fn execute_minus_operator(&mut self) -> Result<()> {
-        let operand = self.pop()?;
+        let operand = self.pop();
 
         let value = if let Object::Int(value) = operand {
             value
@@ -239,8 +237,8 @@ impl VM {
     }
 
     fn execute_comparison(&mut self, opcode: &Opcode) -> Result<()> {
-        let right = self.pop()?;
-        let left = self.pop()?;
+        let right = self.pop();
+        let left = self.pop();
 
         match *opcode {
             OP_EQUAL => self.push(Object::Bool(right == left)),
@@ -251,7 +249,7 @@ impl VM {
     }
 
     fn execute_not_operator(&mut self) -> Result<()> {
-        let operand = self.pop()?;
+        let operand = self.pop();
 
         let value = if let Object::Bool(value) = operand {
             value
@@ -265,8 +263,8 @@ impl VM {
     }
 
     fn execute_binary_bool_operation(&mut self, opcode: &Opcode) -> Result<()> {
-        let right = self.pop()?;
-        let left = self.pop()?;
+        let right = self.pop();
+        let left = self.pop();
 
         match (left, right) {
             (Object::Bool(left), Object::Bool(right)) => {
@@ -282,8 +280,6 @@ impl VM {
         }
     }
 
-    pub fn last_popped_stack_elem(&self) -> Option<Object> {
-        self.last_popped.clone()
     }
 }
 
@@ -461,7 +457,7 @@ mod tests {
             let mut vm = VM::new(compiler.bytecode());
             vm.run()?;
 
-            let stack_element = vm.last_popped_stack_elem().unwrap();
+            let stack_element = vm.last_popped_stack_elem();
 
             assert_eq!(test, stack_element, "{}", test.message(&stack_element))
         }
