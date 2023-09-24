@@ -44,7 +44,7 @@ define_constant!(OP_GET_GLOBAL, 0x0F, 2);
 define_constant!(OP_SET_GLOBAL, 0x10, 2);
 define_constant!(OP_GET_LOCAL, 0x11, 1);
 define_constant!(OP_SET_LOCAL, 0x12, 1);
-define_constant!(OP_CURRENT_FUNCTION, 0x13, 1);
+define_constant!(OP_CURRENT_FUNCTION, 0x13);
 define_constant!(OP_AND, 0x14);
 define_constant!(OP_OR, 0x15);
 define_constant!(OP_STRING_TEMPLATE, 0x16, 2);
