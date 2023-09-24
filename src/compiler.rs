@@ -1147,6 +1147,32 @@ mod tests {
                          make(&OP_CALL, &[2]),
                          make(&OP_POP, &[]),
                          ].concat().into()),
+            define_case!("METHOD sum_5_10 RETURNING rv_sum TYPE i.
+                            rv_sum = 5 + 10.
+                          ENDMETHOD.
+
+                          sum_5_10().";
+                         Object::Int(5), Object::Int(10), 
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_CONSTANT, &[0]),
+                                 make(&OP_CONSTANT, &[1]),
+                                 make(&OP_ADD, &[]),
+                                 make(&OP_SET_LOCAL, &[0]),
+                                 make(&OP_GET_LOCAL, &[0]),
+                                 make(&OP_RETURN_VALUE, &[]),
+                             ].concat().into(),
+                             num_parameters: 0,
+                             num_locals: 1,
+                             ty: DataType::Int,
+                         });
+                         [
+                         make(&OP_FUNCTION, &[2]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_CALL, &[0]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
             define_case!("METHOD no_return.
                           ENDMETHOD.
 
