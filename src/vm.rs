@@ -907,4 +907,26 @@ mod tests {
 
         run_vm_tests(tests)
     }
+
+    #[test]
+    fn test_recursive_fibonacci() -> Result<()> {
+        let tests = def_case_int!(
+            "METHOD fibonacci IMPORTING iv_x TYPE i RETURNING rv_result TYPE i.
+                IF iv_x == 0.
+                    rv_result = 0.
+                ELSE.
+                    IF iv_x == 1.
+                        rv_result = 1.
+                    ELSE.
+                        rv_result = fibonacci(iv_x - 1) + fibonacci(iv_x - 2).
+                    ENDIF.
+                ENDIF.
+             ENDMETHOD.
+
+             fibonacci(15).",
+            610
+        );
+
+        run_vm_tests(tests)
+    }
 }
