@@ -1196,4 +1196,42 @@ mod tests {
 
         run_compiler_tests(tests)
     }
+
+    #[test]
+    fn test_recursive_functions() -> Result<()> {
+        let tests = vec![
+            define_case!("METHOD count_down IMPORTING iv_x TYPE i RETURNING rv_result TYPE i.
+                            rv_result = count_down(iv_x - 1).
+                          ENDMETHOD.
+
+                          count_down(1).";
+                         Object::Int(1),
+                         Object::Function(CompiledFunction{
+                             instructions: [
+                                 make(&OP_CURRENT_FUNCTION, &[]),
+                                 make(&OP_GET_LOCAL, &[0]),
+                                 make(&OP_CONSTANT, &[0]),
+                                 make(&OP_SUB, &[]),
+                                 make(&OP_CALL, &[1]),
+                                 make(&OP_SET_LOCAL, &[1]),
+                                 make(&OP_GET_LOCAL, &[1]),
+                                 make(&OP_RETURN_VALUE, &[]),
+                             ].concat().into(),
+                             num_parameters: 1,
+                             num_locals: 2,
+                             ty: DataType::Int,
+                         }),
+                         Object::Int(1);
+                         [
+                         make(&OP_FUNCTION, &[1]),
+                         make(&OP_SET_GLOBAL, &[0]),
+                         make(&OP_GET_GLOBAL, &[0]),
+                         make(&OP_CONSTANT, &[2]),
+                         make(&OP_CALL, &[1]),
+                         make(&OP_POP, &[]),
+                         ].concat().into()),
+        ];
+
+        run_compiler_tests(tests)
+    }
 }
