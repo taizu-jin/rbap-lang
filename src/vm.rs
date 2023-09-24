@@ -760,9 +760,19 @@ mod tests {
     fn test_functions() -> Result<()> {
         let tests = def_case_int!(
             "METHOD sum_5_10 RETURNING rv_sum TYPE i. rv_sum = 5 + 10. ENDMETHOD. sum_5_10().",
-            15
+            15,
+            "METHOD one RETURNING rv_one TYPE i. rv_one = 1. ENDMETHOD.
+             METHOD two RETURNING rv_two TYPE i. rv_two = 2. ENDMETHOD.
+            one() + two().",
+            3,
+            "METHOD a RETURNING rv_a TYPE i. rv_a = 1. ENDMETHOD.
+             METHOD b RETURNING rv_b TYPE i. rv_b = a() + 1. ENDMETHOD.
+             METHOD c RETURNING rv_c TYPE i. rv_c = b() + 1. ENDMETHOD.
+            c().",
+            3
         );
 
         run_vm_tests(tests)
     }
+
 }
