@@ -36,6 +36,7 @@ pub enum ErrorKind {
     VMConstantIndexOutOfBounds,
     VMConstantNotFunction,
     VMNonFunctionCall,
+    VMWrongArgumentCount,
 }
 
 impl From<&ErrorRepr> for ErrorKind {
@@ -105,6 +106,7 @@ impl From<&VMError> for ErrorKind {
             VMError::UnsupportedTypeForNegation(..) => Self::VMUnsupportedTypeForNegation,
             VMError::ConstantNotFunction(..) => Self::VMConstantNotFunction,
             VMError::NonFunctionCall => Self::VMNonFunctionCall,
+            VMError::WrongArgumentCount { .. } => Self::VMWrongArgumentCount,
         }
     }
 }
@@ -331,6 +333,8 @@ impl From<(DataType, DataType)> for CompilerError {
 
 #[derive(Debug, Error)]
 pub enum VMError {
+    #[error("wrong number of arguments: want={want} got={got}")]
+    WrongArgumentCount { want: usize, got: usize },
     #[error("Calling non-function")]
     NonFunctionCall,
     #[error("Constant {0} not a function")]
