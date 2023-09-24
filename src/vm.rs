@@ -756,4 +756,13 @@ mod tests {
         run_vm_tests(tests)
     }
 
+    #[test]
+    fn test_functions() -> Result<()> {
+        let tests = def_case_int!(
+            "METHOD sum_5_10 RETURNING rv_sum TYPE i. rv_sum = 5 + 10. ENDMETHOD. sum_5_10().",
+            15
+        );
+
+        run_vm_tests(tests)
+    }
 }
