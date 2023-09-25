@@ -25,6 +25,34 @@ impl Writer for StdoutWriter {
     }
 }
 
+trait ReadBytes {
+    fn read_bytes<W: Writer>(vm: &mut VM<W>) -> Self;
+}
+
+impl ReadBytes for u8 {
+    fn read_bytes<W: Writer>(vm: &mut VM<W>) -> Self {
+        let ip = vm.current_frame().ip as usize;
+        let ins = vm.current_frame().instructions();
+        let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
+        let u8 = u8::from_be_bytes(slice);
+        vm.current_frame_mut().ip += 1;
+
+        u8
+    }
+}
+
+impl ReadBytes for u16 {
+    fn read_bytes<W: Writer>(vm: &mut VM<W>) -> Self {
+        let ip = vm.current_frame().ip as usize;
+        let ins = vm.current_frame().instructions();
+        let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+        let u16 = u16::from_be_bytes(slice);
+        vm.current_frame_mut().ip += 2;
+
+        u16
+    }
+}
+
 struct Frame {
     func: CompiledFunction,
     ip: isize,
@@ -97,17 +125,16 @@ where
 
             match opcode {
                 &OP_CONSTANT => {
-                    let const_index = self.read_u16() as usize;
+                    let const_index = u16::read_bytes(self) as usize;
                     let constant = self.get_constant(const_index)?;
-
                     self.push(constant)?;
                 }
                 &OP_SET_GLOBAL => {
-                    let global_index = self.read_u16() as usize;
+                    let global_index = u16::read_bytes(self) as usize;
                     self.globals[global_index] = self.pop();
                 }
                 &OP_GET_GLOBAL => {
-                    let global_index = self.read_u16() as usize;
+                    let global_index = u16::read_bytes(self) as usize;
                     self.push(self.globals[global_index].clone())?;
                 }
                 &OP_POP => {
@@ -120,7 +147,7 @@ where
                     self.execute_binary_bool_operation(opcode)?
                 }
                 &OP_STRING_TEMPLATE => {
-                    let count = self.read_u16() as usize;
+                    let count = u16::read_bytes(self) as usize;
                     let mut result = String::new();
 
                     for _ in 0..count {
@@ -150,11 +177,11 @@ where
                     self.execute_comparison(opcode)?
                 }
                 &OP_JUMP => {
-                    let pos = self.read_u16() as isize;
+                    let pos = u16::read_bytes(self) as isize;
                     self.current_frame_mut().ip = pos - 1;
                 }
                 &OP_JUMP_NOT_TRUTH => {
-                    let pos = self.read_u16() as usize;
+                    let pos = u16::read_bytes(self) as usize;
 
                     let condition = if let Object::Bool(condition) = self.pop() {
                         condition
@@ -171,22 +198,18 @@ where
                     self.push(current_function.into())?;
                 }
                 &OP_FUNCTION => {
-                    let const_index = self.read_u16() as usize;
-
+                    let const_index = u16::read_bytes(self) as usize;
                     self.push_function(const_index)?;
                 }
                 &OP_GET_LOCAL => {
-                    let local_index = self.read_u8() as usize;
-
+                    let local_index = u8::read_bytes(self) as usize;
                     let base_pointer = self.current_frame().base_pointer;
                     let local = self.stack[base_pointer + local_index].clone();
                     self.push(local)?;
                 }
                 &OP_SET_LOCAL => {
-                    let local_index = self.read_u8() as usize;
-
+                    let local_index = u8::read_bytes(self) as usize;
                     let base_pointer = self.current_frame().base_pointer;
-
                     self.stack[base_pointer + local_index] = self.pop();
                 }
                 &OP_RETURN => {
@@ -196,20 +219,16 @@ where
                 }
                 &OP_RETURN_VALUE => {
                     let return_value = self.pop();
-
                     let frame = self.pop_frame()?;
                     self.sp = frame.base_pointer - 1;
-
                     self.push(return_value)?;
                 }
                 &OP_CALL => {
-                    let num_args = self.read_u8() as usize;
-
+                    let num_args = u8::read_bytes(self) as usize;
                     self.execute_call(num_args)?;
                 }
                 &OP_WRITE => {
-                    let count = self.read_u16() as usize;
-
+                    let count = u16::read_bytes(self) as usize;
                     for _ in 0..count {
                         let component = self.pop();
                         self.writer.print(format_args!("{}", component));
@@ -220,26 +239,6 @@ where
         }
 
         Ok(())
-    }
-
-    fn read_u8(&mut self) -> u8 {
-        let ip = self.current_frame().ip as usize;
-        let ins = self.current_frame().instructions();
-        let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
-        let u8 = u8::from_be_bytes(slice);
-        self.current_frame_mut().ip += 1;
-
-        u8
-    }
-
-    fn read_u16(&mut self) -> u16 {
-        let ip = self.current_frame().ip as usize;
-        let ins = self.current_frame().instructions();
-        let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-        let u16 = u16::from_be_bytes(slice);
-        self.current_frame_mut().ip += 2;
-
-        u16
     }
 
     fn current_frame(&self) -> &Frame {
