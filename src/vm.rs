@@ -88,7 +88,13 @@ impl<W> VM<W>
 where
     W: Writer,
 {
-    pub fn new(bytecode: Bytecode, writer: W) -> Self {
+    #[allow(dead_code)]
+    fn new(bytecode: Bytecode, writer: W) -> Self {
+        let globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
+        Self::with_state(bytecode, writer, globals)
+    }
+
+    pub fn with_state(bytecode: Bytecode, writer: W, globals: Box<[Object; GLOBAL_SIZE]>) -> Self {
         let Bytecode {
             instructions,
             constants,
@@ -109,10 +115,15 @@ where
             constants,
             stack: vec![Object::Null; STACK_SIZE].try_into().unwrap(),
             sp: 0,
-            globals: vec![Object::Null; GLOBAL_SIZE].try_into().unwrap(),
+            globals,
             frames,
             writer,
         }
+    }
+
+    /// Consumes self and returns globals array.
+    pub fn consume(self) -> Box<[Object; GLOBAL_SIZE]> {
+        self.globals
     }
 
     pub fn run(&mut self) -> Result<()> {
