@@ -6,7 +6,8 @@ use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Resu
 use crate::object::CompiledFunction;
 use crate::{ast::Node, code::Instructions, object::Object};
 
-use self::symbol_table::{Scope, Symbol, SymbolTable};
+pub use self::symbol_table::SymbolTable;
+use self::symbol_table::{Scope, Symbol};
 
 pub struct Bytecode {
     pub instructions: Instructions,
@@ -41,23 +42,32 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
+        Self::with_state(Vec::new(), SymbolTable::new())
+    }
+
+    pub fn with_state(constants: Vec<Object>, symbol_table: SymbolTable) -> Self {
         let main_scope = CompilationScope::default();
 
         Self {
-            constants: Vec::new(),
-            symbol_table: SymbolTable::new(),
+            constants,
+            symbol_table,
             scopes: vec![main_scope],
         }
     }
 
-    pub fn bytecode(mut self) -> Bytecode {
+    /// Consumes self and returns a tuple of constants and symbol table.
+    pub fn consume(self) -> (Vec<Object>, SymbolTable) {
+        (self.constants, self.symbol_table)
+    }
+
+    pub fn bytecode(&mut self) -> Bytecode {
         Bytecode {
             instructions: self
                 .scopes
                 .pop()
                 .expect("at least one scope is always initialized upon creation")
                 .instructions,
-            constants: self.constants,
+            constants: self.constants.clone(),
         }
     }
 
