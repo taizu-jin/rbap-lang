@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::fmt::Arguments;
+
 use crate::{
     code::*,
     compiler::Bytecode,
@@ -10,6 +12,18 @@ use crate::{
 pub const STACK_SIZE: usize = 2048;
 pub const GLOBAL_SIZE: usize = 65536;
 pub const MAX_FRAMES: usize = 1024;
+
+pub trait Writer {
+    fn print(&mut self, arguments: Arguments);
+}
+
+pub struct StdoutWriter;
+
+impl Writer for StdoutWriter {
+    fn print(&mut self, arguments: Arguments) {
+        print!("{}", arguments);
+    }
+}
 
 struct Frame {
     func: CompiledFunction,
@@ -31,17 +45,24 @@ impl Frame {
     }
 }
 
-pub struct VM {
+pub struct VM<W>
+where
+    W: Writer,
+{
     constants: Vec<Object>,
     stack: Box<[Object; STACK_SIZE]>,
     /// Always points to the next value. Top of the stack is stack\[sp-1\].
     sp: usize,
     globals: Box<[Object; GLOBAL_SIZE]>,
     frames: Vec<Frame>,
+    writer: W,
 }
 
-impl VM {
-    pub fn new(bytecode: Bytecode) -> Self {
+impl<W> VM<W>
+where
+    W: Writer,
+{
+    pub fn new(bytecode: Bytecode, writer: W) -> Self {
         let Bytecode {
             instructions,
             constants,
@@ -64,6 +85,7 @@ impl VM {
             sp: 0,
             globals: vec![Object::Null; GLOBAL_SIZE].try_into().unwrap(),
             frames,
+            writer,
         }
     }
 
@@ -206,6 +228,16 @@ impl VM {
                     self.current_frame_mut().ip += 1;
 
                     self.execute_call(num_args)?;
+                }
+                &OP_WRITE => {
+                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+                    let count = u16::from_be_bytes(slice) as usize;
+                    self.current_frame_mut().ip += 2;
+
+                    for _ in 0..count {
+                        let component = self.pop();
+                        self.writer.print(format_args!("{}", component));
+                    }
                 }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
