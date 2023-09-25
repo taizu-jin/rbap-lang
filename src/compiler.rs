@@ -90,11 +90,11 @@ impl Compiler {
                         .try_into()
                         .expect("max string template bytes count reached");
 
-                    self.emit(OP_WRITE, &[count as i32]);
-
                     for exp in expressions {
                         self.compile(exp)?;
                     }
+
+                    self.emit(OP_WRITE, &[count as i32]);
                 }
                 Statement::Assignment(a) => {
                     let symbol = self.symbol_table.resolve(a.ident.as_ref())?;
@@ -728,13 +728,13 @@ mod tests {
                          Object::String("\n".into()),
                          Object::String("string".into());
                          [
-                         make(&OP_WRITE, &[6]),
                          make(&OP_CONSTANT, &[0]),
                          make(&OP_CONSTANT, &[1]),
                          make(&OP_CONSTANT, &[2]),
                          make(&OP_CONSTANT, &[3]),
                          make(&OP_CONSTANT, &[4]),
                          make(&OP_CONSTANT, &[5]),
+                         make(&OP_WRITE, &[6]),
                          ].concat().into())];
 
         run_compiler_tests(tests)
