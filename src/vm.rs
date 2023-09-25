@@ -88,12 +88,6 @@ impl<W> VM<W>
 where
     W: Writer,
 {
-    #[allow(dead_code)]
-    fn new(bytecode: Bytecode, writer: W) -> Self {
-        let globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
-        Self::with_state(bytecode, writer, globals)
-    }
-
     pub fn with_state(bytecode: Bytecode, writer: W, globals: Box<[Object; GLOBAL_SIZE]>) -> Self {
         let Bytecode {
             instructions,
@@ -647,18 +641,22 @@ mod tests {
     where
         T: PartialEq<Object> + GetInput + GetErrorMessage + Debug,
     {
+        let mut globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
+
         for test in tests {
             let program = parse(test.input().into());
 
             let mut compiler = Compiler::new();
             compiler.compile(program)?;
 
-            let mut vm = VM::new(compiler.bytecode(), DummyWriter::default());
+            let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
             vm.run()?;
 
             let stack_element = vm.last_popped_stack_elem();
 
-            assert_eq!(test, stack_element, "{}", test.message(&stack_element))
+            assert_eq!(test, stack_element, "{}", test.message(&stack_element));
+
+            globals = vm.consume();
         }
 
         Ok(())
@@ -999,13 +997,15 @@ mod tests {
             "WRITE: 'some string'.", "some string";
             "WRITE: / 'some', / 'string'.", "\n", "some", "\n", "string");
 
+        let mut globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
+
         for test in tests {
             let program = parse(test.input.into());
 
             let mut compiler = Compiler::new();
             compiler.compile(program)?;
 
-            let mut vm = VM::new(compiler.bytecode(), DummyWriter::default());
+            let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
             vm.run()?;
 
             assert_eq!(
@@ -1023,6 +1023,8 @@ mod tests {
                     got, want
                 );
             }
+
+            globals = vm.consume();
         }
 
         Ok(())
