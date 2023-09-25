@@ -429,6 +429,15 @@ mod tests {
 
     use super::*;
 
+    #[derive(Default)]
+    struct DummyWriter(Vec<String>);
+
+    impl Writer for DummyWriter {
+        fn print(&mut self, arguments: Arguments) {
+            self.0.push(arguments.to_string())
+        }
+    }
+
     trait GetInput {
         fn input(&self) -> &'static str;
     }
@@ -584,6 +593,23 @@ mod tests {
         };
     }
 
+    #[derive(Debug)]
+    struct TestCaseWriter {
+        input: &'static str,
+        expected_writer_content: Vec<String>,
+    }
+
+    macro_rules! def_case_writer {
+        ($($input:literal, $($expected:literal),*);*) => {
+            vec![$(
+            TestCaseWriter {
+                input: $input,
+                expected_writer_content: vec![$($expected.to_string()),*]
+            }),*
+            ]
+        };
+    }
+
     #[test]
     fn test_integer_arithmetic() -> Result<()> {
         let tests = def_case_int!(
@@ -622,7 +648,7 @@ mod tests {
             let mut compiler = Compiler::new();
             compiler.compile(program)?;
 
-            let mut vm = VM::new(compiler.bytecode());
+            let mut vm = VM::new(compiler.bytecode(), DummyWriter::default());
             vm.run()?;
 
             let stack_element = vm.last_popped_stack_elem();
@@ -960,5 +986,40 @@ mod tests {
         );
 
         run_vm_tests(tests)
+    }
+
+    #[test]
+    fn test_write_statement() -> Result<()> {
+        let tests = def_case_writer!(
+            "WRITE: 'some string'.", "some string";
+            "WRITE: / 'some', / 'string'.", "\n", "some", "\n", "string");
+
+        for test in tests {
+            let program = parse(test.input.into());
+
+            let mut compiler = Compiler::new();
+            compiler.compile(program)?;
+
+            let mut vm = VM::new(compiler.bytecode(), DummyWriter::default());
+            vm.run()?;
+
+            assert_eq!(
+                vm.writer.0.len(),
+                test.expected_writer_content.len(),
+                "printed expression count does not match. got={} want={}",
+                vm.writer.0.len(),
+                test.expected_writer_content.len()
+            );
+
+            for (got, want) in vm.writer.0.iter().zip(test.expected_writer_content.iter()) {
+                assert_eq!(
+                    got, want,
+                    "printed component does not match expected value.\n\tgot={:?}\n\twant={:?}",
+                    got, want
+                );
+            }
+        }
+
+        Ok(())
     }
 }
