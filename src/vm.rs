@@ -92,30 +92,22 @@ where
     pub fn run(&mut self) -> Result<()> {
         while ((self.current_frame().ip + 1) as usize) < self.current_frame().instructions().len() {
             self.current_frame_mut().ip += 1;
-            let ip = (self.current_frame().ip) as usize;
-            let ins = self.current_frame().instructions();
-
-            let opcode = Opcode::lookup(ins[ip])?;
+            let opcode = self.current_frame().instructions()[self.current_frame().ip as usize];
+            let opcode = Opcode::lookup(opcode)?;
 
             match opcode {
                 &OP_CONSTANT => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let const_index = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let const_index = self.read_u16() as usize;
                     let constant = self.get_constant(const_index)?;
 
                     self.push(constant)?;
                 }
                 &OP_SET_GLOBAL => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let global_index = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let global_index = self.read_u16() as usize;
                     self.globals[global_index] = self.pop();
                 }
                 &OP_GET_GLOBAL => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let global_index = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let global_index = self.read_u16() as usize;
                     self.push(self.globals[global_index].clone())?;
                 }
                 &OP_POP => {
@@ -128,10 +120,7 @@ where
                     self.execute_binary_bool_operation(opcode)?
                 }
                 &OP_STRING_TEMPLATE => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let count = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
-
+                    let count = self.read_u16() as usize;
                     let mut result = String::new();
 
                     for _ in 0..count {
@@ -161,14 +150,11 @@ where
                     self.execute_comparison(opcode)?
                 }
                 &OP_JUMP => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let pos = u16::from_be_bytes(slice) as isize;
+                    let pos = self.read_u16() as isize;
                     self.current_frame_mut().ip = pos - 1;
                 }
                 &OP_JUMP_NOT_TRUTH => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let pos = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let pos = self.read_u16() as usize;
 
                     let condition = if let Object::Bool(condition) = self.pop() {
                         condition
@@ -185,25 +171,19 @@ where
                     self.push(current_function.into())?;
                 }
                 &OP_FUNCTION => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let const_index = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let const_index = self.read_u16() as usize;
 
                     self.push_function(const_index)?;
                 }
                 &OP_GET_LOCAL => {
-                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
-                    let local_index = u8::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 1;
+                    let local_index = self.read_u8() as usize;
 
                     let base_pointer = self.current_frame().base_pointer;
                     let local = self.stack[base_pointer + local_index].clone();
                     self.push(local)?;
                 }
                 &OP_SET_LOCAL => {
-                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
-                    let local_index = u8::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 1;
+                    let local_index = self.read_u8() as usize;
 
                     let base_pointer = self.current_frame().base_pointer;
 
@@ -223,16 +203,12 @@ where
                     self.push(return_value)?;
                 }
                 &OP_CALL => {
-                    let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
-                    let num_args = u8::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 1;
+                    let num_args = self.read_u8() as usize;
 
                     self.execute_call(num_args)?;
                 }
                 &OP_WRITE => {
-                    let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
-                    let count = u16::from_be_bytes(slice) as usize;
-                    self.current_frame_mut().ip += 2;
+                    let count = self.read_u16() as usize;
 
                     for _ in 0..count {
                         let component = self.pop();
@@ -245,6 +221,27 @@ where
 
         Ok(())
     }
+
+    fn read_u8(&mut self) -> u8 {
+        let ip = self.current_frame().ip as usize;
+        let ins = self.current_frame().instructions();
+        let slice: [u8; 1] = ins[ip + 1..=ip + 1].try_into().unwrap();
+        let u8 = u8::from_be_bytes(slice);
+        self.current_frame_mut().ip += 1;
+
+        u8
+    }
+
+    fn read_u16(&mut self) -> u16 {
+        let ip = self.current_frame().ip as usize;
+        let ins = self.current_frame().instructions();
+        let slice: [u8; 2] = ins[ip + 1..=ip + 2].try_into().unwrap();
+        let u16 = u16::from_be_bytes(slice);
+        self.current_frame_mut().ip += 2;
+
+        u16
+    }
+
     fn current_frame(&self) -> &Frame {
         self.frames
             .last()
