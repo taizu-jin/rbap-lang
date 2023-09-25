@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod symbol_table;
 
 use crate::ast::{DataType, Expression, Operator, Statement};
@@ -18,7 +16,7 @@ pub struct Bytecode {
 #[derive(Clone, Copy, Default)]
 struct EmittedInstruction {
     opcode: u8,
-    position: usize,
+    _position: usize,
 }
 
 impl PartialEq<Opcode> for EmittedInstruction {
@@ -343,7 +341,7 @@ impl Compiler {
         let previous = current_scope.last_instruction;
         let last = EmittedInstruction {
             opcode: op.into(),
-            position: pos,
+            _position: pos,
         };
 
         current_scope.prev_instruction = previous;
@@ -428,24 +426,6 @@ impl Compiler {
         let instructions = self.current_instructions_mut();
 
         instructions[pos..pos + instruction.len()].swap_with_slice(instruction.as_mut_slice());
-    }
-
-    fn last_instruction_is(&self, opcode: Opcode) -> bool {
-        if self.current_instructions().is_empty() {
-            return false;
-        }
-
-        self.current_scope().last_instruction == opcode
-    }
-
-    fn remove_last_instruction(&mut self) {
-        let scope = self.current_scope();
-        let last = scope.last_instruction;
-        let previous = scope.prev_instruction;
-
-        self.current_instructions_mut().truncate(last.position);
-        let scope = self.current_scope_mut();
-        scope.last_instruction = previous;
     }
 
     fn enter_scope(&mut self) {
