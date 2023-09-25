@@ -28,7 +28,7 @@ pub fn start() -> io::Result<()> {
         let program = parser.parse();
 
         for error in parser.errors() {
-            write!(stderr, "{}", error)?;
+            writeln!(stderr, "{}", error)?;
         }
 
         let mut compiler = Compiler::with_state(constants, symbol_table);
@@ -42,7 +42,7 @@ pub fn start() -> io::Result<()> {
         }
 
         let last_popped = vm.last_popped_stack_elem();
-        writeln!(stdout, "{}", last_popped)?;
+        writeln!(stdout, "\n{}", last_popped)?;
 
         stderr.flush()?;
         stdout.flush()?;
