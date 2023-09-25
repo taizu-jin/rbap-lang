@@ -90,7 +90,7 @@ impl Compiler {
                         .try_into()
                         .expect("max string template bytes count reached");
 
-                    for exp in expressions {
+                    for exp in expressions.into_iter().rev() {
                         self.compile(exp)?;
                     }
 
@@ -720,13 +720,14 @@ mod tests {
 
     #[test]
     fn test_write_statement() -> Result<()> {
-        let tests = vec![define_case!("WRITE:/ 'print', / 'a', / 'string'.";
-                         Object::String("\n".into()),
-                         Object::String("print".into()),
+        let tests = vec![
+            define_case!("WRITE:/ 'print', / 'a', / 'string'.";
+                         Object::String("string".into()),
                          Object::String("\n".into()),
                          Object::String("a".into()),
                          Object::String("\n".into()),
-                         Object::String("string".into());
+                         Object::String("print".into()),
+                         Object::String("\n".into());
                          [
                          make(&OP_CONSTANT, &[0]),
                          make(&OP_CONSTANT, &[1]),
@@ -735,7 +736,14 @@ mod tests {
                          make(&OP_CONSTANT, &[4]),
                          make(&OP_CONSTANT, &[5]),
                          make(&OP_WRITE, &[6]),
-                         ].concat().into())];
+                         ].concat().into()),
+            define_case!("WRITE: 'some string'.";
+                         Object::String("some string".into());
+                         [
+                         make(&OP_CONSTANT, &[0]),
+                         make(&OP_WRITE, &[1]),
+                         ].concat().into()),
+        ];
 
         run_compiler_tests(tests)
     }
