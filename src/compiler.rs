@@ -88,7 +88,7 @@ impl Compiler {
                 Statement::Declaration(d) => {
                     for declaration in d.as_ref() {
                         self.symbol_table
-                            .define(declaration.ident.as_ref(), declaration.ty);
+                            .define(declaration.ident.to_string(), declaration.ty);
                     }
                 }
                 Statement::Write(w) => {

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::error::{CompilerError, Result};
 use std::{collections::HashMap, fmt::Display, sync::OnceLock};
 
@@ -56,7 +58,7 @@ define_constant!(OP_RETURN_VALUE, 0x1B);
 
 static DEFINITIONS: OnceLock<HashMap<u8, &'static Opcode>> = OnceLock::new();
 
-#[derive(Default, Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Default, Debug, PartialEq, PartialOrd, Clone, Serialize, Deserialize)]
 pub struct Instructions(Vec<u8>);
 
 impl AsRef<[u8]> for Instructions {
