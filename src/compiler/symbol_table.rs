@@ -1,29 +1,31 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 
 use crate::{
     ast::DataType,
     error::{CompilerError, Result},
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Scope {
     Global,
     Local,
     Function,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Symbol {
-    pub name: Rc<str>,
+    pub name: String,
     pub scope: Scope,
     pub index: usize,
     pub ty: DataType,
 }
 
 impl Symbol {
-    pub fn new(name: impl Into<Rc<str>>, scope: Scope, index: usize, ty: DataType) -> Self {
+    pub fn new(name: String, scope: Scope, index: usize, ty: DataType) -> Self {
         Self {
-            name: name.into(),
+            name,
             scope,
             index,
             ty,
@@ -31,11 +33,11 @@ impl Symbol {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SymbolTable {
     pub outer: Option<Box<SymbolTable>>,
 
-    store: HashMap<Rc<str>, Symbol>,
+    store: HashMap<String, Symbol>,
     pub num_definitions: usize,
 }
 
@@ -48,7 +50,7 @@ impl SymbolTable {
         }
     }
 
-    pub fn define(&mut self, name: impl Into<Rc<str>>, ty: DataType) -> Symbol {
+    pub fn define(&mut self, name: String, ty: DataType) -> Symbol {
         let scope = if self.outer.is_none() {
             Scope::Global
         } else {
@@ -85,8 +87,7 @@ impl SymbolTable {
         }
     }
 
-    pub fn define_function_name(&mut self, name: impl Into<Rc<str>>, ty: DataType) -> Symbol {
-        let name = name.into();
+    pub fn define_function_name(&mut self, name: String, ty: DataType) -> Symbol {
         let symbol = Symbol::new(name.clone(), Scope::Function, 0, ty);
         self.store.insert(name, symbol.clone());
         symbol
@@ -100,24 +101,36 @@ mod tests {
 
     #[test]
     fn test_define() {
-        let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
+        let expected: HashMap<String, Symbol> = HashMap::from([
             (
                 "a".into(),
-                Symbol::new("a", Scope::Global, 0, DataType::Int),
+                Symbol::new("a".into(), Scope::Global, 0, DataType::Int),
             ),
             (
                 "b".into(),
-                Symbol::new("b", Scope::Global, 1, DataType::Int),
+                Symbol::new("b".into(), Scope::Global, 1, DataType::Int),
             ),
-            ("c".into(), Symbol::new("c", Scope::Local, 0, DataType::Int)),
-            ("d".into(), Symbol::new("d", Scope::Local, 1, DataType::Int)),
-            ("e".into(), Symbol::new("e", Scope::Local, 0, DataType::Int)),
-            ("f".into(), Symbol::new("f", Scope::Local, 1, DataType::Int)),
+            (
+                "c".into(),
+                Symbol::new("c".into(), Scope::Local, 0, DataType::Int),
+            ),
+            (
+                "d".into(),
+                Symbol::new("d".into(), Scope::Local, 1, DataType::Int),
+            ),
+            (
+                "e".into(),
+                Symbol::new("e".into(), Scope::Local, 0, DataType::Int),
+            ),
+            (
+                "f".into(),
+                Symbol::new("f".into(), Scope::Local, 1, DataType::Int),
+            ),
         ]);
 
         let mut scope = SymbolTable::new();
 
-        let a = scope.define("a", DataType::Int);
+        let a = scope.define("a".into(), DataType::Int);
         assert_eq!(
             &a,
             expected.get("a").unwrap(),
@@ -126,7 +139,7 @@ mod tests {
             a
         );
 
-        let b = scope.define("b", DataType::Int);
+        let b = scope.define("b".into(), DataType::Int);
         assert_eq!(
             &b,
             expected.get("b").unwrap(),
@@ -137,7 +150,7 @@ mod tests {
 
         scope.enclose();
 
-        let c = scope.define("c", DataType::Int);
+        let c = scope.define("c".into(), DataType::Int);
         assert_eq!(
             &c,
             expected.get("c").unwrap(),
@@ -146,7 +159,7 @@ mod tests {
             c
         );
 
-        let d = scope.define("d", DataType::Int);
+        let d = scope.define("d".into(), DataType::Int);
         assert_eq!(
             &d,
             expected.get("d").unwrap(),
@@ -157,7 +170,7 @@ mod tests {
 
         scope.enclose();
 
-        let e = scope.define("e", DataType::Int);
+        let e = scope.define("e".into(), DataType::Int);
         assert_eq!(
             &e,
             expected.get("e").unwrap(),
@@ -166,7 +179,7 @@ mod tests {
             e
         );
 
-        let f = scope.define("f", DataType::Int);
+        let f = scope.define("f".into(), DataType::Int);
         assert_eq!(
             &f,
             expected.get("f").unwrap(),
@@ -178,20 +191,20 @@ mod tests {
 
     #[test]
     fn test_resolve_global() -> Result<()> {
-        let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
+        let expected: HashMap<String, Symbol> = HashMap::from([
             (
                 "a".into(),
-                Symbol::new("a", Scope::Global, 0, DataType::Int),
+                Symbol::new("a".into(), Scope::Global, 0, DataType::Int),
             ),
             (
                 "b".into(),
-                Symbol::new("b", Scope::Global, 1, DataType::Int),
+                Symbol::new("b".into(), Scope::Global, 1, DataType::Int),
             ),
         ]);
 
         let mut global = SymbolTable::new();
-        global.define("a", DataType::Int);
-        global.define("b", DataType::Int);
+        global.define("a".into(), DataType::Int);
+        global.define("b".into(), DataType::Int);
 
         for (_, val) in expected {
             let result = global.resolve(&val.name)?;
@@ -203,27 +216,33 @@ mod tests {
 
     #[test]
     fn test_resolve_local() -> Result<()> {
-        let expected: HashMap<Rc<str>, Symbol> = HashMap::from([
+        let expected: HashMap<String, Symbol> = HashMap::from([
             (
                 "a".into(),
-                Symbol::new("a", Scope::Global, 0, DataType::Int),
+                Symbol::new("a".into(), Scope::Global, 0, DataType::Int),
             ),
             (
                 "b".into(),
-                Symbol::new("b", Scope::Global, 1, DataType::Int),
+                Symbol::new("b".into(), Scope::Global, 1, DataType::Int),
             ),
-            ("c".into(), Symbol::new("c", Scope::Local, 0, DataType::Int)),
-            ("d".into(), Symbol::new("d", Scope::Local, 1, DataType::Int)),
+            (
+                "c".into(),
+                Symbol::new("c".into(), Scope::Local, 0, DataType::Int),
+            ),
+            (
+                "d".into(),
+                Symbol::new("d".into(), Scope::Local, 1, DataType::Int),
+            ),
         ]);
 
         let mut scope = SymbolTable::new();
-        scope.define("a", DataType::Int);
-        scope.define("b", DataType::Int);
+        scope.define("a".into(), DataType::Int);
+        scope.define("b".into(), DataType::Int);
 
         scope.enclose();
 
-        scope.define("c", DataType::Int);
-        scope.define("d", DataType::Int);
+        scope.define("c".into(), DataType::Int);
+        scope.define("d".into(), DataType::Int);
 
         for (_, val) in expected {
             let result = scope.resolve(&val.name)?;
@@ -236,18 +255,18 @@ mod tests {
     #[test]
     fn test_resolve_nested_local() -> Result<()> {
         let mut table = SymbolTable::new();
-        table.define("a", DataType::Int);
-        table.define("b", DataType::Int);
+        table.define("a".into(), DataType::Int);
+        table.define("b".into(), DataType::Int);
 
         table.enclose();
 
-        table.define("c", DataType::Int);
-        table.define("d", DataType::Int);
+        table.define("c".into(), DataType::Int);
+        table.define("d".into(), DataType::Int);
 
         table.enclose();
 
-        table.define("e", DataType::Int);
-        table.define("f", DataType::Int);
+        table.define("e".into(), DataType::Int);
+        table.define("f".into(), DataType::Int);
 
         struct TestCase {
             expected_symbols: Vec<Symbol>,
@@ -256,18 +275,18 @@ mod tests {
         let tests = vec![
             TestCase {
                 expected_symbols: vec![
-                    Symbol::new("a", Scope::Global, 0, DataType::Int),
-                    Symbol::new("b", Scope::Global, 1, DataType::Int),
-                    Symbol::new("e", Scope::Local, 0, DataType::Int),
-                    Symbol::new("f", Scope::Local, 1, DataType::Int),
+                    Symbol::new("a".into(), Scope::Global, 0, DataType::Int),
+                    Symbol::new("b".into(), Scope::Global, 1, DataType::Int),
+                    Symbol::new("e".into(), Scope::Local, 0, DataType::Int),
+                    Symbol::new("f".into(), Scope::Local, 1, DataType::Int),
                 ],
             },
             TestCase {
                 expected_symbols: vec![
-                    Symbol::new("a", Scope::Global, 0, DataType::Int),
-                    Symbol::new("b", Scope::Global, 1, DataType::Int),
-                    Symbol::new("c", Scope::Local, 0, DataType::Int),
-                    Symbol::new("d", Scope::Local, 1, DataType::Int),
+                    Symbol::new("a".into(), Scope::Global, 0, DataType::Int),
+                    Symbol::new("b".into(), Scope::Global, 1, DataType::Int),
+                    Symbol::new("c".into(), Scope::Local, 0, DataType::Int),
+                    Symbol::new("d".into(), Scope::Local, 1, DataType::Int),
                 ],
             },
         ];
@@ -286,9 +305,9 @@ mod tests {
     #[test]
     fn test_define_and_resolve_function_name() -> Result<()> {
         let mut global = SymbolTable::new();
-        global.define_function_name("a", DataType::Int);
+        global.define_function_name("a".into(), DataType::Int);
 
-        let expected = Symbol::new("a", Scope::Function, 0, DataType::Int);
+        let expected = Symbol::new("a".into(), Scope::Function, 0, DataType::Int);
 
         let result = global.resolve("a")?;
 

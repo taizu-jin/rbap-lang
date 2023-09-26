@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     error::Result,
     lexer::TokenKind,
@@ -78,7 +80,7 @@ impl Display for Declaration {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Copy, Clone, Serialize, Deserialize)]
 pub enum DataType {
     String,
     Int,
