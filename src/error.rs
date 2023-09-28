@@ -1,4 +1,4 @@
-use std::num::ParseIntError;
+use std::{io, num::ParseIntError};
 
 use thiserror::Error;
 
@@ -28,6 +28,8 @@ pub enum ErrorKind {
     CompilerExpectedDataType,
     CompilerIndexOutOfBounds,
     CompilerUndefinedOpcode,
+    CompilerCompilation,
+    IOError,
     VMStackOverflow,
     VMFramesEmpty,
     VMFrameOverflow,
@@ -55,6 +57,7 @@ impl From<&ErrorRepr> for ErrorKind {
             ErrorRepr::VMError(e) => e.into(),
             ErrorRepr::UnknownOperator(_) => Self::UnknownOperator,
             ErrorRepr::UnexpectedExpression(_) => Self::UnexpectedExpression,
+            ErrorRepr::IOError(_) => Self::IOError,
         }
     }
 }
@@ -91,6 +94,7 @@ impl From<&CompilerError> for ErrorKind {
             CompilerError::ExpectedDataType { .. } => Self::CompilerExpectedDataType,
             CompilerError::UndefinedOpcode(_) => Self::CompilerUndefinedOpcode,
             CompilerError::IndexOutOfBounds(_) => Self::CompilerIndexOutOfBounds,
+            CompilerError::Compilation(_) => Self::CompilerCompilation,
         }
     }
 }
@@ -191,9 +195,27 @@ impl Error {
     }
 }
 
+impl From<io::Error> for Error {
+    fn from(value: io::Error) -> Self {
+        Self {
+            kind: ErrorKind::IOError,
+            repr: value.into(),
+        }
+    }
+}
+
+impl From<bincode::Error> for Error {
+    fn from(value: bincode::Error) -> Self {
+        Self {
+            kind: ErrorKind::CompilerCompilation,
+            repr: CompilerError::from(value).into(),
+        }
+    }
+}
+
 impl From<ErrorRepr> for Error {
     fn from(value: ErrorRepr) -> Self {
-        Error {
+        Self {
             kind: ErrorKind::from(&value),
             repr: value,
         }
@@ -285,6 +307,8 @@ enum ErrorRepr {
     CompilerError(#[from] CompilerError),
     #[error(transparent)]
     VMError(#[from] VMError),
+    #[error(transparent)]
+    IOError(#[from] io::Error),
 }
 
 #[derive(Debug, Error)]
@@ -320,6 +344,8 @@ pub enum CompilerError {
     UndefinedOpcode(u8),
     #[error("index {0} is out of instruction stack range")]
     IndexOutOfBounds(usize),
+    #[error(transparent)]
+    Compilation(#[from] bincode::Error),
 }
 
 impl From<(DataType, DataType)> for CompilerError {
