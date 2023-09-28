@@ -1,20 +1,28 @@
 mod symbol_table;
 
+use std::fs::{read_to_string, File};
+use std::path::Path;
+
+use serde::{Deserialize, Serialize};
+
 use crate::ast::{DataType, Expression, Operator, Statement};
 use crate::code::*;
 use crate::error::{CompilerError, Error, ParseInfixError, ParsePrefixError, Result};
+use crate::lexer::Lexer;
 use crate::object::CompiledFunction;
+use crate::parser::Parser;
 use crate::{ast::Node, code::Instructions, object::Object};
 
 pub use self::symbol_table::SymbolTable;
 use self::symbol_table::{Scope, Symbol};
 
+#[derive(Serialize, Deserialize)]
 pub struct Bytecode {
     pub instructions: Instructions,
     pub constants: Vec<Object>,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq)]
 struct EmittedInstruction {
     opcode: u8,
     _position: usize,
@@ -26,13 +34,14 @@ impl PartialEq<Opcode> for EmittedInstruction {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq)]
 struct CompilationScope {
     instructions: Instructions,
     last_instruction: EmittedInstruction,
     prev_instruction: EmittedInstruction,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Compiler {
     constants: Vec<Object>,
     symbol_table: SymbolTable,
@@ -71,6 +80,40 @@ impl Compiler {
         }
     }
 
+    pub fn compile<P>(src: P) -> Result<Compiler>
+    where
+        P: AsRef<Path>,
+    {
+        let input = read_to_string(src).map_err(Error::from)?;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer.iter());
+        let program = parser.parse();
+
+        let constants = Vec::new();
+        let symbol_table = SymbolTable::new();
+        let mut compiler = Compiler::with_state(constants, symbol_table);
+
+        compiler.compile_node(program)?;
+
+        Ok(compiler)
+    }
+
+    pub fn into_file<P>(self, path: P) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .map_err(Error::from)?;
+
+        bincode::serialize_into(&file, &self)?;
+
+        Ok(())
+    }
     pub(crate) fn compile_node(&mut self, node: impl Into<Node>) -> Result<()> {
         let node = node.into();
 

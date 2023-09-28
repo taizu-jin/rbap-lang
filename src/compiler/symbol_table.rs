@@ -33,7 +33,7 @@ impl Symbol {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SymbolTable {
     pub outer: Option<Box<SymbolTable>>,
 
