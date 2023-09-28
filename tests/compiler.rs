@@ -23,3 +23,19 @@ fn compile_source_file() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn build_compiler_from_compiled_file() -> Result<()> {
+    let source = Path::new(test_file!("compiled"));
+    let compiler = Compiler::from_file(source)?;
+
+    let source = Path::new(test_file!("compile.rbap"));
+    let compiler_from_source = Compiler::compile(source)?;
+
+    assert_eq!(
+        compiler, compiler_from_source,
+        "compiler from source and compiler from compiled file do not match"
+    );
+
+    Ok(())
+}
