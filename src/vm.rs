@@ -93,6 +93,14 @@ impl VM<StdoutWriter> {
         let mut vm = Self::with_state(compiler.bytecode(), StdoutWriter, globals);
         vm.run_bytecode()
     }
+
+    pub fn execute<P: AsRef<Path>>(target: P) -> Result<()> {
+        let mut compiler = Compiler::from_file(&target)?;
+
+        let globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
+        let mut vm = Self::with_state(compiler.bytecode(), StdoutWriter, globals);
+        vm.run_bytecode()
+    }
 }
 
 impl<W> VM<W>
