@@ -41,11 +41,11 @@ pub struct Compiler {
 }
 
 impl Compiler {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self::with_state(Vec::new(), SymbolTable::new())
     }
 
-    pub fn with_state(constants: Vec<Object>, symbol_table: SymbolTable) -> Self {
+    pub(crate) fn with_state(constants: Vec<Object>, symbol_table: SymbolTable) -> Self {
         let main_scope = CompilationScope::default();
 
         Self {
@@ -56,11 +56,11 @@ impl Compiler {
     }
 
     /// Consumes self and returns a tuple of constants and symbol table.
-    pub fn consume(self) -> (Vec<Object>, SymbolTable) {
+    pub(crate) fn consume(self) -> (Vec<Object>, SymbolTable) {
         (self.constants, self.symbol_table)
     }
 
-    pub fn bytecode(&mut self) -> Bytecode {
+    pub(crate) fn bytecode(&mut self) -> Bytecode {
         Bytecode {
             instructions: self
                 .scopes
