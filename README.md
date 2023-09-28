@@ -21,7 +21,7 @@ lv_int = 5 + 10.
 WRITE: / lv_int.
 WRITE: / 'answer to life:', / (lv_int - 2 * 5) * (16 - 32 / 4) + 2.
 
-IF lv_int == 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT 5 <> 5 OR NOT rbap_false AND rbap_true.
+IF lv_int == 15 AND 5 < 10 OR 15 > 5 OR 5 <> 10 OR NOT (5 <> 5) OR NOT rbap_false AND rbap_true.
     WRITE: 'TRUE'.
 ENDIF.
 
@@ -42,4 +42,35 @@ DATA: lv_sum TYPE i,
 
 lv_sum = sum(2, 1).
 lv_sub = sub(lv_sum, 2).
+
+WRITE:/ lv_sum, / lv_sub.
+```
+
+# CLI tool
+
+CLI tool has the following functions.
+
+1. Run source file
+```
+rbap-lang run <source.rbap>
+```
+
+2. Compile source file
+```
+rbap-lang compile <source.rbap> [dest]
+```
+
+3. Execute compiled file
+```
+rbap-lang execute <compiled>
+```
+
+4. Enter REPL
+```
+rbap-lang 
+```
+
+5. Help
+```
+rbap-lang  --help
 ```
