@@ -13,7 +13,9 @@ pub enum Commands {
     /// Compile source file
     Compile(ArgsOutput),
     /// Run source file
-    Run(ArgsRun),
+    Run(ArgsTarget),
+    /// Execute compiled file
+    Execute(ArgsTarget),
 }
 
 #[derive(Args)]
@@ -28,7 +30,7 @@ pub struct ArgsOutput {
 }
 
 #[derive(Args)]
-pub struct ArgsRun {
+pub struct ArgsTarget {
     /// Target file
     pub target: String,
 }
