@@ -24,6 +24,7 @@ fn main() -> Result<()> {
                 compiler.into_file(dest)?;
             }
             Commands::Run(f) => VM::run(f.target)?,
+            Commands::Execute(f) => VM::execute(f.target)?,
         },
         None => start()?,
     }
