@@ -114,6 +114,15 @@ impl Compiler {
 
         Ok(())
     }
+
+    pub fn from_file<P>(path: P) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::options().read(true).open(path).map_err(Error::from)?;
+        Ok(bincode::deserialize_from(file)?)
+    }
+
     pub(crate) fn compile_node(&mut self, node: impl Into<Node>) -> Result<()> {
         let node = node.into();
 
