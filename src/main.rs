@@ -1,27 +1,29 @@
 use std::path::PathBuf;
 
-use rbap_lang::{cli::Cli, start, Compiler, Parser, Result};
+use rbap_lang::{
+    cli::{Cli, Commands},
+    start, Compiler, Parser, Result, VM,
+};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
         Some(commands) => match commands {
-            rbap_lang::cli::Commands::Compile(c) => {
-                let src = PathBuf::from(&c.src);
+            Commands::Compile(c) => {
                 let dest = c.dest.map_or_else(
                     || {
-                        let mut dest = src.clone();
+                        let mut dest = PathBuf::from(&c.src);
                         dest.set_extension("rbap");
                         dest
                     },
                     |dest| PathBuf::from(&dest),
                 );
 
-                let compiler = Compiler::compile(src)?;
+                let compiler = Compiler::compile(c.src)?;
                 compiler.into_file(dest)?;
             }
-            rbap_lang::cli::Commands::Run(_) => todo!(),
+            Commands::Run(f) => VM::run(f.target)?,
         },
         None => start()?,
     }
