@@ -1,0 +1,5 @@
+METHOD test IMPORTING iv_text TYPE i.
+  WRITE: iv_text.
+ENDMETHOD.
+
+test(10).
