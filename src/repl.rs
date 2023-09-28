@@ -32,7 +32,7 @@ pub fn start() -> io::Result<()> {
         }
 
         let mut compiler = Compiler::with_state(constants, symbol_table);
-        if let Err(e) = compiler.compile(program) {
+        if let Err(e) = compiler.compile_node(program) {
             writeln!(stderr, "{}", e)?;
         }
 

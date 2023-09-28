@@ -71,18 +71,18 @@ impl Compiler {
         }
     }
 
-    pub fn compile(&mut self, node: impl Into<Node>) -> Result<()> {
+    pub(crate) fn compile_node(&mut self, node: impl Into<Node>) -> Result<()> {
         let node = node.into();
 
         match node {
             Node::Program(p) => {
                 for s in p.statements {
-                    self.compile(s)?;
+                    self.compile_node(s)?;
                 }
             }
             Node::Statement(s) => match s {
                 Statement::Expression(e) => {
-                    self.compile(e)?;
+                    self.compile_node(e)?;
                     self.emit(OP_POP, &[]);
                 }
                 Statement::Declaration(d) => {
@@ -99,7 +99,7 @@ impl Compiler {
                         .expect("max string template bytes count reached");
 
                     for exp in expressions.into_iter().rev() {
-                        self.compile(exp)?;
+                        self.compile_node(exp)?;
                     }
 
                     self.emit(OP_WRITE, &[count as i32]);
@@ -112,7 +112,7 @@ impl Compiler {
                         return Err(CompilerError::from((symbol.ty, ty)).into());
                     }
 
-                    self.compile(a.value)?;
+                    self.compile_node(a.value)?;
 
                     let index: u8 = symbol.index.try_into().expect("max symbol count reached");
 
@@ -124,15 +124,15 @@ impl Compiler {
                 }
                 Statement::Block(block) => {
                     for statement in block.statements {
-                        self.compile(statement)?;
+                        self.compile_node(statement)?;
                     }
                 }
                 Statement::If(is) => {
-                    self.compile(is.condition)?;
+                    self.compile_node(is.condition)?;
 
                     let jump_not_truth_pos = self.emit(OP_JUMP_NOT_TRUTH, &[9999]);
 
-                    self.compile(is.consequence)?;
+                    self.compile_node(is.consequence)?;
 
                     let after_not_truth_pos: u16;
 
@@ -145,7 +145,7 @@ impl Compiler {
                             .try_into()
                             .expect("max jump index reached");
 
-                        self.compile(alternative)?;
+                        self.compile_node(alternative)?;
 
                         let after_pos: u16 = self
                             .current_instructions()
@@ -189,7 +189,7 @@ impl Compiler {
                         self.symbol_table.define(ret.ident.to_owned(), ret.ty);
                     }
 
-                    self.compile(f.body)?;
+                    self.compile_node(f.body)?;
 
                     if let Some(ret) = f.ret {
                         let symbol = self.symbol_table.resolve(&ret.ident)?;
@@ -252,13 +252,13 @@ impl Compiler {
                         .expect("max string template bytes count reached");
 
                     for exp in expressions {
-                        self.compile(exp)?;
+                        self.compile_node(exp)?;
                     }
 
                     self.emit(OP_STRING_TEMPLATE, &[count as i32]);
                 }
                 Expression::CallExpression(ce) => {
-                    self.compile(ce.function)?;
+                    self.compile_node(ce.function)?;
                     let arg_count: u8 = ce
                         .arguments
                         .len()
@@ -266,7 +266,7 @@ impl Compiler {
                         .expect("reached max function call argument count");
 
                     for arg in ce.arguments {
-                        self.compile(arg)?;
+                        self.compile_node(arg)?;
                     }
 
                     self.emit(OP_CALL, &[arg_count as i32]);
@@ -288,12 +288,12 @@ impl Compiler {
                         o => return Err(ParseInfixError::UnsupportedOperator(o).into()),
                     };
 
-                    self.compile(left)?;
-                    self.compile(right)?;
+                    self.compile_node(left)?;
+                    self.compile_node(right)?;
                     self.emit(operand_op_code, &[]);
                 }
                 Expression::PrefixExpression(pe) => {
-                    self.compile(*pe.right)?;
+                    self.compile_node(*pe.right)?;
                     match pe.operator {
                         Operator::Not => self.emit(OP_NOT, &[]),
                         Operator::Sub => self.emit(OP_MINUS, &[]),
@@ -539,7 +539,7 @@ mod tests {
             let program = parse(test.input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
 
             let bytecode = compiler.bytecode();
 
@@ -856,7 +856,7 @@ mod tests {
 
             let mut compiler = Compiler::new();
 
-            match compiler.compile(program) {
+            match compiler.compile_node(program) {
                 Err(e) if e.kind() == ErrorKind::CompilerExpectedDataType => continue,
                 Err(e) => panic!("Unexpected error occured: {}", e),
                 _ => panic!(
@@ -882,7 +882,7 @@ mod tests {
             let program = parse(input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
         }
 
         Ok(())
@@ -911,7 +911,7 @@ mod tests {
             let program = parse(input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
         }
 
         Ok(())
@@ -936,7 +936,7 @@ mod tests {
             let program = parse(input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
         }
 
         Ok(())
