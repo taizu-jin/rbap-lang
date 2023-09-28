@@ -12,7 +12,7 @@ pub struct Cli {
 pub enum Commands {
     /// Compile source file
     Compile(ArgsOutput),
-    /// Run compiled file
+    /// Run source file
     Run(ArgsRun),
 }
 
