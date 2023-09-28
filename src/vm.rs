@@ -88,7 +88,11 @@ impl<W> VM<W>
 where
     W: Writer,
 {
-    pub fn with_state(bytecode: Bytecode, writer: W, globals: Box<[Object; GLOBAL_SIZE]>) -> Self {
+    pub(crate) fn with_state(
+        bytecode: Bytecode,
+        writer: W,
+        globals: Box<[Object; GLOBAL_SIZE]>,
+    ) -> Self {
         let Bytecode {
             instructions,
             constants,
@@ -116,11 +120,11 @@ where
     }
 
     /// Consumes self and returns globals array.
-    pub fn consume(self) -> Box<[Object; GLOBAL_SIZE]> {
+    pub(crate) fn consume(self) -> Box<[Object; GLOBAL_SIZE]> {
         self.globals
     }
 
-    pub fn run(&mut self) -> Result<()> {
+    pub(crate) fn run(&mut self) -> Result<()> {
         while ((self.current_frame().ip + 1) as usize) < self.current_frame().instructions().len() {
             self.current_frame_mut().ip += 1;
             let opcode = self.current_frame().instructions()[self.current_frame().ip as usize];
@@ -413,7 +417,7 @@ where
         self.push_frame(frame)
     }
 
-    pub fn last_popped_stack_elem(&self) -> Object {
+    pub(crate) fn last_popped_stack_elem(&self) -> Object {
         self.stack[self.sp].clone()
     }
 }
