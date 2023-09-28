@@ -10,3 +10,6 @@ clap = { version = "4.4.4", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.0"
 thiserror = "1"
+
+[dev-dependencies]
+file_diff = "1"

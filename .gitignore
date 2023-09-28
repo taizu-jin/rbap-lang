@@ -1,3 +1,4 @@
 /target
+/tests/resources/artifact*
 
 Cargo.lock
