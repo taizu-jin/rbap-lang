@@ -236,6 +236,7 @@ where
                         let component = self.pop();
                         self.writer.print(format_args!("{}", component));
                     }
+                    self.writer.print(format_args!("\n"));
                 }
                 opcode => unimplemented!("handling for {} not implemented", opcode),
             }
@@ -994,8 +995,8 @@ mod tests {
     #[test]
     fn test_write_statement() -> Result<()> {
         let tests = def_case_writer!(
-            "WRITE: 'some string'.", "some string";
-            "WRITE: / 'some', / 'string'.", "\n", "some", "\n", "string");
+            "WRITE: 'some string'.", "some string", "\n";
+            "WRITE: / 'some', / 'string'.", "\n", "some", "\n", "string", "\n");
 
         let mut globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
 
