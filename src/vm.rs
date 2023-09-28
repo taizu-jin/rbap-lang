@@ -1,10 +1,11 @@
-use std::fmt::Arguments;
+use std::{fmt::Arguments, path::Path};
 
 use crate::{
     code::*,
     compiler::Bytecode,
     error::{Error, Result, VMError},
     object::{CompiledFunction, Object},
+    Compiler,
 };
 
 pub const STACK_SIZE: usize = 2048;
@@ -84,6 +85,16 @@ where
     writer: W,
 }
 
+impl VM<StdoutWriter> {
+    pub fn run<P: AsRef<Path>>(target: P) -> Result<()> {
+        let mut compiler = Compiler::compile(&target)?;
+
+        let globals: Box<_> = vec![Object::Null; GLOBAL_SIZE].try_into().unwrap();
+        let mut vm = Self::with_state(compiler.bytecode(), StdoutWriter, globals);
+        vm.run_bytecode()
+    }
+}
+
 impl<W> VM<W>
 where
     W: Writer,
@@ -124,7 +135,7 @@ where
         self.globals
     }
 
-    pub(crate) fn run(&mut self) -> Result<()> {
+    pub(crate) fn run_bytecode(&mut self) -> Result<()> {
         while ((self.current_frame().ip + 1) as usize) < self.current_frame().instructions().len() {
             self.current_frame_mut().ip += 1;
             let opcode = self.current_frame().instructions()[self.current_frame().ip as usize];
@@ -655,7 +666,7 @@ mod tests {
             compiler.compile_node(program)?;
 
             let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
-            vm.run()?;
+            vm.run_bytecode()?;
 
             let stack_element = vm.last_popped_stack_elem();
 
@@ -1011,7 +1022,7 @@ mod tests {
             compiler.compile_node(program)?;
 
             let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
-            vm.run()?;
+            vm.run_bytecode()?;
 
             assert_eq!(
                 vm.writer.0.len(),

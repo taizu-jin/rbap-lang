@@ -37,7 +37,7 @@ pub fn start() -> io::Result<()> {
         }
 
         let mut vm = VM::with_state(compiler.bytecode(), StdoutWriter, globals);
-        if let Err(e) = vm.run() {
+        if let Err(e) = vm.run_bytecode() {
             writeln!(stderr, "{}", e)?;
         }
 

@@ -9,4 +9,4 @@ mod parser;
 mod repl;
 mod vm;
 
-pub use {clap::Parser, compiler::Compiler, error::Result, repl::start};
+pub use {clap::Parser, compiler::Compiler, error::Result, repl::start, vm::VM};
