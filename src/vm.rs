@@ -647,7 +647,7 @@ mod tests {
             let program = parse(test.input().into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
 
             let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
             vm.run()?;
@@ -1003,7 +1003,7 @@ mod tests {
             let program = parse(test.input.into());
 
             let mut compiler = Compiler::new();
-            compiler.compile(program)?;
+            compiler.compile_node(program)?;
 
             let mut vm = VM::with_state(compiler.bytecode(), DummyWriter::default(), globals);
             vm.run()?;
